@@ -80,10 +80,10 @@ used to open a browser to the Web Interface.  Most everything can be configured 
 The Clock will display the time of the City selected for the weather.
 
 <p align="center">
-  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.05.png" width="200"/>
-  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.15.png" width="200"/>
-  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.32.png" width="200"/>
-  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.58.png" width="200"/>
+  <img src="/images/2018-04-19%2006.58.05.png" width="200"/>
+  <img src="/images/2018-04-19%2006.58.15.png" width="200"/>
+  <img src="/images/2018-04-19%2006.58.32.png" width="200"/>
+  <img src="/images/2018-04-19%2006.58.58.png" width="200"/>
 </p>
 
 ## Contributors
@@ -91,4 +91,5 @@ David Payne
 Nathan Glause  
 Daniel Eichhorn -- Author of the TimeClient class  
 
-![Marquee Scroller](/images/5d7f02ccbf01125cabbf246f97f2ead1_preview_featured.jpg) . 
+![Marquee Scroller](/images/5d7f02ccbf01125cabbf246f97f2ead1_preview_featured.jpg)  
+![Marquee Parts](/images/1ffa0c835554d280258c13be5513c4fe_preview_featured.jpg)
