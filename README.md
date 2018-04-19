@@ -88,7 +88,7 @@ The Clock will display the time of the City selected for the weather.
 
 ## Contributors
 David Payne  
-Nathan Glause  
+Nathan Glaus  
 Daniel Eichhorn -- Author of the TimeClient class  
 
 ![Marquee Scroller](/images/5d7f02ccbf01125cabbf246f97f2ead1_preview_featured.jpg)  
