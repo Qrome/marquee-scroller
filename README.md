@@ -50,7 +50,7 @@ https://www.thingiverse.com/thing:2867294
 It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.  
 Select Board:  "WeMos D1 R2 & mini"
 
-Packages the following packages and libraries are used (download and install):
+Packages the following packages and libraries are used (download and install):  
 <ESP8266WiFi.h>  
 <ArduinoJson.h>  --> https://github.com/bblanchon/ArduinoJson  
 <ESP8266WebServer.h>  
