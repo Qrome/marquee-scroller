@@ -80,8 +80,9 @@ used to open a browser to the Web Interface.  Most everything can be configured 
 The Clock will display the time of the City selected for the weather.
 
 <p align="center">
-  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.05.png" width="300"/>
-  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.15.png" width="300"/>
+  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.05.png" width="200"/>
+  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.15.png" width="200"/>
+  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.32.png" width="200"/>
 </p>
 
 ## Contributors
