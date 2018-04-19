@@ -79,6 +79,8 @@ used to open a browser to the Web Interface.  Most everything can be configured 
 
 The Clock will display the time of the City selected for the weather.
 
+![alt text](https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.05.png)
+
 ## Contributors
 David Payne  
 Nathan Glause  
