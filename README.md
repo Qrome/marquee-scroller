@@ -53,7 +53,7 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 * Open Boards Manager from Tools > Board menu and install esp8266 platform (and don't forget to select your ESP8266 board from Tools > Board menu after installation).
 * Select Board:  "WeMos D1 R2 & mini"
 
-Packages the following packages and libraries are used (download and install):  
+**Packages** -- the following packages and libraries are used (download and install):  
 <ESP8266WiFi.h>  
 <ArduinoJson.h>  --> https://github.com/bblanchon/ArduinoJson  
 <ESP8266WebServer.h>  
