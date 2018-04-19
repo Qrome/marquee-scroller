@@ -83,6 +83,7 @@ The Clock will display the time of the City selected for the weather.
   <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.05.png" width="200"/>
   <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.15.png" width="200"/>
   <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.32.png" width="200"/>
+  <img src="https://github.com/Qrome/marquee-scroller/blob/master/images/2018-04-19%2006.58.58.png" width="200"/>
 </p>
 
 ## Contributors
