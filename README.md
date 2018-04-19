@@ -38,30 +38,30 @@ SOFTWARE.
 
 ## Wiring for the Wemos D1 Mini to the Dot Matrix Display
 CLK -> D5 (SCK)  
-CS  -> D6 
-DIN -> D7 (MOSI)
-VCC -> 5V+
-GND -> GND-
+CS  -> D6  
+DIN -> D7 (MOSI)  
+VCC -> 5V+  
+GND -> GND-  
 
 ## 3D Printed Case by David Payne:  
 https://www.thingiverse.com/thing:2867294
 
 ## Compiling and Loading to Wemos D1
-It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.
+It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.  
 Select Board:  "WeMos D1 R2 & mini"
 
 Packages the following packages and libraries are used (download and install):
-<ESP8266WiFi.h>
-<ArduinoJson.h>  --> https://github.com/bblanchon/ArduinoJson
-<ESP8266WebServer.h>
-<WiFiManager.h>
-"FS.h"
-<SPI.h>
-<Adafruit_GFX.h>  --> https://github.com/adafruit/Adafruit-GFX-Library
-<Max72xxPanel.h> --> https://github.com/markruys/arduino-Max72xxPanel
+<ESP8266WiFi.h>  
+<ArduinoJson.h>  --> https://github.com/bblanchon/ArduinoJson  
+<ESP8266WebServer.h>  
+<WiFiManager.h>  
+"FS.h"  
+<SPI.h>  
+<Adafruit_GFX.h>  --> https://github.com/adafruit/Adafruit-GFX-Library  
+<Max72xxPanel.h> --> https://github.com/markruys/arduino-Max72xxPanel  
 
 ## Initial Configuration
-You will need to update the **Settings.h** file with your API Keys for the following:
+You will need to update the **Settings.h** file with your API Keys for the following:  
 * Open Weather API Key: http://openweathermap.com/
 * News API Key: https://newsapi.org/sources
 * GeoNames Key (optional as you can use mine or create your own) http://www.geonames.org/
@@ -77,6 +77,6 @@ used to open a browser to the Web Interface.  Most everything can be configured 
 The Clock will display the time of the City selected for the weather.
 
 ## Contributors
-David Payne
-Nathan Glause
-Daniel Eichhorn -- Author of the TimeClient class
+David Payne  
+Nathan Glause  
+Daniel Eichhorn -- Author of the TimeClient class  
