@@ -23,7 +23,7 @@ SOFTWARE.
 
 # Marquee Scroller (Clock, Weather, News, and More)
 
-Features Displays the following every 60 seconds:
+## Features Displays the following every 60 seconds:
 * Accurate Clock refresh off Internet Time Servers
 * Local Weather and conditions (refreshed every 10 - 30 minutes)
 * News Headlines from all the major sources
