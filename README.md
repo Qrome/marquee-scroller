@@ -54,7 +54,7 @@ Packages the following packages and libraries are used (download and install):
 <ESP8266WiFi.h>  
 <ArduinoJson.h>  --> https://github.com/bblanchon/ArduinoJson  
 <ESP8266WebServer.h>  
-<WiFiManager.h>  
+<WiFiManager.h> --> https://github.com/tzapu/WiFiManager  
 "FS.h"  
 <SPI.h>  
 <Adafruit_GFX.h>  --> https://github.com/adafruit/Adafruit-GFX-Library  
