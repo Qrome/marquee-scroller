@@ -48,7 +48,10 @@ https://www.thingiverse.com/thing:2867294
 
 ## Compiling and Loading to Wemos D1
 It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.  
-Select Board:  "WeMos D1 R2 & mini"
+* USB CH340G drivers:  https://wiki.wemos.cc/downloads
+* Enter http://arduino.esp8266.com/stable/package_esp8266... into Additional Board Manager URLs field. You can add multiple URLs, separating them with commas.
+* Open Boards Manager from Tools > Board menu and install esp8266 platform (and don't forget to select your ESP8266 board from Tools > Board menu after installation).
+* Select Board:  "WeMos D1 R2 & mini"
 
 Packages the following packages and libraries are used (download and install):  
 <ESP8266WiFi.h>  
