@@ -90,3 +90,5 @@ The Clock will display the time of the City selected for the weather.
 David Payne  
 Nathan Glause  
 Daniel Eichhorn -- Author of the TimeClient class  
+
+![Marquee Scroller](/images/5d7f02ccbf01125cabbf246f97f2ead1_preview_featured.jpg) . 
