@@ -62,6 +62,7 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 <SPI.h>  
 <Adafruit_GFX.h>  --> https://github.com/adafruit/Adafruit-GFX-Library  
 <Max72xxPanel.h> --> https://github.com/markruys/arduino-Max72xxPanel  
+<JsonStreamingParser.h> --> https://github.com/squix78/json-streaming-parser  
 
 ## Initial Configuration
 You will need to update the **Settings.h** file with your API Keys for the following:  
