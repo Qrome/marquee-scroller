@@ -827,7 +827,38 @@ void readCityIds() {
   fr.close();
 }
 
+// remove diacritic character
+String diacriticCleaner(String message)
+{
+  String withDiacritic("ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÌÍÎÏìíîïÙÚÛÜùúûüÿÑñÇç");
+  String withoutDiacritic("AAAAAAaaaaaaOOOOOOooooooEEEEeeeeIIIIiiiiUUUUuuuuyNnCc");
+  String messageCourt;
+  int i=0,j=0,k=0,messageSize;
+
+  messageSize=message.length();
+
+  for (i=0;i<=messageSize;i++)
+  {
+      for(j=0;j<=104;j=j+2)
+      {
+          if((message[i]==withDiacritic[j])&&(message[i+1]==withDiacritic[j+1]))
+          {
+              message[i]=withoutDiacritic[j/2];
+              for(k=i+1;k<messageSize;k++)
+              {
+                  message[k]=message[k+1];
+              }
+              message=message.substring(0,messageSize-1);
+              messageSize=message.length();
+          }
+      }
+  }
+
+  return message;
+}
+
 void scrollMessage(String msg) {
+  msg = diacriticCleaner(msg);
   msg += " "; // add a space at the end
   for ( int i = 0 ; i < width * msg.length() + matrix.width() - 1 - spacer; i++ ) {
     handleWebClient();
