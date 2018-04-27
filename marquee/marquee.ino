@@ -84,9 +84,7 @@ OpenWeatherMapClient weatherClient(APIKEY, CityIDs, 1, IS_METRIC);
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort);
 int printerCount = 0;
 
-WiFiServer server(WEBSERVER_PORT);
-WiFiClient webClient;
-
+ESP8266WebServer server(WEBSERVER_PORT);
 
 const String WEB_ACTIONS =  "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
                             "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
@@ -94,7 +92,7 @@ const String WEB_ACTIONS =  "<a class='w3-bar-item w3-button' href='/'><i class=
                             "<a class='w3-bar-item w3-button' href='/display'>%TOGGLEDISPLAY%</a>"
                             "<a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
                             "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
-                            "<a class='w3-bar-item w3-button' href='http://designsharp.com' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
+                            "<a class='w3-bar-item w3-button' href='https://www.thingiverse.com/thing:2867294' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
                             
 const String CHANGE_FORM =  "<form class='w3-container' action='/locations' method='get'><h2>City ID:</h2>"
                             "<label>%CITYNAME1%</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'>"
@@ -221,7 +219,19 @@ void setup() {
   Serial.print(getWifiQuality());
   Serial.println("%");
 
+  if (MDNS.begin ("scroller")) {
+    Serial.println ("MDNS responder started");
+  }
+
   if (WEBSERVER_ENABLED) {
+    server.on("/", displayWeatherData);
+    server.on("/pull", handlePull);
+    server.on("/locations", handleLocations);
+    server.on("/systemreset", handleSystemReset);
+    server.on("/forgetwifi", handleForgetWifi);
+    server.on("/configure", handleConfigure);
+    server.on("/display", handleDisplay);
+    server.onNotFound(handleNotFound);
     // Start the server
     server.begin();
     Serial.println("Server started");
@@ -300,138 +310,107 @@ void loop() {
     hourMinutes = timeClient.getHours() + ":" + timeClient.getMinutes();
   }
   centerPrint(hourMinutes);
-
-  handleWebClient();
-
+  
+  server.handleClient();
 }
 
-//***************************************
-// WEBCLIENT
-//***************************************
-void handleWebClient() {
-  // Check if a client has connected
-  webClient = server.available();
-  if (!webClient) {
-    return;
-  }
-  timeoutCount = 0;
-  while(!webClient.available()){
-    delay(1);
-    timeoutCount++;
-    if (timeoutCount == TIMEOUT) {
-      Serial.println("Ping and No Connection...");
-      webClient.stop();
-      return;
-    }
-  }
-  
-  Serial.print("Remote IP: ");
-  Serial.println(webClient.remoteIP());
- 
-  // Read the first line of the request
-  String request = webClient.readStringUntil('\r');
-  Serial.println(request);
-  webClient.flush(); 
 
-  // Return the response **********************************************************************
-  if (request.indexOf("/pull") != -1) {
-    timeOffsetFetched = false;
-    getWeatherData(); // this will force a data pull for new weather
-    displayWeatherData();
-  } else if (request.indexOf("/locations") != -1) {
-    String lastCity = request.substring(request.lastIndexOf("city1=") + 6);
-    CityIDs[0] = lastCity.substring(0, lastCity.indexOf("&")).toInt();
-    NEWS_ENABLED = (request.indexOf("displaynews=") > 0);
-    ADVICE_ENABLED = (request.indexOf("displayadvice=") > 0);
-    IS_24HOUR = (request.indexOf("is24hour=") > 0);
-    IS_METRIC = (request.indexOf("metric=") > 0);
-    NEWS_SOURCE = request.substring(request.lastIndexOf("newssource=") + 11, request.lastIndexOf("&marqueeMsg="));
-    marqueeMessage = decodeHtmlString(request.substring(request.lastIndexOf("marqueeMsg=") + 11, request.lastIndexOf("&startTime=")));
-    timeDisplayTurnsOn = decodeHtmlString(request.substring(request.lastIndexOf("startTime=") + 10, request.lastIndexOf("&endTime=")));
-    timeDisplayTurnsOff = decodeHtmlString(request.substring(request.lastIndexOf("endTime=") + 8, request.lastIndexOf("&ledintensity=")));
-    displayIntensity = request.substring(request.lastIndexOf("ledintensity=") + 13, request.lastIndexOf("&refresh=")).toInt();
-    minutesBetweenDataRefresh = request.substring(request.lastIndexOf("refresh=") + 8, request.indexOf(" HTTP/")).toInt();
-    weatherClient.setMetric(IS_METRIC);
-    matrix.fillScreen(LOW); // show black
-    writeCityIds();
-    getWeatherData(); // this will force a data pull for new weather
+void handlePull() {
+  timeOffsetFetched = false;
+  getWeatherData(); // this will force a data pull for new weather
+  displayWeatherData();
+}
+
+void handleLocations() {
+  CityIDs[0] = server.arg("city1").toInt();
+  NEWS_ENABLED = server.hasArg("displaynews");
+  ADVICE_ENABLED = server.hasArg("displayadvice");
+  IS_24HOUR = server.hasArg("is24hour");
+  IS_METRIC = server.hasArg("metric");
+  NEWS_SOURCE = server.arg("newssource");
+  marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
+  timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
+  timeDisplayTurnsOff = decodeHtmlString(server.arg("endTime"));
+  displayIntensity = server.arg("ledintensity").toInt();
+  minutesBetweenDataRefresh = server.arg("refresh").toInt();
+  weatherClient.setMetric(IS_METRIC);
+  matrix.fillScreen(LOW); // show black
+  writeCityIds();
+  getWeatherData(); // this will force a data pull for new weather
+  redirectHome();
+}
+
+void handleSystemReset() {
+  Serial.println("Reset System Configuration");
+  if (SPIFFS.remove(CONFIG)) {
     redirectHome();
-  } else if (request.indexOf("/systemreset") != -1) {
-    Serial.println("Reset System Configuration");
-    if (SPIFFS.remove(CONFIG)) {
-      redirectHome();
-      ESP.restart();
-    }
-  } else if (request.indexOf("/forgetwifi") != -1) {
-    //WiFiManager
-    //Local intialization. Once its business is done, there is no need to keep it around
-    redirectHome();
-    WiFiManager wifiManager;
-    wifiManager.resetSettings();
     ESP.restart();
-  } else if (request.indexOf("/configure") != -1) {
-    String form = String(CHANGE_FORM);
-    for (int inx = 0; inx < 1; inx++) {
-      String cityName = "";
-      if (CityIDs[inx] > 0) {
-        cityName = weatherClient.getCity(inx) + ", " + weatherClient.getCountry(inx);
-      } else {
-        cityName = "<i>Available</i>";
-      }
-      form.replace(String("%CITYNAME" + String(inx +1) + "%"), cityName);
-      form.replace(String("%CITY" + String(inx +1) + "%"), String(CityIDs[inx]));
-    }
-    String isNewsDisplayedChecked = "";
-    if (NEWS_ENABLED) {
-      isNewsDisplayedChecked = "checked='checked'";
-    }
-    form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
-    String isAdviceDisplayedChecked = "";
-    if (ADVICE_ENABLED) {
-      isAdviceDisplayedChecked = "checked='checked'";
-    }
-    form.replace("%ADVICECHECKED%", isAdviceDisplayedChecked);
-    String is24hourChecked = "";
-    if (IS_24HOUR) {
-      is24hourChecked = "checked='checked'";
-    }
-    form.replace("%IS_24HOUR_CHECKED%", is24hourChecked);
-    String checked = "";
-    if (IS_METRIC) {
-      checked = "checked='checked'";
-    }
-    form.replace("%CHECKED%", checked);
-    form.replace("%MSG%", marqueeMessage);
-    form.replace("%STARTTIME%", timeDisplayTurnsOn);
-    form.replace("%ENDTIME%", timeDisplayTurnsOff);
-    String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
-    options.replace(">"+String(minutesBetweenDataRefresh)+"<", " selected>"+String(minutesBetweenDataRefresh)+"<");
-    form.replace("%OPTIONS%", options);
-    String newsOptions = String(NEWS_OPTIONS);
-    newsOptions.replace(">"+String(NEWS_SOURCE)+"<", " selected>"+String(NEWS_SOURCE)+"<");
-    form.replace("%NEWSOPTIONS%", newsOptions);
-    String ledOptions = "<option>1</option><option>3</option><option>6</option><option>9</option><option>12</option><option>15</option>";
-    ledOptions.replace(">"+String(displayIntensity)+"<", " selected>"+String(displayIntensity)+"<");
-    form.replace("%INTENSITYOPTIONS%", ledOptions);
-    displayMessage(form);
-  } else if (request.indexOf("/display") != -1) {
-    enableDisplay(!displayOn);
-    String state = "OFF";
-    if (displayOn) {
-      state = "ON";
-    }
-    displayMessage("Display is now " + state);
-  } else {
-    //*********************************************** 
-    displayWeatherData();
-    //***********************************************
   }
- // END Return the response **********************************************************************
- 
-  delay(1);
-  Serial.println("Client disconnected");
-  Serial.println();
-  webClient.stop();
+}
+
+void handleForgetWifi() {
+  //WiFiManager
+  //Local intialization. Once its business is done, there is no need to keep it around
+  redirectHome();
+  WiFiManager wifiManager;
+  wifiManager.resetSettings();
+  ESP.restart();
+}
+
+void handleConfigure() {
+  String form = String(CHANGE_FORM);
+  for (int inx = 0; inx < 1; inx++) {
+    String cityName = "";
+    if (CityIDs[inx] > 0) {
+      cityName = weatherClient.getCity(inx) + ", " + weatherClient.getCountry(inx);
+    } else {
+      cityName = "<i>Available</i>";
+    }
+    form.replace(String("%CITYNAME" + String(inx +1) + "%"), cityName);
+    form.replace(String("%CITY" + String(inx +1) + "%"), String(CityIDs[inx]));
+  }
+  String isNewsDisplayedChecked = "";
+  if (NEWS_ENABLED) {
+    isNewsDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
+  String isAdviceDisplayedChecked = "";
+  if (ADVICE_ENABLED) {
+    isAdviceDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%ADVICECHECKED%", isAdviceDisplayedChecked);
+  String is24hourChecked = "";
+  if (IS_24HOUR) {
+    is24hourChecked = "checked='checked'";
+  }
+  form.replace("%IS_24HOUR_CHECKED%", is24hourChecked);
+  String checked = "";
+  if (IS_METRIC) {
+    checked = "checked='checked'";
+  }
+  form.replace("%CHECKED%", checked);
+  form.replace("%MSG%", marqueeMessage);
+  form.replace("%STARTTIME%", timeDisplayTurnsOn);
+  form.replace("%ENDTIME%", timeDisplayTurnsOff);
+  String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
+  options.replace(">"+String(minutesBetweenDataRefresh)+"<", " selected>"+String(minutesBetweenDataRefresh)+"<");
+  form.replace("%OPTIONS%", options);
+  String newsOptions = String(NEWS_OPTIONS);
+  newsOptions.replace(">"+String(NEWS_SOURCE)+"<", " selected>"+String(NEWS_SOURCE)+"<");
+  form.replace("%NEWSOPTIONS%", newsOptions);
+  String ledOptions = "<option>1</option><option>3</option><option>6</option><option>9</option><option>12</option><option>15</option>";
+  ledOptions.replace(">"+String(displayIntensity)+"<", " selected>"+String(displayIntensity)+"<");
+  form.replace("%INTENSITYOPTIONS%", ledOptions);
+  displayMessage(form);
+}
+
+void handleDisplay() {
+  enableDisplay(!displayOn);
+  String state = "OFF";
+  if (displayOn) {
+    state = "ON";
+  }
+  displayMessage("Display is now " + state);
 }
 
 void getWeatherData() //client function to send/receive GET request data.
@@ -487,29 +466,34 @@ void getWeatherData() //client function to send/receive GET request data.
 }
 
 void displayMessage(String message) {
-  String html = "";
+  digitalWrite(externalLight, LOW);
 
-  displayHeader();
+  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+  server.sendContent(String(getHeader()));
+  server.sendContent(String(message));
+  server.sendContent(String(getFooter()));
+  server.client().stop();
   
-  html += message;
-
-  webClient.print(html);
-  displayFooter();
+  digitalWrite(externalLight, HIGH);
 }
 
 void redirectHome() {
-    // Send them back to the Root Directory
-    webClient.println("HTTP/1.1 302 Found");
-    webClient.println("Location: /");
+  // Send them back to the Root Directory
+  server.sendHeader("Location", String("/"), true);
+  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.send(302, "text/plain", "");
+  server.client().stop();
 }
 
-void displayHeader() {
-  digitalWrite(externalLight, LOW);
+String getHeader() {
   String menu = String(WEB_ACTIONS);
   menu.replace("%TOGGLEDISPLAY%", (displayOn) ? "<i class='fa fa-eye-slash'></i> Turn Display OFF" : "<i class='fa fa-eye'></i> Turn Display ON");
-  webClient.println("HTTP/1.1 200 OK");
-  webClient.println("Content-Type: text/html");
-  webClient.println(""); //  do not forget this one
   String html = "<!DOCTYPE HTML>";
   html += "<html><link rel='icon' href='data:;base64,='>";
   html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
@@ -529,10 +513,10 @@ void displayHeader() {
   html += "function openSidebar(){document.getElementById('mySidebar').style.display='block'}function closeSidebar(){document.getElementById('mySidebar').style.display='none'}closeSidebar();";
   html += "</script>";
   html += "<br><div class='w3-container w3-large' style='margin-top:88px'>";
-  webClient.println(html);
+  return html;
 }
 
-void displayFooter() {
+String getFooter() {
   int8_t rssi = getWifiQuality();
   Serial.print("Signal Strength (RSSI): ");
   Serial.print(rssi);
@@ -546,14 +530,20 @@ void displayFooter() {
   html += String(rssi) + "%";
   html += "</footer>";
   html += "</body></html>";
-  webClient.println(html);
-  digitalWrite(externalLight, HIGH);
+  return html;
 }
 
 void displayWeatherData() {
+  digitalWrite(externalLight, LOW);
   String html = "";
-  displayHeader();
 
+  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+  server.sendContent(String(getHeader()));
+  
   for (int inx = 0; inx < 1; inx++) {
     if (weatherClient.getTemp(inx) == "") {
       break; // no more data
@@ -586,7 +576,7 @@ void displayWeatherData() {
     html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(inx) + "," + weatherClient.getLon(inx) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fa fa-map-marker' style='color:red'></i> Map It!</a><br>";
     html += "</p></div></div><hr>";
 
-    webClient.print(html); // spit out what we got
+    server.sendContent(String(html)); // spit out what we got
     html = ""; // fresh start
   }
 
@@ -595,7 +585,7 @@ void displayWeatherData() {
     for (int inx = 0; inx < 10; inx++) {
       html += "<div class='w3-cell-row'><a href='" + newsClient.getUrl(inx) + "' target='_BLANK'>" + newsClient.getTitle(inx) + "</a></div>";
       html += "<div class='w3-cell-row'>" + newsClient.getDescription(inx) + "</div><br>";
-      webClient.print(html);
+      server.sendContent(String(html));
       html = "";
     }
   }
@@ -604,11 +594,13 @@ void displayWeatherData() {
     html = "<div class='w3-cell-row' style='width:100%'><h2>Advice Slip</h2></div>";
       html += "<div class='w3-cell-row'>Current Advice: </div>";
       html += "<div class='w3-cell-row'>" + adviceClient.getAdvice() + "</div><br>";
-      webClient.print(html);
+      server.sendContent(String(html));
       html = "";
   }
   
-  displayFooter();
+  server.sendContent(String(getFooter()));
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
 }
 
 float getTimeOffset(int index) {
@@ -622,6 +614,25 @@ float getTimeOffset(int index) {
   UtcOffset = geoNames.getTimeOffset();
 
   return UtcOffset;
+}
+
+void handleNotFound() {
+  digitalWrite(externalLight, LOW);
+  String message = "File Not Found\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += ( server.method() == HTTP_GET ) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+
+  for ( uint8_t i = 0; i < server.args(); i++ ) {
+    message += " " + server.argName ( i ) + ": " + server.arg ( i ) + "\n";
+  }
+
+  server.send ( 404, "text/plain", message );
+  digitalWrite(externalLight, HIGH);
 }
 
 void configModeCallback (WiFiManager *myWiFiManager) {
@@ -827,41 +838,10 @@ void readCityIds() {
   fr.close();
 }
 
-// remove diacritic character
-String diacriticCleaner(String message)
-{
-  String withDiacritic("ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÌÍÎÏìíîïÙÚÛÜùúûüÿÑñÇç");
-  String withoutDiacritic("AAAAAAaaaaaaOOOOOOooooooEEEEeeeeIIIIiiiiUUUUuuuuyNnCc");
-  String messageCourt;
-  int i=0,j=0,k=0,messageSize;
-
-  messageSize=message.length();
-
-  for (i=0;i<=messageSize;i++)
-  {
-      for(j=0;j<=104;j=j+2)
-      {
-          if((message[i]==withDiacritic[j])&&(message[i+1]==withDiacritic[j+1]))
-          {
-              message[i]=withoutDiacritic[j/2];
-              for(k=i+1;k<messageSize;k++)
-              {
-                  message[k]=message[k+1];
-              }
-              message=message.substring(0,messageSize-1);
-              messageSize=message.length();
-          }
-      }
-  }
-
-  return message;
-}
-
 void scrollMessage(String msg) {
-  msg = diacriticCleaner(msg);
   msg += " "; // add a space at the end
   for ( int i = 0 ; i < width * msg.length() + matrix.width() - 1 - spacer; i++ ) {
-    handleWebClient();
+    server.handleClient();
     if (refresh==1) i=0;
     refresh=0;
     matrix.fillScreen(LOW);
