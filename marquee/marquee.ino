@@ -382,6 +382,17 @@ void handleForgetWifi() {
 }
 
 void handleConfigure() {
+
+  digitalWrite(externalLight, LOW);
+  String html = "";
+
+  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+  server.sendContent(String(getHeader()));
+  
   String form = String(CHANGE_FORM);
   for (int inx = 0; inx < 1; inx++) {
     String cityName = "";
@@ -433,7 +444,12 @@ void handleConfigure() {
   form.replace("%OCTOKEY%", OctoPrintApiKey);
   form.replace("%OCTOADDRESS%", OctoPrintServer);
   form.replace("%OCTOPORT%", String(OctoPrintPort));
-  displayMessage(String(form));
+
+  server.sendContent(String(form));
+  
+  server.sendContent(String(getFooter()));
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
 }
 
 void handleDisplay() {
