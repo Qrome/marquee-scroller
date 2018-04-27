@@ -107,6 +107,10 @@ const String CHANGE_FORM =  "<form class='w3-container' action='/locations' meth
                             "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
                             "Select Display Brightness <select class='w3-option w3-padding' name='ledintensity'>%INTENSITYOPTIONS%</select></p>"
                             "Refresh Data (minutes) <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
+                            "<input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status<p>"
+                            "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
+                            "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
+                            "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
                             "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
                             "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
@@ -333,6 +337,10 @@ void handleLocations() {
   timeDisplayTurnsOff = decodeHtmlString(server.arg("endTime"));
   displayIntensity = server.arg("ledintensity").toInt();
   minutesBetweenDataRefresh = server.arg("refresh").toInt();
+  OCTOPRINT_ENABLED = server.hasArg("displayoctoprint");
+  OctoPrintApiKey = server.arg("octoPrintApiKey");
+  OctoPrintServer = server.arg("octoPrintAddress");
+  OctoPrintPort = server.arg("octoPrintPort").toInt();
   weatherClient.setMetric(IS_METRIC);
   matrix.fillScreen(LOW); // show black
   writeCityIds();
@@ -401,7 +409,15 @@ void handleConfigure() {
   String ledOptions = "<option>1</option><option>3</option><option>6</option><option>9</option><option>12</option><option>15</option>";
   ledOptions.replace(">"+String(displayIntensity)+"<", " selected>"+String(displayIntensity)+"<");
   form.replace("%INTENSITYOPTIONS%", ledOptions);
-  displayMessage(form);
+  String isOctoPrintDisplayedChecked = "";
+  if (OCTOPRINT_ENABLED) {
+    isOctoPrintDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%OCTOCHECKED%", isOctoPrintDisplayedChecked);
+  form.replace("%OCTOKEY%", OctoPrintApiKey);
+  form.replace("%OCTOADDRESS%", OctoPrintServer);
+  form.replace("%OCTOPORT%", String(OctoPrintPort));
+  displayMessage(String(form));
 }
 
 void handleDisplay() {
@@ -767,6 +783,10 @@ String writeCityIds() {
     f.println("is24hour=" + String(IS_24HOUR));
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
+    f.println("isOctoPrint=" + String(OCTOPRINT_ENABLED));
+    f.println("octoKey=" + OctoPrintApiKey);
+    f.println("octoServer=" + OctoPrintServer);
+    f.println("octoPort=" + String(OctoPrintPort));
   }
   f.close();
   readCityIds();
@@ -830,12 +850,33 @@ void readCityIds() {
       displayIntensity = line.substring(line.lastIndexOf("ledIntensity=") + 13).toInt();
       Serial.println("displayIntensity=" + String(displayIntensity));
     }
+    if (line.indexOf("isOctoPrint=") >= 0) {
+      OCTOPRINT_ENABLED = line.substring(line.lastIndexOf("isOctoPrint=") + 12).toInt();
+      Serial.println("OCTOPRINT_ENABLED=" + String(OCTOPRINT_ENABLED));
+    }
+    if (line.indexOf("octoKey=") >= 0) {
+      OctoPrintApiKey = line.substring(line.lastIndexOf("octoKey=") + 8);
+      OctoPrintApiKey.trim();
+      Serial.println("OctoPrintApiKey=" + OctoPrintApiKey);
+    }
+    if (line.indexOf("octoServer=") >= 0) {
+      OctoPrintServer = line.substring(line.lastIndexOf("octoServer=") + 11);
+      OctoPrintServer.trim();
+      Serial.println("OctoPrintServer=" + OctoPrintServer);
+    }
+    if (line.indexOf("octoPort=") >= 0) {
+      OctoPrintPort = line.substring(line.lastIndexOf("octoPort=") + 9).toInt();
+      Serial.println("OctoPrintPort=" + String(OctoPrintPort));
+    }
   }
+  fr.close();
   matrix.setIntensity(displayIntensity);
   newsClient.updateNewsSource(NEWS_SOURCE);
   weatherClient.setMetric(IS_METRIC);
   weatherClient.updateCityIdList(CityIDs, 1);
-  fr.close();
+  if (OCTOPRINT_ENABLED) {
+    printerClient.getPrinterJobResults();
+  }
 }
 
 void scrollMessage(String msg) {
