@@ -223,10 +223,25 @@ void setup() {
   Serial.print(getWifiQuality());
   Serial.println("%");
 
-  if (MDNS.begin ("scroller")) {
-    Serial.println ("MDNS responder started");
-  }
-
+  ArduinoOTA.onStart([]() {
+    Serial.println("Start");
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+  });
+  ArduinoOTA.begin();
+  
   if (WEBSERVER_ENABLED) {
     server.on("/", displayWeatherData);
     server.on("/pull", handlePull);
@@ -316,6 +331,7 @@ void loop() {
   centerPrint(hourMinutes);
   
   server.handleClient();
+  ArduinoOTA.handle();
 }
 
 
@@ -596,6 +612,20 @@ void displayWeatherData() {
     html = ""; // fresh start
   }
 
+  if (OCTOPRINT_ENABLED) {
+    html = "<div class='w3-cell-row'>OctoPrint Status: ";
+    if (printerClient.isPrinting()) {
+      html += printerClient.getState() + " " + printerClient.getFileName() + " (" + printerClient.getProgressCompletion() + "%)";
+    } else if (printerClient.isOperational()) {
+      html += printerClient.getState();
+    } else {
+      html += "Not Opperational";
+    }
+    html += "</div><br><hr>";
+    server.sendContent(String(html));
+    html = "";
+  }
+
   if (NEWS_ENABLED) {
     html = "<div class='w3-cell-row' style='width:100%'><h2>News (" + NEWS_SOURCE + ")</h2></div>";
     for (int inx = 0; inx < 10; inx++) {
@@ -608,10 +638,10 @@ void displayWeatherData() {
 
   if (ADVICE_ENABLED) {
     html = "<div class='w3-cell-row' style='width:100%'><h2>Advice Slip</h2></div>";
-      html += "<div class='w3-cell-row'>Current Advice: </div>";
-      html += "<div class='w3-cell-row'>" + adviceClient.getAdvice() + "</div><br>";
-      server.sendContent(String(html));
-      html = "";
+    html += "<div class='w3-cell-row'>Current Advice: </div>";
+    html += "<div class='w3-cell-row'>" + adviceClient.getAdvice() + "</div><br>";
+    server.sendContent(String(html));
+    html = "";
   }
   
   server.sendContent(String(getFooter()));
@@ -883,6 +913,7 @@ void scrollMessage(String msg) {
   msg += " "; // add a space at the end
   for ( int i = 0 ; i < width * msg.length() + matrix.width() - 1 - spacer; i++ ) {
     server.handleClient();
+    ArduinoOTA.handle();
     if (refresh==1) i=0;
     refresh=0;
     matrix.fillScreen(LOW);
