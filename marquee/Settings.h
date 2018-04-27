@@ -53,7 +53,7 @@ SOFTWARE.
 const String APIKEY = ""; // Your API Key from http://openweathermap.com/
 // Default City Location (use http://openweathermap.com/find to find city ID)
 int CityIDs[] = { 5304391 }; //Only USE ONE for weather marquee
-String marqueeMessage = "THANK YOU";
+String marqueeMessage = "";
 boolean IS_METRIC = false; // false = Imperial and true = Metric
 boolean IS_24HOUR = false; // 23:00 millitary 24 hour clock
 const int WEBSERVER_PORT = 80; // The port you can access this device on over HTTP
@@ -84,6 +84,7 @@ String OctoPrintApiKey = "";  // ApiKey from your User Account on OctoPrint
 String OctoPrintServer = ""; // IP or Address of your OctoPrint Server (DO NOT include http://)
 int OctoPrintPort = 80; // the port you are running your OctoPrint server on (usually 80);
 
+boolean ENABLE_OTA = true;  // this will allow you to load firmware to the device over WiFi (see OTA for ESP8266)
 //******************************
 // End Settings
 //******************************
