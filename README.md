@@ -30,6 +30,7 @@ SOFTWARE.
 * Configured through Web Interface
 * Display 3D print progress from your OctoPrint Server
 * Option to display random goofy advice
+* Support for OTA (loading firmware over WiFi)
 * Video: https://youtu.be/DsThufRpoiQ
 
 ## Required Parts:
