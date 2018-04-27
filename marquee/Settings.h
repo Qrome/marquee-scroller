@@ -32,6 +32,8 @@ SOFTWARE.
 #include <ArduinoJson.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
+#include <ESP8266mDNS.h>
+#include <ArduinoOTA.h>
 #include "FS.h"
 #include <SPI.h>
 #include <Adafruit_GFX.h>
