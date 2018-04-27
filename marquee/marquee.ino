@@ -94,14 +94,15 @@ const String WEB_ACTIONS =  "<a class='w3-bar-item w3-button' href='/'><i class=
                             "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
                             "<a class='w3-bar-item w3-button' href='https://www.thingiverse.com/thing:2867294' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
                             
-const String CHANGE_FORM =  "<form class='w3-container' action='/locations' method='get'><h2>City ID:</h2>"
+const String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>City ID:</h2>"
                             "<label>%CITYNAME1%</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'>"
                             "<p class='w3-center'><a href='http://openweathermap.com/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a></p>"
                             "<input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)<p>"
                             "<input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)<p>"
                             "<input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines<p>"
-                            "Select News Source <select class='w3-option w3-padding' name='newssource'>%NEWSOPTIONS%</select></p>"
-                            "<input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice<p>"
+                            "Select News Source <select class='w3-option w3-padding' name='newssource'>%NEWSOPTIONS%</select></p>";
+                            
+const String CHANGE_FORM2 = "<input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice<p>"
                             "<label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'>"
                             "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
                             "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
@@ -223,24 +224,27 @@ void setup() {
   Serial.print(getWifiQuality());
   Serial.println("%");
 
-  ArduinoOTA.onStart([]() {
-    Serial.println("Start");
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
-  });
-  ArduinoOTA.begin();
+  if (ENABLE_OTA) {
+    ArduinoOTA.onStart([]() {
+      Serial.println("Start");
+    });
+    ArduinoOTA.onEnd([]() {
+      Serial.println("\nEnd");
+    });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    });
+    ArduinoOTA.onError([](ota_error_t error) {
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    });
+    ArduinoOTA.begin();
+  }
+  
   
   if (WEBSERVER_ENABLED) {
     server.on("/", displayWeatherData);
@@ -331,7 +335,9 @@ void loop() {
   centerPrint(hourMinutes);
   
   server.handleClient();
-  ArduinoOTA.handle();
+  if (ENABLE_OTA) {
+    ArduinoOTA.handle();
+  }
 }
 
 
@@ -386,14 +392,16 @@ void handleConfigure() {
   digitalWrite(externalLight, LOW);
   String html = "";
 
-  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
   server.sendHeader("Expires", "-1");
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html", "");
-  server.sendContent(String(getHeader()));
+
+  html = getHeader();
+  server.sendContent(html);
   
-  String form = String(CHANGE_FORM);
+  String form = String(CHANGE_FORM1);
   for (int inx = 0; inx < 1; inx++) {
     String cityName = "";
     if (CityIDs[inx] > 0) {
@@ -404,16 +412,6 @@ void handleConfigure() {
     form.replace(String("%CITYNAME" + String(inx +1) + "%"), cityName);
     form.replace(String("%CITY" + String(inx +1) + "%"), String(CityIDs[inx]));
   }
-  String isNewsDisplayedChecked = "";
-  if (NEWS_ENABLED) {
-    isNewsDisplayedChecked = "checked='checked'";
-  }
-  form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
-  String isAdviceDisplayedChecked = "";
-  if (ADVICE_ENABLED) {
-    isAdviceDisplayedChecked = "checked='checked'";
-  }
-  form.replace("%ADVICECHECKED%", isAdviceDisplayedChecked);
   String is24hourChecked = "";
   if (IS_24HOUR) {
     is24hourChecked = "checked='checked'";
@@ -424,18 +422,31 @@ void handleConfigure() {
     checked = "checked='checked'";
   }
   form.replace("%CHECKED%", checked);
-  form.replace("%MSG%", marqueeMessage);
-  form.replace("%STARTTIME%", timeDisplayTurnsOn);
-  form.replace("%ENDTIME%", timeDisplayTurnsOff);
-  String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
-  options.replace(">"+String(minutesBetweenDataRefresh)+"<", " selected>"+String(minutesBetweenDataRefresh)+"<");
-  form.replace("%OPTIONS%", options);
+  String isNewsDisplayedChecked = "";
+  if (NEWS_ENABLED) {
+    isNewsDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
   String newsOptions = String(NEWS_OPTIONS);
   newsOptions.replace(">"+String(NEWS_SOURCE)+"<", " selected>"+String(NEWS_SOURCE)+"<");
   form.replace("%NEWSOPTIONS%", newsOptions);
+  server.sendContent(String(form)); //Send first Chunk of form
+
+  form = String(CHANGE_FORM2);
+  String isAdviceDisplayedChecked = "";
+  if (ADVICE_ENABLED) {
+    isAdviceDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%ADVICECHECKED%", isAdviceDisplayedChecked);
+  form.replace("%MSG%", marqueeMessage);
+  form.replace("%STARTTIME%", timeDisplayTurnsOn);
+  form.replace("%ENDTIME%", timeDisplayTurnsOff);
   String ledOptions = "<option>1</option><option>3</option><option>6</option><option>9</option><option>12</option><option>15</option>";
   ledOptions.replace(">"+String(displayIntensity)+"<", " selected>"+String(displayIntensity)+"<");
   form.replace("%INTENSITYOPTIONS%", ledOptions);
+  String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
+  options.replace(">"+String(minutesBetweenDataRefresh)+"<", " selected>"+String(minutesBetweenDataRefresh)+"<");
+  form.replace("%OPTIONS%", options);
   String isOctoPrintDisplayedChecked = "";
   if (OCTOPRINT_ENABLED) {
     isOctoPrintDisplayedChecked = "checked='checked'";
@@ -445,9 +456,11 @@ void handleConfigure() {
   form.replace("%OCTOADDRESS%", OctoPrintServer);
   form.replace("%OCTOPORT%", String(OctoPrintPort));
 
-  server.sendContent(String(form));
-  
-  server.sendContent(String(getFooter()));
+  server.sendContent(String(form)); // Send the second chunk of Data
+
+  html = getFooter();
+  server.sendContent(html);
+  server.sendContent("");
   server.client().stop();
   digitalWrite(externalLight, HIGH);
 }
@@ -516,14 +529,17 @@ void getWeatherData() //client function to send/receive GET request data.
 void displayMessage(String message) {
   digitalWrite(externalLight, LOW);
 
-  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
   server.sendHeader("Expires", "-1");
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html", "");
-  server.sendContent(String(getHeader()));
+  String html = getHeader();
+  server.sendContent(String(html));
   server.sendContent(String(message));
-  server.sendContent(String(getFooter()));
+  html = getFooter();
+  server.sendContent(String(html));
+  server.sendContent("");
   server.client().stop();
   
   digitalWrite(externalLight, HIGH);
@@ -532,7 +548,7 @@ void displayMessage(String message) {
 void redirectHome() {
   // Send them back to the Root Directory
   server.sendHeader("Location", String("/"), true);
-  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
   server.sendHeader("Expires", "-1");
   server.send(302, "text/plain", "");
@@ -585,7 +601,7 @@ void displayWeatherData() {
   digitalWrite(externalLight, LOW);
   String html = "";
 
-  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
   server.sendHeader("Expires", "-1");
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
@@ -661,6 +677,7 @@ void displayWeatherData() {
   }
   
   server.sendContent(String(getFooter()));
+  server.sendContent("");
   server.client().stop();
   digitalWrite(externalLight, HIGH);
 }
@@ -929,7 +946,9 @@ void scrollMessage(String msg) {
   msg += " "; // add a space at the end
   for ( int i = 0 ; i < width * msg.length() + matrix.width() - 1 - spacer; i++ ) {
     server.handleClient();
-    ArduinoOTA.handle();
+    if (ENABLE_OTA) {
+      ArduinoOTA.handle();
+    }
     if (refresh==1) i=0;
     refresh=0;
     matrix.fillScreen(LOW);

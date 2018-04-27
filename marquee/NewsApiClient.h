@@ -23,6 +23,7 @@ SOFTWARE.
 
 #pragma once
 #include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
 #include <JsonListener.h>
 #include <JsonStreamingParser.h>
 
@@ -66,4 +67,3 @@ class NewsApiClient: public JsonListener {
     virtual void startObject();
 
 };
-

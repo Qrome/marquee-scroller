@@ -21,7 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+
 #include "NewsApiClient.h"
+
+
 
 #define arr_len( x )  ( sizeof( x ) / sizeof( *x ) )
 
@@ -35,43 +38,49 @@ NewsApiClient::NewsApiClient(String ApiKey, String NewsSource) {
 void NewsApiClient::updateNews() {
   JsonStreamingParser parser;
   parser.setListener(this);
+  HTTPClient http;
   WiFiClient newsClient;
 
-  String apiGetData = "GET /v2/top-headlines?sources=" + mySource + "&apiKey=" + myApiKey + " HTTP/1.1";
+  String apiGetData = "http://" + String(servername) + "/v2/top-headlines?sources=" + mySource + "&apiKey=" + myApiKey;
 
   Serial.println("Getting News Data");
   Serial.println(apiGetData);
+  http.begin(apiGetData);
+  int httpCode = http.GET();
 
-  if (newsClient.connect(servername, 80)) {  //starts client connection, checks for connection
-    newsClient.println(apiGetData);
-    newsClient.println("Host: " + String(servername));
-    newsClient.println("User-Agent: ArduinoWiFi/1.1");
-    newsClient.println("Connection: close");
-    newsClient.println();
-  } 
-  else {
-    Serial.println("connection for news data failed: " + String(servername)); //error message if no client connect
+  if (httpCode > 0) {  // checks for connection
+    Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+    if(httpCode == HTTP_CODE_OK) {
+      // get lenght of document (is -1 when Server sends no Content-Length header)
+      int len = http.getSize();
+      // create buffer for read
+      char buff[128] = { 0 };
+      // get tcp stream
+      WiFiClient * stream = http.getStreamPtr();
+      // read all data from server
+      Serial.println("Start parsing...");
+      while(http.connected() && (len > 0 || len == -1)) {
+        // get available data size
+        size_t size = stream->available();
+        if(size) {
+          // read up to 128 byte
+          int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+          for(int i=0;i<c;i++) {
+            parser.parse(buff[i]); 
+          }
+            
+          if(len > 0)
+            len -= c;
+          }
+        delay(1);
+      }
+    }
+    http.end();
+  } else {
+    Serial.println("connection for news data failed: " + String(apiGetData)); //error message if no client connect
     Serial.println();
     return;
   }
-  
-  while(newsClient.connected() && !newsClient.available()) delay(1); //waits for data
- 
-  Serial.println("Waiting for data");
-
-  int size = 0;
-  char c;
-  boolean isBody = false;
-  while (newsClient.connected() || newsClient.available()) { //connected or data available
-    c = newsClient.read(); //gets byte from ethernet buffer
-    if (c == '{' || c == '[') {
-      isBody = true;
-    }
-    if (isBody) {
-      parser.parse(c);
-    }
-  }
-  newsClient.stop(); //stop client
 }
 
 String NewsApiClient::getTitle(int index) {
@@ -144,7 +153,3 @@ String NewsApiClient::cleanText(String text) {
   text.replace("•", "-");
   return text;
 }
-
-
-
-
