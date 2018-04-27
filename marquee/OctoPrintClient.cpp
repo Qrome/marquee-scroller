@@ -35,6 +35,7 @@ void OctoPrintClient::updateOctoPrintClient(String ApiKey, String server, int po
 
 void OctoPrintClient::getPrinterJobResults() {
   WiFiClient printClient;
+  printClient.setTimeout(10000);
   String apiGetData = "GET /api/job HTTP/1.1";
 
   Serial.println("Getting Octoprint Data");
@@ -46,7 +47,11 @@ void OctoPrintClient::getPrinterJobResults() {
     printClient.println("X-Api-Key: " + myApiKey);
     printClient.println("User-Agent: ArduinoWiFi/1.1");
     printClient.println("Connection: close");
-    printClient.println();
+    if (printClient.println() == 0) {
+      Serial.println("OctoPrint Connection failed.");
+      printerData.state = "";
+      return;
+    }
   } 
   else {
     Serial.println("connection for OctoPrint data failed"); //error message if no client connect
@@ -55,31 +60,34 @@ void OctoPrintClient::getPrinterJobResults() {
     return;
   }
 
-  while(printClient.connected() && !printClient.available()) delay(1); //waits for data
- 
-  Serial.println("Waiting for data...");
+  // Check HTTP status
+  char status[32] = {0};
+  printClient.readBytesUntil('\r', status, sizeof(status));
+  if (strcmp(status, "HTTP/1.1 200 OK") != 0) {
+    Serial.print(F("Unexpected response: "));
+    Serial.println(status);
+    printerData.state = "";
+    return;
+  }
 
-  boolean isBody = false;
-  char c;
-  while (printClient.connected() || printClient.available()) { //connected or data available
-    c = printClient.read(); //gets byte from ethernet buffer
-    if (c == '{' || c == '[') {
-      isBody = true;
-    }
-    if (isBody) {
-      result = result + c;
-    }
+  // Skip HTTP headers
+  char endOfHeaders[] = "\r\n\r\n";
+  if (!printClient.find(endOfHeaders)) {
+    Serial.println(F("Invalid response"));
+    printerData.state = "";
+    return;
+  }
+
+  const size_t bufferSize = JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 2*JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(6) + 710;
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+
+  // Parse JSON object
+  JsonObject& root = jsonBuffer.parseObject(printClient);
+  if (!root.success()) {
+    Serial.println(F("OctoPrint Data Parsing failed!"));
+    return;
   }
   
-  printClient.stop(); //stop client
-  Serial.println(result);
-
-  char jsonArray [result.length()+1];
-  result.toCharArray(jsonArray,sizeof(jsonArray));
-  jsonArray[result.length() + 1] = '\0';
-  DynamicJsonBuffer json_buf;
-  JsonObject& root = json_buf.parseObject(jsonArray);
-
   printerData.averagePrintTime = (const char*)root["job"]["averagePrintTime"];
   printerData.estimatedPrintTime = (const char*)root["job"]["estimatedPrintTime"];
   printerData.fileName = (const char*)root["job"]["file"]["name"];
@@ -90,6 +98,17 @@ void OctoPrintClient::getPrinterJobResults() {
   printerData.progressPrintTime = (const char*)root["progress"]["printTime"];
   printerData.progressPrintTimeLeft = (const char*)root["progress"]["printTimeLeft"];
   printerData.state = (const char*)root["state"];
+
+  if (isPrinting()) {
+    Serial.println("Status: " + printerData.state + " " + printerData.fileName + "(" + printerData.progressCompletion + "%)");
+  } else if (isOperational()) {
+    Serial.println("Status: " + printerData.state);
+  } else {
+    Serial.println("Printer Not Opperational");
+  }
+  
+  
+  printClient.stop(); //stop client
 }
 
 String OctoPrintClient::getAveragePrintTime(){
@@ -147,5 +166,3 @@ boolean OctoPrintClient::isOperational() {
   }
   return operational;
 }
-
-
