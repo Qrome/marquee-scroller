@@ -68,10 +68,12 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 
 ## Initial Configuration
 You will need to update the **Settings.h** file with your API Keys for the following:  
-* Open Weather API Key: http://openweathermap.com/
+* Open Weather API Key: http://openweathermap.org/
 * News API Key: https://newsapi.org/sources
 * GeoNames Key (optional as you can use mine or create your own) http://www.geonames.org/
-* Your OctoPrint API Key (optional if you use the OctoPrint status)
+* Your OctoPrint API Key (optional if you use the OctoPrint status)  
+
+NOTE: The settings in the Settings.h are the default settings for the first loading. After loading you will manage changes to the settings via the Web Interface. If you want to change settings again in the settings.h, you will need to erase the file system on the Wemos or use the “Reset Settings” option in the Web Interface.  
 
 ## Web Interface
 The Marquee Scroller uses the **WiFiManager** so when it can't find the last network it was connected to 
@@ -81,8 +83,6 @@ After connected to your WiFi network it will display the IP addressed assigned t
 used to open a browser to the Web Interface.  Most everything can be configured there.
 
 The Clock will display the time of the City selected for the weather.  
-
-NOTE: The settings in the Settings.h are the default settings for the first loading. After loading you will manage changes to the settings via the Web Interface. If you want to change settings again in the settings.h, you will need to erase the file system on the Wemos or use the “Reset Settings” option in the Web Interface.  
 
 <p align="center">
   <img src="/images/2018-04-19%2006.58.05.png" width="200"/>
