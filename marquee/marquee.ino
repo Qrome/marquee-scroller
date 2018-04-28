@@ -956,6 +956,7 @@ void readCityIds() {
   newsClient.updateNewsSource(NEWS_SOURCE);
   weatherClient.setMetric(IS_METRIC);
   weatherClient.updateCityIdList(CityIDs, 1);
+  printerClient.updateOctoPrintClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort);
   if (OCTOPRINT_ENABLED) {
     printerClient.getPrinterJobResults();
   }

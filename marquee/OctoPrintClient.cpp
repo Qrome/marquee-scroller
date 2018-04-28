@@ -54,7 +54,7 @@ void OctoPrintClient::getPrinterJobResults() {
     }
   } 
   else {
-    Serial.println("connection for OctoPrint data failed"); //error message if no client connect
+    Serial.println("Connection for OctoPrint data failed: " + String(myServer) + ":" + String(myPort)); //error message if no client connect
     Serial.println();
     printerData.state = "";
     return;
@@ -106,7 +106,6 @@ void OctoPrintClient::getPrinterJobResults() {
   } else {
     Serial.println("Printer Not Opperational");
   }
-  
   
   printClient.stop(); //stop client
 }
