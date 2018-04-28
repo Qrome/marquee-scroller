@@ -49,8 +49,8 @@ SOFTWARE.
 // Start Settings
 //******************************
 
-const String APIKEY = ""; // Your API Key from http://openweathermap.com/
-// Default City Location (use http://openweathermap.com/find to find city ID)
+const String APIKEY = ""; // Your API Key from http://openweathermap.org/
+// Default City Location (use http://openweathermap.org/find to find city ID)
 int CityIDs[] = { 5304391 }; //Only USE ONE for weather marquee
 String marqueeMessage = "";
 boolean IS_METRIC = false; // false = Imperial and true = Metric
