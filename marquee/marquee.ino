@@ -96,7 +96,7 @@ const String WEB_ACTIONS =  "<a class='w3-bar-item w3-button' href='/'><i class=
                             
 const String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>City ID:</h2>"
                             "<label>%CITYNAME1%</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'>"
-                            "<p class='w3-center'><a href='http://openweathermap.com/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a></p>"
+                            "<p class='w3-center'><a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a></p>"
                             "<input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)<p>"
                             "<input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)<p>"
                             "<input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines<p>"
