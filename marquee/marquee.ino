@@ -112,6 +112,8 @@ const String CHANGE_FORM2 = "<input name='displayadvice' class='w3-check w3-marg
                             "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
                             "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
                             "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                            "<hr><label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'>"
+                            "<label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'>"
                             "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
                             "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
@@ -254,7 +256,7 @@ void setup() {
     server.on("/forgetwifi", handleForgetWifi);
     server.on("/configure", handleConfigure);
     server.on("/display", handleDisplay);
-    server.onNotFound(handleNotFound);
+    server.onNotFound(redirectHome);
     // Start the server
     server.begin();
     Serial.println("Server started");
@@ -334,7 +336,9 @@ void loop() {
   }
   centerPrint(hourMinutes);
   
-  server.handleClient();
+  if (WEBSERVER_ENABLED) {
+    server.handleClient();
+  }
   if (ENABLE_OTA) {
     ArduinoOTA.handle();
   }
@@ -348,6 +352,9 @@ void handlePull() {
 }
 
 void handleLocations() {
+  if (!server.authenticate(www_username, www_password)) {
+    return server.requestAuthentication();
+  }
   CityIDs[0] = server.arg("city1").toInt();
   NEWS_ENABLED = server.hasArg("displaynews");
   ADVICE_ENABLED = server.hasArg("displayadvice");
@@ -363,6 +370,10 @@ void handleLocations() {
   OctoPrintApiKey = server.arg("octoPrintApiKey");
   OctoPrintServer = server.arg("octoPrintAddress");
   OctoPrintPort = server.arg("octoPrintPort").toInt();
+  String temp = server.arg("userid");
+  temp.toCharArray(www_username, sizeof(temp));
+  temp = server.arg("stationpassword");
+  temp.toCharArray(www_password, sizeof(temp));
   weatherClient.setMetric(IS_METRIC);
   matrix.fillScreen(LOW); // show black
   writeCityIds();
@@ -371,6 +382,9 @@ void handleLocations() {
 }
 
 void handleSystemReset() {
+  if (!server.authenticate(www_username, www_password)) {
+    return server.requestAuthentication();
+  }
   Serial.println("Reset System Configuration");
   if (SPIFFS.remove(CONFIG)) {
     redirectHome();
@@ -379,6 +393,9 @@ void handleSystemReset() {
 }
 
 void handleForgetWifi() {
+  if (!server.authenticate(www_username, www_password)) {
+    return server.requestAuthentication();
+  }
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
   redirectHome();
@@ -388,7 +405,9 @@ void handleForgetWifi() {
 }
 
 void handleConfigure() {
-
+  if (!server.authenticate(www_username, www_password)) {
+    return server.requestAuthentication();
+  }
   digitalWrite(externalLight, LOW);
   String html = "";
 
@@ -455,6 +474,8 @@ void handleConfigure() {
   form.replace("%OCTOKEY%", OctoPrintApiKey);
   form.replace("%OCTOADDRESS%", OctoPrintServer);
   form.replace("%OCTOPORT%", String(OctoPrintPort));
+  form.replace("%USERID%", String(www_username));
+  form.replace("%STATIONPASSWORD%", String(www_password));
 
   server.sendContent(String(form)); // Send the second chunk of Data
 
@@ -466,6 +487,9 @@ void handleConfigure() {
 }
 
 void handleDisplay() {
+  if (!server.authenticate(www_username, www_password)) {
+    return server.requestAuthentication();
+  }
   enableDisplay(!displayOn);
   String state = "OFF";
   if (displayOn) {
@@ -695,25 +719,6 @@ float getTimeOffset(int index) {
   return UtcOffset;
 }
 
-void handleNotFound() {
-  digitalWrite(externalLight, LOW);
-  String message = "File Not Found\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += ( server.method() == HTTP_GET ) ? "GET" : "POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
-
-  for ( uint8_t i = 0; i < server.args(); i++ ) {
-    message += " " + server.argName ( i ) + ": " + server.arg ( i ) + "\n";
-  }
-
-  server.send ( 404, "text/plain", message );
-  digitalWrite(externalLight, HIGH);
-}
-
 void configModeCallback (WiFiManager *myWiFiManager) {
   Serial.println("Entered config mode");
   Serial.println(WiFi.softAPIP());  
@@ -850,6 +855,8 @@ String writeCityIds() {
     f.println("octoKey=" + OctoPrintApiKey);
     f.println("octoServer=" + OctoPrintServer);
     f.println("octoPort=" + String(OctoPrintPort));
+    f.println("www_username=" + String(www_username));
+    f.println("www_password=" + String(www_password));
   }
   f.close();
   readCityIds();
@@ -931,6 +938,18 @@ void readCityIds() {
       OctoPrintPort = line.substring(line.lastIndexOf("octoPort=") + 9).toInt();
       Serial.println("OctoPrintPort=" + String(OctoPrintPort));
     }
+    if (line.indexOf("www_username=") >= 0) {
+      String temp = line.substring(line.lastIndexOf("www_username=") + 13);
+      temp.trim();
+      temp.toCharArray(www_username, sizeof(temp));
+      Serial.println("www_username=" + String(www_username));
+    }
+    if (line.indexOf("www_password=") >= 0) {
+      String temp = line.substring(line.lastIndexOf("www_password=") + 13);
+      temp.trim();
+      temp.toCharArray(www_password, sizeof(temp));
+      Serial.println("www_password=" + String(www_password));
+    }
   }
   fr.close();
   matrix.setIntensity(displayIntensity);
@@ -945,7 +964,9 @@ void readCityIds() {
 void scrollMessage(String msg) {
   msg += " "; // add a space at the end
   for ( int i = 0 ; i < width * msg.length() + matrix.width() - 1 - spacer; i++ ) {
-    server.handleClient();
+    if (WEBSERVER_ENABLED) {
+      server.handleClient();
+    }
     if (ENABLE_OTA) {
       ArduinoOTA.handle();
     }

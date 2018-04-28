@@ -21,13 +21,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-/*******************************************************
+/******************************************************************************
  * This is designed for the Wemos D1 ESP8266
  * Wemos D1 Mini:  https://amzn.to/2qLyKJd
  * MAX7219 Dot Matrix Module 4-in-1 Display For Arduino
  * Matrix Display:  https://amzn.to/2HtnQlD
- *******************************************************/
-
+ ******************************************************************************/
+/******************************************************************************
+ * NOTE: The settings here are the default settings for the first loading.  
+ * After loading you will manage changes to the settings via the Web Interface.  
+ * If you want to change settings again in the settings.h, you will need to 
+ * erase the file system on the Wemos or use the “Reset Settings” option in 
+ * the Web Interface.
+ ******************************************************************************/
+ 
 #include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 #include <ESP8266WebServer.h>
@@ -57,6 +64,8 @@ boolean IS_METRIC = false; // false = Imperial and true = Metric
 boolean IS_24HOUR = false; // 23:00 millitary 24 hour clock
 const int WEBSERVER_PORT = 80; // The port you can access this device on over HTTP
 const boolean WEBSERVER_ENABLED = true;  // Device will provide a web interface via http://[ip]:[port]/
+char* www_username = "admin";  // User account for the Web Interface
+char* www_password = "password";  // Password for the Web Interface
 int minutesBetweenDataRefresh = 15;  // Time in minutes between data refresh (default 15 minutes)
 
 boolean NEWS_ENABLED = true;
