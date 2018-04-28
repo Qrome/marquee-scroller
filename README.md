@@ -30,6 +30,7 @@ SOFTWARE.
 * Configured through Web Interface
 * Display 3D print progress from your OctoPrint Server
 * Option to display random goofy advice
+* Basic Authorization around Configuration web interface
 * Support for OTA (loading firmware over WiFi)
 * Video: https://youtu.be/DsThufRpoiQ
 
@@ -79,7 +80,9 @@ it will become a **AP Hotspot** -- connect to it with your phone and you can the
 After connected to your WiFi network it will display the IP addressed assigned to it and that can be 
 used to open a browser to the Web Interface.  Most everything can be configured there.
 
-The Clock will display the time of the City selected for the weather.
+The Clock will display the time of the City selected for the weather.  
+
+NOTE: The settings in the Settings.h are the default settings for the first loading. After loading you will manage changes to the settings via the Web Interface. If you want to change settings again in the settings.h, you will need to erase the file system on the Wemos or use the “Reset Settings” option in the Web Interface.  
 
 <p align="center">
   <img src="/images/2018-04-19%2006.58.05.png" width="200"/>
