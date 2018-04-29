@@ -67,8 +67,12 @@ void OpenWeatherMapClient::updateWeather() {
   JsonObject& root = json_buf.parseObject(jsonArray);
 
   weathers[0].cached = false;
-  if (root["cnt"] == "") {
+  weathers[0].error = "";
+  if (root.measureLength() <= 150) {
+    Serial.println("Error Does not look like we got the data.  Size: " + String(root.measureLength()));
     weathers[0].cached = true;
+    weathers[0].error = (const char*)root["message"];
+    Serial.println("Error: " + weathers[0].error);
     return;
   }
   int count = root["cnt"];
@@ -167,6 +171,10 @@ boolean OpenWeatherMapClient::getCached() {
 
 String OpenWeatherMapClient::getMyCityIDs() {
   return myCityIDs;
+}
+
+String OpenWeatherMapClient::getError() {
+  return weathers[0].error;
 }
 
 String OpenWeatherMapClient::getWeatherIcon(int index)

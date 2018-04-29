@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "1.3"
+#define VERSION "1.4"
 
 #define HOSTNAME "ESP8266-" 
 #define CONFIG "/conf.txt"
@@ -112,7 +112,9 @@ const String CHANGE_FORM2 = "<input name='displayadvice' class='w3-check w3-marg
                             "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
                             "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
                             "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
-                            "<hr><label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'>"
+                            "<hr>"
+                            "<input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes<p>"
+                            "<label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'>"
                             "<label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'>"
                             "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
                             "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
@@ -344,6 +346,12 @@ void loop() {
   }
 }
 
+boolean athentication() {
+  if (IS_BASIC_AUTH) {
+    return server.authenticate(www_username, www_password);
+  } 
+  return true; // Authentication not required
+}
 
 void handlePull() {
   timeOffsetFetched = false;
@@ -352,7 +360,7 @@ void handlePull() {
 }
 
 void handleLocations() {
-  if (!server.authenticate(www_username, www_password)) {
+  if (!athentication()) {
     return server.requestAuthentication();
   }
   CityIDs[0] = server.arg("city1").toInt();
@@ -370,6 +378,7 @@ void handleLocations() {
   OctoPrintApiKey = server.arg("octoPrintApiKey");
   OctoPrintServer = server.arg("octoPrintAddress");
   OctoPrintPort = server.arg("octoPrintPort").toInt();
+  IS_BASIC_AUTH = server.hasArg("isBasicAuth");
   String temp = server.arg("userid");
   temp.toCharArray(www_username, sizeof(temp));
   temp = server.arg("stationpassword");
@@ -382,7 +391,7 @@ void handleLocations() {
 }
 
 void handleSystemReset() {
-  if (!server.authenticate(www_username, www_password)) {
+  if (!athentication()) {
     return server.requestAuthentication();
   }
   Serial.println("Reset System Configuration");
@@ -393,7 +402,7 @@ void handleSystemReset() {
 }
 
 void handleForgetWifi() {
-  if (!server.authenticate(www_username, www_password)) {
+  if (!athentication()) {
     return server.requestAuthentication();
   }
   //WiFiManager
@@ -405,7 +414,7 @@ void handleForgetWifi() {
 }
 
 void handleConfigure() {
-  if (!server.authenticate(www_username, www_password)) {
+  if (!athentication()) {
     return server.requestAuthentication();
   }
   digitalWrite(externalLight, LOW);
@@ -474,6 +483,11 @@ void handleConfigure() {
   form.replace("%OCTOKEY%", OctoPrintApiKey);
   form.replace("%OCTOADDRESS%", OctoPrintServer);
   form.replace("%OCTOPORT%", String(OctoPrintPort));
+  String isUseSecurityChecked = "";
+  if (IS_BASIC_AUTH) {
+    isUseSecurityChecked = "checked='checked'";
+  }
+  form.replace("%IS_BASICAUTH_CHECKED%", isUseSecurityChecked);
   form.replace("%USERID%", String(www_username));
   form.replace("%STATIONPASSWORD%", String(www_password));
 
@@ -487,7 +501,7 @@ void handleConfigure() {
 }
 
 void handleDisplay() {
-  if (!server.authenticate(www_username, www_password)) {
+  if (!athentication()) {
     return server.requestAuthentication();
   }
   enableDisplay(!displayOn);
@@ -498,6 +512,7 @@ void handleDisplay() {
   displayMessage("Display is now " + state);
 }
 
+//***********************************************************************
 void getWeatherData() //client function to send/receive GET request data.
 {
   digitalWrite(externalLight, LOW);
@@ -508,6 +523,11 @@ void getWeatherData() //client function to send/receive GET request data.
     // only pull the weather data if display is on
     centerPrint(".");
     weatherClient.updateWeather();
+    if (weatherClient.getError() != "") {
+      do {
+        scrollMessage(weatherClient.getError());
+      } while (true);
+    }
   }
 
   Serial.println("Updating Time...");
@@ -857,6 +877,7 @@ String writeCityIds() {
     f.println("octoPort=" + String(OctoPrintPort));
     f.println("www_username=" + String(www_username));
     f.println("www_password=" + String(www_password));
+    f.println("IS_BASIC_AUTH=" + String(IS_BASIC_AUTH));
   }
   f.close();
   readCityIds();
@@ -949,6 +970,10 @@ void readCityIds() {
       temp.trim();
       temp.toCharArray(www_password, sizeof(temp));
       Serial.println("www_password=" + String(www_password));
+    }
+    if (line.indexOf("IS_BASIC_AUTH=") >= 0) {
+      IS_BASIC_AUTH = line.substring(line.lastIndexOf("IS_BASIC_AUTH=") + 14).toInt();
+      Serial.println("IS_BASIC_AUTH=" + String(IS_BASIC_AUTH));
     }
   }
   fr.close();
