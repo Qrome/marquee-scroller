@@ -49,6 +49,7 @@ private:
     String description;
     String icon;
     boolean cached;
+    String error;
   } weather;
 
   weather weathers[5];
@@ -78,5 +79,6 @@ public:
   boolean getCached();
   String getMyCityIDs();
   String getWeatherIcon(int index);
+  String getError();
 };
 
