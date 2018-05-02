@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "1.4"
+#define VERSION "1.5"
 
 #define HOSTNAME "ESP8266-" 
 #define CONFIG "/conf.txt"
@@ -322,7 +322,7 @@ void loop() {
     if (NEWS_ENABLED) {
       msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + " ";
       newsIndex += 1;
-      if (newsIndex > 10) {
+      if (newsIndex > 9) {
         newsIndex = 0;
       }
     }

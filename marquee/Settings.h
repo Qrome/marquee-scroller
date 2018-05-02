@@ -70,7 +70,7 @@ char* www_password = "password";  // Password for the Web Interface
 int minutesBetweenDataRefresh = 15;  // Time in minutes between data refresh (default 15 minutes)
 
 boolean NEWS_ENABLED = true;
-String NEWS_API_KEY = "";
+String NEWS_API_KEY = ""; // Get your News API Key from https://newsapi.org
 String NEWS_SOURCE = "reuters";  // https://newsapi.org/sources to get full list of news sources available
 
 boolean ADVICE_ENABLED = false;
