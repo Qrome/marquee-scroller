@@ -322,7 +322,7 @@ void loop() {
     if (NEWS_ENABLED) {
       msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + " ";
       newsIndex += 1;
-      if (newsIndex > 10) {
+      if (newsIndex > 9) {
         newsIndex = 0;
       }
     }
