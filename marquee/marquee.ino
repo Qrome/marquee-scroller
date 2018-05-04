@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "1.5"
+#define VERSION "1.6"
 
 #define HOSTNAME "ESP8266-" 
 #define CONFIG "/conf.txt"
