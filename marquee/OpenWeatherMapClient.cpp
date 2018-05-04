@@ -31,7 +31,7 @@ OpenWeatherMapClient::OpenWeatherMapClient(String ApiKey, int CityIDs[], int cit
 
 void OpenWeatherMapClient::updateWeather() {
   WiFiClient weatherClient;
-  String apiGetData = "GET /data/2.5/group?id=" + myCityIDs + "&units=" + units + "&cnt=1&APPID=" + myApiKey;
+  String apiGetData = "GET /data/2.5/group?id=" + myCityIDs + "&units=" + units + "&cnt=1&APPID=" + myApiKey + " HTTP/1.1";
 
   Serial.println("Getting Weather Data");
   Serial.println(apiGetData);
@@ -52,6 +52,23 @@ void OpenWeatherMapClient::updateWeather() {
   while(weatherClient.connected() && !weatherClient.available()) delay(1); //waits for data
  
   Serial.println("Waiting for data");
+
+  // Check HTTP status
+  char status[32] = {0};
+  weatherClient.readBytesUntil('\r', status, sizeof(status));
+  Serial.println("Response Header: " + String(status));
+  if (strcmp(status, "HTTP/1.1 200 OK") != 0) {
+    Serial.print(F("Unexpected response: "));
+    Serial.println(status);
+    return;
+  }
+
+    // Skip HTTP headers
+  char endOfHeaders[] = "\r\n\r\n";
+  if (!weatherClient.find(endOfHeaders)) {
+    Serial.println(F("Invalid response"));
+    return;
+  }
 
   while (weatherClient.connected() || weatherClient.available()) { //connected or data available
     char c = weatherClient.read(); //gets byte from ethernet buffer
