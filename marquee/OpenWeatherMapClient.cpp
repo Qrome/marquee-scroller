@@ -70,21 +70,21 @@ void OpenWeatherMapClient::updateWeather() {
     return;
   }
 
-  while (weatherClient.connected() || weatherClient.available()) { //connected or data available
-    char c = weatherClient.read(); //gets byte from ethernet buffer
-    result = result+c;
-  }
-  weatherClient.stop(); //stop client
-  Serial.println(result);
-
-  char jsonArray [result.length()+1];
-  result.toCharArray(jsonArray,sizeof(jsonArray));
-  jsonArray[result.length() + 1] = '\0';
-  DynamicJsonBuffer json_buf;
-  JsonObject& root = json_buf.parseObject(jsonArray);
+  const size_t bufferSize = 710;
+  DynamicJsonBuffer jsonBuffer(bufferSize);
 
   weathers[0].cached = false;
   weathers[0].error = "";
+  // Parse JSON object
+  JsonObject& root = jsonBuffer.parseObject(weatherClient);
+  if (!root.success()) {
+    Serial.println(F("Weather Data Parsing failed!"));
+    weathers[0].error = "Weather Data Parsing failed!";
+    return;
+  }
+
+  weatherClient.stop(); //stop client
+
   if (root.measureLength() <= 150) {
     Serial.println("Error Does not look like we got the data.  Size: " + String(root.measureLength()));
     weathers[0].cached = true;
@@ -107,6 +107,21 @@ void OpenWeatherMapClient::updateWeather() {
     weathers[inx].weatherId = (const char*)root["list"][inx]["weather"][0]["id"];
     weathers[inx].description = (const char*)root["list"][inx]["weather"][0]["description"];
     weathers[inx].icon = (const char*)root["list"][inx]["weather"][0]["icon"];
+
+    Serial.println("lat: " + weathers[inx].lat);
+    Serial.println("lon: " + weathers[inx].lon);
+    Serial.println("dt: " + weathers[inx].dt);
+    Serial.println("city: " + weathers[inx].city);
+    Serial.println("country: " + weathers[inx].country);
+    Serial.println("temp: " + weathers[inx].temp);
+    Serial.println("humidity: " + weathers[inx].humidity);
+    Serial.println("condition: " + weathers[inx].condition);
+    Serial.println("wind: " + weathers[inx].wind);
+    Serial.println("weatherId: " + weathers[inx].weatherId);
+    Serial.println("description: " + weathers[inx].description);
+    Serial.println("icon: " + weathers[inx].icon);
+    Serial.println();
+    
   }
 }
 
