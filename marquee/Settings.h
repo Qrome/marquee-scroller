@@ -51,6 +51,7 @@ SOFTWARE.
 #include "NewsApiClient.h" 
 #include "OctoPrintClient.h"
 #include "AdviceSlipClient.h"
+#include "BitcoinApiClient.h"
 
 //******************************
 // Start Settings
@@ -92,6 +93,9 @@ boolean OCTOPRINT_ENABLED = false;
 String OctoPrintApiKey = "";  // ApiKey from your User Account on OctoPrint
 String OctoPrintServer = ""; // IP or Address of your OctoPrint Server (DO NOT include http://)
 int OctoPrintPort = 80; // the port you are running your OctoPrint server on (usually 80);
+
+// Bitcoin Client - NONE or empty is off
+String BitcoinCurrencyCode = "NONE";  // Change to USD, GBD, EUR, or NONE -- this can be managed in the Web Interface
 
 boolean ENABLE_OTA = true;  // this will allow you to load firmware to the device over WiFi (see OTA for ESP8266)
 //******************************

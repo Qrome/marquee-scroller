@@ -84,6 +84,9 @@ OpenWeatherMapClient weatherClient(APIKEY, CityIDs, 1, IS_METRIC);
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort);
 int printerCount = 0;
 
+// Bitcoin Client
+BitcoinApiClient bitcoinClient;
+
 ESP8266WebServer server(WEBSERVER_PORT);
 
 const String WEB_ACTIONS =  "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
@@ -101,6 +104,8 @@ const String CHANGE_FORM1 = "<form class='w3-container' action='/locations' meth
                             "<input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)<p>"
                             "<input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines<p>"
                             "Select News Source <select class='w3-option w3-padding' name='newssource'>%NEWSOPTIONS%</select></p>";
+                           
+const String BITCOIN_FORM = "Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>";
                             
 const String CHANGE_FORM2 = "<input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice<p>"
                             "<label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'>"
@@ -139,6 +144,17 @@ const String NEWS_OPTIONS = "<option>bbc-news</option>"
                             "<option>time</option>"
                             "<option>usa-today</option>"
                             "<option>wired</option>";
+                            
+const String CURRENCY_OPTIONS = "<option value='NONE'>NONE</option>"
+                            "<option value='USD'>United States Dollar</option>"
+                            "<option value='AUD'>Australian Dollar</option>"
+                            "<option value='BRL'>Brazilian Real</option>"
+                            "<option value='BTC'>Bitcoin</option>"
+                            "<option value='CAD'>Canadian Dollar</option>"
+                            "<option value='CNY'>Chinese Yuan</option>"
+                            "<option value='EUR'>Euro</option>"
+                            "<option value='GBP'>British Pound Sterling</option>"
+                            "<option value='XAU'>Gold (troy ounce)</option>";
 
 const int TIMEOUT = 500; // 500 = 1/2 second
 int timeoutCount = 0;
@@ -309,11 +325,7 @@ void loop() {
     String description = weatherClient.getDescription(0);
     description.toUpperCase();
     String msg;
-    if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
-      msg += printerClient.getFileName() + " ";
-      msg += "(" + printerClient.getProgressCompletion() + "%)   ";
-    }
-    msg += weatherClient.getCity(0) + "    ";
+    msg += " " + weatherClient.getCity(0) + "    ";
     msg += temperature + getTempSymbol() + "    ";
     msg += description + "    ";
     msg += "Humidity:" + weatherClient.getHumidity(0) + "%   ";
@@ -328,6 +340,13 @@ void loop() {
     }
     if (ADVICE_ENABLED) {
       msg += "  Advice: " + adviceClient.getAdvice() + " ";
+    }
+    if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
+      msg += printerClient.getFileName() + " ";
+      msg += "(" + printerClient.getProgressCompletion() + "%)   ";
+    }
+    if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
+      msg += "    Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
     }
     scrollMessage(msg);
   }
@@ -369,6 +388,7 @@ void handleLocations() {
   IS_24HOUR = server.hasArg("is24hour");
   IS_METRIC = server.hasArg("metric");
   NEWS_SOURCE = server.arg("newssource");
+  BitcoinCurrencyCode = server.arg("bitcoincurrency");
   marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
   timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
   timeDisplayTurnsOff = decodeHtmlString(server.arg("endTime"));
@@ -387,6 +407,9 @@ void handleLocations() {
   matrix.fillScreen(LOW); // show black
   writeCityIds();
   getWeatherData(); // this will force a data pull for new weather
+  if (OCTOPRINT_ENABLED) {
+    printerClient.getPrinterJobResults();
+  }
   redirectHome();
 }
 
@@ -428,7 +451,7 @@ void handleConfigure() {
 
   html = getHeader();
   server.sendContent(html);
-  
+
   String form = String(CHANGE_FORM1);
   for (int inx = 0; inx < 1; inx++) {
     String cityName = "";
@@ -459,6 +482,12 @@ void handleConfigure() {
   newsOptions.replace(">"+String(NEWS_SOURCE)+"<", " selected>"+String(NEWS_SOURCE)+"<");
   form.replace("%NEWSOPTIONS%", newsOptions);
   server.sendContent(String(form)); //Send first Chunk of form
+
+  form = String(BITCOIN_FORM);
+  String bitcoinOptions = String(CURRENCY_OPTIONS);
+  bitcoinOptions.replace(BitcoinCurrencyCode + "'>", BitcoinCurrencyCode + "' selected>");
+  form.replace("%BITCOINOPTIONS%", bitcoinOptions);
+  server.sendContent(String(form)); //Send another Chunk of form
 
   form = String(CHANGE_FORM2);
   String isAdviceDisplayedChecked = "";
@@ -562,6 +591,10 @@ void getWeatherData() //client function to send/receive GET request data.
     timeOffsetFetched = true;
     GeoNamesClient geoNames(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
     UtcOffset = geoNames.getTimeOffset();
+  }
+
+  if (displayOn) {
+    bitcoinClient.updateBitcoinData(BitcoinCurrencyCode);  // does nothing if BitCoinCurrencyCode is "NONE" or empty
   }
   
   matrix.fillScreen(LOW); // show black
@@ -698,6 +731,12 @@ void displayWeatherData() {
       html += "Not Opperational";
     }
     html += "</div><br><hr>";
+    server.sendContent(String(html));
+    html = "";
+  }
+
+  if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
+    html = "<div class='w3-cell-row'>Bitcoin value: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + "</div><br><hr>";
     server.sendContent(String(html));
     html = "";
   }
@@ -878,6 +917,7 @@ String writeCityIds() {
     f.println("www_username=" + String(www_username));
     f.println("www_password=" + String(www_password));
     f.println("IS_BASIC_AUTH=" + String(IS_BASIC_AUTH));
+    f.println("BitcoinCurrencyCode=" + BitcoinCurrencyCode);
   }
   f.close();
   readCityIds();
@@ -975,6 +1015,11 @@ void readCityIds() {
       IS_BASIC_AUTH = line.substring(line.lastIndexOf("IS_BASIC_AUTH=") + 14).toInt();
       Serial.println("IS_BASIC_AUTH=" + String(IS_BASIC_AUTH));
     }
+    if (line.indexOf("BitcoinCurrencyCode=") >= 0) {
+      BitcoinCurrencyCode = line.substring(line.lastIndexOf("BitcoinCurrencyCode=") + 20);
+      BitcoinCurrencyCode.trim();
+      Serial.println("BitcoinCurrencyCode=" + BitcoinCurrencyCode);
+    }
   }
   fr.close();
   matrix.setIntensity(displayIntensity);
@@ -982,9 +1027,6 @@ void readCityIds() {
   weatherClient.setMetric(IS_METRIC);
   weatherClient.updateCityIdList(CityIDs, 1);
   printerClient.updateOctoPrintClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort);
-  if (OCTOPRINT_ENABLED) {
-    printerClient.getPrinterJobResults();
-  }
 }
 
 void scrollMessage(String msg) {

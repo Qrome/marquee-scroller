@@ -21,31 +21,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "BitcoinApiClient.h"
 
-#include "NewsApiClient.h"
-
-
-
-#define arr_len( x )  ( sizeof( x ) / sizeof( *x ) )
-
-NewsApiClient::NewsApiClient(String ApiKey, String NewsSource) {
-  
-  mySource = NewsSource;
-  myApiKey = ApiKey;
-
+BitcoinApiClient::BitcoinApiClient() {
+  //Constructor
 }
 
-void NewsApiClient::updateNews() {
-  JsonStreamingParser parser;
-  parser.setListener(this);
+void BitcoinApiClient::updateBitcoinData(String currencyCode) {
+  if (currencyCode == "" || currencyCode == "NONE") {
+    bpiData.code = "";
+    bpiData.rate = "";
+    bpiData.description = "";
+    bpiData.rate_float = 0;
+    return; // nothing to do here
+  }
   HTTPClient http;
+  
+  String apiGetData = "http://" + String(servername) + "/v1/bpi/currentprice/" + currencyCode + ".json";
 
-  String apiGetData = "http://" + String(servername) + "/v2/top-headlines?sources=" + mySource + "&apiKey=" + myApiKey;
-
-  Serial.println("Getting News Data");
+  Serial.println("Getting Bitcoin Data");
   Serial.println(apiGetData);
   http.begin(apiGetData);
   int httpCode = http.GET();
+
+  String result = "";
 
   if (httpCode > 0) {  // checks for connection
     Serial.printf("[HTTP] GET... code: %d\n", httpCode);
@@ -57,7 +56,7 @@ void NewsApiClient::updateNews() {
       // get tcp stream
       WiFiClient * stream = http.getStreamPtr();
       // read all data from server
-      Serial.println("Start parsing...");
+      Serial.println("Start reading...");
       while(http.connected() && (len > 0 || len == -1)) {
         // get available data size
         size_t size = stream->available();
@@ -65,7 +64,7 @@ void NewsApiClient::updateNews() {
           // read up to 128 byte
           int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
           for(int i=0;i<c;i++) {
-            parser.parse(buff[i]); 
+            result += buff[i];
           }
             
           if(len > 0)
@@ -80,75 +79,52 @@ void NewsApiClient::updateNews() {
     Serial.println();
     return;
   }
-}
+  //Clean dirty results
+  result.remove(0, result.indexOf("{"));
+  result.remove(result.lastIndexOf("}") + 1);
+  Serial.println("Results:");
+  Serial.println(result);
+  Serial.println("End");
 
-String NewsApiClient::getTitle(int index) {
-  return news[index].title;
-}
+  char jsonArray [result.length()+1];
+  result.toCharArray(jsonArray,sizeof(jsonArray));
+  //jsonArray[result.length() + 1] = '\0';
+  DynamicJsonBuffer json_buf;
+  JsonObject& root = json_buf.parseObject(jsonArray);
 
-String NewsApiClient::getDescription(int index) {
-  return news[index].description;
-}
-
-String NewsApiClient::getUrl(int index) {
-  return news[index].url;
-}
-
-void NewsApiClient::updateNewsSource(String source) {
-  mySource = source;
-}
-
-void NewsApiClient::whitespace(char c) {
-
-}
-
-void NewsApiClient::startDocument() {
-  counterTitle = 0;
-}
-
-void NewsApiClient::key(String key) {
-  currentKey = key;
-}
-
-void NewsApiClient::value(String value) {
-  if (counterTitle == 10) {
-    // we are full so return
+  if (!root.success()) {
+    Serial.println(F("Bitcoin Data Parsing failed!"));
     return;
   }
-  if (currentKey == "title") {
-    news[counterTitle].title = cleanText(value);
-  }
-  if (currentKey == "description") {
-    news[counterTitle].description = cleanText(value);
-  }
-  if (currentKey == "url") {
-    news[counterTitle].url = value;
-    counterTitle++;
-  }
-  Serial.println(currentKey + "=" + value);
+  
+  bpiData.code = (const char*)root["bpi"][String(currencyCode)]["code"];
+  bpiData.rate = (const char*)root["bpi"][String(currencyCode)]["rate"];
+  bpiData.description = (const char*)root["bpi"][String(currencyCode)]["description"];
+  bpiData.rate_float = String((const char*)root["bpi"][String(currencyCode)]["rate_float"]).toFloat();
+
+  Serial.println("code: " + bpiData.code);
+  Serial.println("rate: " + bpiData.rate);
+  Serial.println("description: " + bpiData.description);
+  Serial.println("rate_float: " + String(bpiData.rate_float));
+
+  Serial.println();
 }
 
-void NewsApiClient::endArray() {
+String BitcoinApiClient::getCode() {
+  return bpiData.code;
 }
 
-void NewsApiClient::endObject() {
-}
-void NewsApiClient::startArray() {
-}
-
-void NewsApiClient::startObject() {
+String BitcoinApiClient::getRate() {
+  String rate = bpiData.rate;
+  rate.remove(rate.indexOf(".") + 3);
+  return rate;
 }
 
-void NewsApiClient::endDocument() {
+String BitcoinApiClient::getDescription() {
+  return bpiData.description;
 }
 
-String NewsApiClient::cleanText(String text) {
-  text.replace("’", "'");
-  text.replace("“", "\"");
-  text.replace("”", "\"");
-  text.replace("`", "'");
-  text.replace("‘", "'");
-  text.replace("\\\"", "'");
-  text.replace("•", "-");
-  return text;
+float BitcoinApiClient::getRateFloat() {
+  return bpiData.rate_float;
 }
+
