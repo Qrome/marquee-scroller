@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "1.7"
+#define VERSION "1.8"
 
 #define HOSTNAME "ESP8266-" 
 #define CONFIG "/conf.txt"
@@ -221,6 +221,9 @@ void setup() {
   //wifiManager.resetSettings();
   wifiManager.setAPCallback(configModeCallback);
   
+  //Custom Station (client) Static IP Configuration - Set custom IP for your Network (IP, Gateway, Subnet mask)
+  //wifiManager.setSTAStaticIPConfig(IPAddress(192,168,0,99), IPAddress(192,168,0,1), IPAddress(255,255,255,0));
+ 
   //or use this for auto generated name ESP + ChipID
   wifiManager.autoConnect();
   
