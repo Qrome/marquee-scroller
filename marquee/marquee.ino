@@ -335,7 +335,7 @@ void loop() {
     msg += "Wind:" + weatherClient.getWind(0) + "  ";
     msg += marqueeMessage + " ";
     if (NEWS_ENABLED) {
-      msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + " ";
+      msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "   ";
       newsIndex += 1;
       if (newsIndex > 9) {
         newsIndex = 0;
@@ -345,7 +345,7 @@ void loop() {
       msg += "  Advice: " + adviceClient.getAdvice() + " ";
     }
     if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
-      msg += printerClient.getFileName() + " ";
+      msg += "   " + printerClient.getFileName() + " ";
       msg += "(" + printerClient.getProgressCompletion() + "%)   ";
     }
     if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
@@ -484,13 +484,13 @@ void handleConfigure() {
   String newsOptions = String(NEWS_OPTIONS);
   newsOptions.replace(">"+String(NEWS_SOURCE)+"<", " selected>"+String(NEWS_SOURCE)+"<");
   form.replace("%NEWSOPTIONS%", newsOptions);
-  server.sendContent(String(form)); //Send first Chunk of form
+  server.sendContent(form); //Send first Chunk of form
 
   form = String(BITCOIN_FORM);
   String bitcoinOptions = String(CURRENCY_OPTIONS);
   bitcoinOptions.replace(BitcoinCurrencyCode + "'>", BitcoinCurrencyCode + "' selected>");
   form.replace("%BITCOINOPTIONS%", bitcoinOptions);
-  server.sendContent(String(form)); //Send another Chunk of form
+  server.sendContent(form); //Send another Chunk of form
 
   form = String(CHANGE_FORM2);
   String isAdviceDisplayedChecked = "";
@@ -523,7 +523,7 @@ void handleConfigure() {
   form.replace("%USERID%", String(www_username));
   form.replace("%STATIONPASSWORD%", String(www_password));
 
-  server.sendContent(String(form)); // Send the second chunk of Data
+  server.sendContent(form); // Send the second chunk of Data
 
   html = getFooter();
   server.sendContent(html);
