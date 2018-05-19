@@ -488,7 +488,7 @@ void handleConfigure() {
 
   form = String(BITCOIN_FORM);
   String bitcoinOptions = String(CURRENCY_OPTIONS);
-  bitcoinOptions.replace(BitcoinCurrencyCode + "'>", BitcoinCurrencyCode + "' selected>");
+  bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
   form.replace("%BITCOINOPTIONS%", bitcoinOptions);
   server.sendContent(form); //Send another Chunk of form
 
@@ -688,41 +688,37 @@ void displayWeatherData() {
   server.send(200, "text/html", "");
   server.sendContent(String(getHeader()));
   
-  for (int inx = 0; inx < 1; inx++) {
-    if (weatherClient.getTemp(inx) == "") {
-      break; // no more data
-    }
-    String temperature = weatherClient.getTemp(inx);
+  String temperature = weatherClient.getTemp(0);
 
-    if ((temperature.indexOf(".") != -1) && (temperature.length() >= (temperature.indexOf(".") + 2))) {
-      temperature.remove(temperature.indexOf(".") + 2);
-    }
-
-    timeClient.setUtcOffset(getTimeOffset(inx));
-    String time = timeClient.getAmPmFormattedTime();
-    
-    Serial.println(weatherClient.getCity(inx));
-    Serial.println(weatherClient.getCondition(inx));
-    Serial.println(weatherClient.getDescription(inx));
-    Serial.println(temperature);
-    Serial.println(time);
-
-    html += "<div class='w3-cell-row' style='width:100%'><h2>" + weatherClient.getCity(inx) + ", " + weatherClient.getCountry(inx) + "</h2></div><div class='w3-cell-row'>";
-    html += "<div class='w3-cell w3-left w3-medium' style='width:120px'>";
-    html += "<img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(inx) + ".png' alt='" + weatherClient.getDescription(inx) + "'><br>";
-    html += weatherClient.getHumidity(inx) + "% Humidity<br>";
-    html += weatherClient.getWind(inx) + " <span class='w3-tiny'>mph</span> Wind<br>";
-    html += "</div>";
-    html += "<div class='w3-cell w3-container' style='width:100%'><p>";
-    html += weatherClient.getCondition(inx) + " (" + weatherClient.getDescription(inx) + ")<br>";
-    html += temperature + " " + getTempSymbol() + "<br>";
-    html += time + "<br>";
-    html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(inx) + "," + weatherClient.getLon(inx) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fa fa-map-marker' style='color:red'></i> Map It!</a><br>";
-    html += "</p></div></div><hr>";
-
-    server.sendContent(String(html)); // spit out what we got
-    html = ""; // fresh start
+  if ((temperature.indexOf(".") != -1) && (temperature.length() >= (temperature.indexOf(".") + 2))) {
+    temperature.remove(temperature.indexOf(".") + 2);
   }
+
+  timeClient.setUtcOffset(getTimeOffset());
+  String time = timeClient.getAmPmFormattedTime();
+  
+  Serial.println(weatherClient.getCity(0));
+  Serial.println(weatherClient.getCondition(0));
+  Serial.println(weatherClient.getDescription(0));
+  Serial.println(temperature);
+  Serial.println(time);
+
+  html += "<div class='w3-cell-row' style='width:100%'><h2>" + weatherClient.getCity(0) + ", " + weatherClient.getCountry(0) + "</h2></div><div class='w3-cell-row'>";
+  html += "<div class='w3-cell w3-left w3-medium' style='width:120px'>";
+  html += "<img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'><br>";
+  html += weatherClient.getHumidity(0) + "% Humidity<br>";
+  html += weatherClient.getWind(0) + " <span class='w3-tiny'>mph</span> Wind<br>";
+  html += "</div>";
+  html += "<div class='w3-cell w3-container' style='width:100%'><p>";
+  html += weatherClient.getCondition(0) + " (" + weatherClient.getDescription(0) + ")<br>";
+  html += temperature + " " + getTempSymbol() + "<br>";
+  html += time + "<br>";
+  html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(0) + "," + weatherClient.getLon(0) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fa fa-map-marker' style='color:red'></i> Map It!</a><br>";
+  html += "</p></div></div><hr>";
+
+  server.sendContent(String(html)); // spit out what we got
+  html = ""; // fresh start
+
 
   if (OCTOPRINT_ENABLED) {
     html = "<div class='w3-cell-row'>OctoPrint Status: ";
@@ -768,7 +764,7 @@ void displayWeatherData() {
   digitalWrite(externalLight, HIGH);
 }
 
-float getTimeOffset(int index) {
+float getTimeOffset() {
   if (timeOffsetFetched) {
     return UtcOffset;
   }
@@ -879,7 +875,7 @@ void checkDisplay() {
   if (timeDisplayTurnsOn == "" || timeDisplayTurnsOff == "") {
     return; // nothing to do
   }
-  timeClient.setUtcOffset(getTimeOffset(0));
+  timeClient.setUtcOffset(getTimeOffset());
   String currentTime = timeClient.getHours() + ":" + timeClient.getMinutes(); 
 
   if (currentTime == timeDisplayTurnsOn && !displayOn) {
