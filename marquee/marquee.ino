@@ -29,7 +29,7 @@ SOFTWARE.
 
 #define VERSION "1.8"
 
-#define HOSTNAME "ESP8266-" 
+#define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
 #define BUZZER_PIN  D2
 
@@ -265,6 +265,7 @@ void setup() {
       else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
       else if (error == OTA_END_ERROR) Serial.println("End Failed");
     });
+    ArduinoOTA.setHostname((const char *)hostname.c_str());
     ArduinoOTA.begin();
   }
   
