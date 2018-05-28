@@ -125,6 +125,12 @@ void OpenWeatherMapClient::updateWeather() {
   }
 }
 
+String OpenWeatherMapClient::roundValue(String value) {
+  float f = value.toFloat();
+  int rounded = (int)(f+0.5f);
+  return String(rounded);
+}
+
 void OpenWeatherMapClient::updateCityIdList(int CityIDs[], int cityCount) {
   myCityIDs = "";
   for (int inx = 0; inx < cityCount; inx++) {
@@ -173,8 +179,16 @@ String OpenWeatherMapClient::getTemp(int index) {
   return weathers[index].temp;
 }
 
+String OpenWeatherMapClient::getTempRounded(int index) {
+  return roundValue(getTemp(index));
+}
+
 String OpenWeatherMapClient::getHumidity(int index) {
   return weathers[index].humidity;
+}
+
+String OpenWeatherMapClient::getHumidityRounded(int index) {
+  return roundValue(getHumidity(index));
 }
 
 String OpenWeatherMapClient::getCondition(int index) {
@@ -183,6 +197,10 @@ String OpenWeatherMapClient::getCondition(int index) {
 
 String OpenWeatherMapClient::getWind(int index) {
   return weathers[index].wind;
+}
+
+String OpenWeatherMapClient::getWindRounded(int index) {
+  return roundValue(getWind(index));
 }
 
 String OpenWeatherMapClient::getWeatherId(int index) {

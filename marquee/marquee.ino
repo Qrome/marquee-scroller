@@ -224,22 +224,13 @@ void setup() {
   //Custom Station (client) Static IP Configuration - Set custom IP for your Network (IP, Gateway, Subnet mask)
   //wifiManager.setSTAStaticIPConfig(IPAddress(192,168,0,99), IPAddress(192,168,0,1), IPAddress(255,255,255,0));
  
-  //or use this for auto generated name ESP + ChipID
-  wifiManager.autoConnect();
-  
-  //Manual Wifi
-  //WiFi.begin(WIFI_SSID, WIFI_PWD);
   String hostname(HOSTNAME);
   hostname += String(ESP.getChipId(), HEX);
-  WiFi.hostname(hostname);
-
-  int cnt = 0;
-  while (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(externalLight, LOW);
-    delay(500);
-    Serial.print(".");
-    cnt++;
-    digitalWrite(externalLight, HIGH);
+  if (!wifiManager.autoConnect((const char *)hostname.c_str())) {// new addition
+    delay(3000);
+    WiFi.disconnect(true);
+    ESP.reset();
+    delay(5000);
   }
 
   // print the received signal strength:
@@ -322,18 +313,15 @@ void loop() {
     }
     
     lastMinute = timeClient.getMinutes();
-    String temperature = weatherClient.getTemp(0);
-    if ((temperature.indexOf(".") != -1) && (temperature.length() >= (temperature.indexOf(".") + 2))) {
-      temperature.remove(temperature.indexOf(".") + 2);
-    }
+    String temperature = weatherClient.getTempRounded(0);
     String description = weatherClient.getDescription(0);
     description.toUpperCase();
     String msg;
     msg += " " + weatherClient.getCity(0) + "    ";
     msg += temperature + getTempSymbol() + "    ";
     msg += description + "    ";
-    msg += "Humidity:" + weatherClient.getHumidity(0) + "%   ";
-    msg += "Wind:" + weatherClient.getWind(0) + "  ";
+    msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
+    msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
     msg += marqueeMessage + " ";
     if (NEWS_ENABLED) {
       msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "   ";
@@ -634,6 +622,7 @@ void redirectHome() {
   server.sendHeader("Expires", "-1");
   server.send(302, "text/plain", "");
   server.client().stop();
+  delay(1000);
 }
 
 String getHeader() {
@@ -708,7 +697,7 @@ void displayWeatherData() {
   html += "<div class='w3-cell w3-left w3-medium' style='width:120px'>";
   html += "<img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'><br>";
   html += weatherClient.getHumidity(0) + "% Humidity<br>";
-  html += weatherClient.getWind(0) + " <span class='w3-tiny'>mph</span> Wind<br>";
+  html += weatherClient.getWind(0) + " <span class='w3-tiny'>" + getSpeedSymbol() + "</span> Wind<br>";
   html += "</div>";
   html += "<div class='w3-cell w3-container' style='width:100%'><p>";
   html += weatherClient.getCondition(0) + " (" + weatherClient.getDescription(0) + ")<br>";
@@ -805,6 +794,14 @@ String getTempSymbol() {
   String rtnValue = "F";
   if (IS_METRIC) {
     rtnValue = "C";
+  }
+  return rtnValue;
+}
+
+String getSpeedSymbol() {
+  String rtnValue = "mph";
+  if (IS_METRIC) {
+    rtnValue = "kph";
   }
   return rtnValue;
 }
