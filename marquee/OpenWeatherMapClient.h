@@ -54,7 +54,7 @@ private:
 
   weather weathers[5];
 
-  
+  String roundValue(String value);
   
 public:
   OpenWeatherMapClient(String ApiKey, int CityIDs[], int cityCount, boolean isMetric);
@@ -70,9 +70,12 @@ public:
   String getCity(int index);
   String getCountry(int index);
   String getTemp(int index);
+  String getTempRounded(int index);
   String getHumidity(int index);
+  String getHumidityRounded(int index);
   String getCondition(int index);
   String getWind(int index);
+  String getWindRounded(int index);
   String getWeatherId(int index);
   String getDescription(int index);
   String getIcon(int index);

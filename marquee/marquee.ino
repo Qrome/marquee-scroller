@@ -27,9 +27,9 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "1.7"
+#define VERSION "1.8"
 
-#define HOSTNAME "ESP8266-" 
+#define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
 #define BUZZER_PIN  D2
 
@@ -221,22 +221,16 @@ void setup() {
   //wifiManager.resetSettings();
   wifiManager.setAPCallback(configModeCallback);
   
-  //or use this for auto generated name ESP + ChipID
-  wifiManager.autoConnect();
-  
-  //Manual Wifi
-  //WiFi.begin(WIFI_SSID, WIFI_PWD);
+  //Custom Station (client) Static IP Configuration - Set custom IP for your Network (IP, Gateway, Subnet mask)
+  //wifiManager.setSTAStaticIPConfig(IPAddress(192,168,0,99), IPAddress(192,168,0,1), IPAddress(255,255,255,0));
+ 
   String hostname(HOSTNAME);
   hostname += String(ESP.getChipId(), HEX);
-  WiFi.hostname(hostname);
-
-  int cnt = 0;
-  while (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(externalLight, LOW);
-    delay(500);
-    Serial.print(".");
-    cnt++;
-    digitalWrite(externalLight, HIGH);
+  if (!wifiManager.autoConnect((const char *)hostname.c_str())) {// new addition
+    delay(3000);
+    WiFi.disconnect(true);
+    ESP.reset();
+    delay(5000);
   }
 
   // print the received signal strength:
@@ -262,6 +256,7 @@ void setup() {
       else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
       else if (error == OTA_END_ERROR) Serial.println("End Failed");
     });
+    ArduinoOTA.setHostname((const char *)hostname.c_str());
     ArduinoOTA.begin();
   }
   
@@ -318,21 +313,18 @@ void loop() {
     }
     
     lastMinute = timeClient.getMinutes();
-    String temperature = weatherClient.getTemp(0);
-    if ((temperature.indexOf(".") != -1) && (temperature.length() >= (temperature.indexOf(".") + 2))) {
-      temperature.remove(temperature.indexOf(".") + 2);
-    }
+    String temperature = weatherClient.getTempRounded(0);
     String description = weatherClient.getDescription(0);
     description.toUpperCase();
     String msg;
     msg += " " + weatherClient.getCity(0) + "    ";
     msg += temperature + getTempSymbol() + "    ";
     msg += description + "    ";
-    msg += "Humidity:" + weatherClient.getHumidity(0) + "%   ";
-    msg += "Wind:" + weatherClient.getWind(0) + "  ";
+    msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
+    msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
     msg += marqueeMessage + " ";
     if (NEWS_ENABLED) {
-      msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + " ";
+      msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "   ";
       newsIndex += 1;
       if (newsIndex > 9) {
         newsIndex = 0;
@@ -342,7 +334,7 @@ void loop() {
       msg += "  Advice: " + adviceClient.getAdvice() + " ";
     }
     if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
-      msg += printerClient.getFileName() + " ";
+      msg += "   " + printerClient.getFileName() + " ";
       msg += "(" + printerClient.getProgressCompletion() + "%)   ";
     }
     if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
@@ -481,13 +473,13 @@ void handleConfigure() {
   String newsOptions = String(NEWS_OPTIONS);
   newsOptions.replace(">"+String(NEWS_SOURCE)+"<", " selected>"+String(NEWS_SOURCE)+"<");
   form.replace("%NEWSOPTIONS%", newsOptions);
-  server.sendContent(String(form)); //Send first Chunk of form
+  server.sendContent(form); //Send first Chunk of form
 
   form = String(BITCOIN_FORM);
   String bitcoinOptions = String(CURRENCY_OPTIONS);
-  bitcoinOptions.replace(BitcoinCurrencyCode + "'>", BitcoinCurrencyCode + "' selected>");
+  bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
   form.replace("%BITCOINOPTIONS%", bitcoinOptions);
-  server.sendContent(String(form)); //Send another Chunk of form
+  server.sendContent(form); //Send another Chunk of form
 
   form = String(CHANGE_FORM2);
   String isAdviceDisplayedChecked = "";
@@ -520,7 +512,7 @@ void handleConfigure() {
   form.replace("%USERID%", String(www_username));
   form.replace("%STATIONPASSWORD%", String(www_password));
 
-  server.sendContent(String(form)); // Send the second chunk of Data
+  server.sendContent(form); // Send the second chunk of Data
 
   html = getFooter();
   server.sendContent(html);
@@ -630,6 +622,7 @@ void redirectHome() {
   server.sendHeader("Expires", "-1");
   server.send(302, "text/plain", "");
   server.client().stop();
+  delay(1000);
 }
 
 String getHeader() {
@@ -685,41 +678,37 @@ void displayWeatherData() {
   server.send(200, "text/html", "");
   server.sendContent(String(getHeader()));
   
-  for (int inx = 0; inx < 1; inx++) {
-    if (weatherClient.getTemp(inx) == "") {
-      break; // no more data
-    }
-    String temperature = weatherClient.getTemp(inx);
+  String temperature = weatherClient.getTemp(0);
 
-    if ((temperature.indexOf(".") != -1) && (temperature.length() >= (temperature.indexOf(".") + 2))) {
-      temperature.remove(temperature.indexOf(".") + 2);
-    }
-
-    timeClient.setUtcOffset(getTimeOffset(inx));
-    String time = timeClient.getAmPmFormattedTime();
-    
-    Serial.println(weatherClient.getCity(inx));
-    Serial.println(weatherClient.getCondition(inx));
-    Serial.println(weatherClient.getDescription(inx));
-    Serial.println(temperature);
-    Serial.println(time);
-
-    html += "<div class='w3-cell-row' style='width:100%'><h2>" + weatherClient.getCity(inx) + ", " + weatherClient.getCountry(inx) + "</h2></div><div class='w3-cell-row'>";
-    html += "<div class='w3-cell w3-left w3-medium' style='width:120px'>";
-    html += "<img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(inx) + ".png' alt='" + weatherClient.getDescription(inx) + "'><br>";
-    html += weatherClient.getHumidity(inx) + "% Humidity<br>";
-    html += weatherClient.getWind(inx) + " <span class='w3-tiny'>mph</span> Wind<br>";
-    html += "</div>";
-    html += "<div class='w3-cell w3-container' style='width:100%'><p>";
-    html += weatherClient.getCondition(inx) + " (" + weatherClient.getDescription(inx) + ")<br>";
-    html += temperature + " " + getTempSymbol() + "<br>";
-    html += time + "<br>";
-    html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(inx) + "," + weatherClient.getLon(inx) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fa fa-map-marker' style='color:red'></i> Map It!</a><br>";
-    html += "</p></div></div><hr>";
-
-    server.sendContent(String(html)); // spit out what we got
-    html = ""; // fresh start
+  if ((temperature.indexOf(".") != -1) && (temperature.length() >= (temperature.indexOf(".") + 2))) {
+    temperature.remove(temperature.indexOf(".") + 2);
   }
+
+  timeClient.setUtcOffset(getTimeOffset());
+  String time = timeClient.getAmPmFormattedTime();
+  
+  Serial.println(weatherClient.getCity(0));
+  Serial.println(weatherClient.getCondition(0));
+  Serial.println(weatherClient.getDescription(0));
+  Serial.println(temperature);
+  Serial.println(time);
+
+  html += "<div class='w3-cell-row' style='width:100%'><h2>" + weatherClient.getCity(0) + ", " + weatherClient.getCountry(0) + "</h2></div><div class='w3-cell-row'>";
+  html += "<div class='w3-cell w3-left w3-medium' style='width:120px'>";
+  html += "<img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'><br>";
+  html += weatherClient.getHumidity(0) + "% Humidity<br>";
+  html += weatherClient.getWind(0) + " <span class='w3-tiny'>" + getSpeedSymbol() + "</span> Wind<br>";
+  html += "</div>";
+  html += "<div class='w3-cell w3-container' style='width:100%'><p>";
+  html += weatherClient.getCondition(0) + " (" + weatherClient.getDescription(0) + ")<br>";
+  html += temperature + " " + getTempSymbol() + "<br>";
+  html += time + "<br>";
+  html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(0) + "," + weatherClient.getLon(0) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fa fa-map-marker' style='color:red'></i> Map It!</a><br>";
+  html += "</p></div></div><hr>";
+
+  server.sendContent(String(html)); // spit out what we got
+  html = ""; // fresh start
+
 
   if (OCTOPRINT_ENABLED) {
     html = "<div class='w3-cell-row'>OctoPrint Status: ";
@@ -765,7 +754,7 @@ void displayWeatherData() {
   digitalWrite(externalLight, HIGH);
 }
 
-float getTimeOffset(int index) {
+float getTimeOffset() {
   if (timeOffsetFetched) {
     return UtcOffset;
   }
@@ -805,6 +794,14 @@ String getTempSymbol() {
   String rtnValue = "F";
   if (IS_METRIC) {
     rtnValue = "C";
+  }
+  return rtnValue;
+}
+
+String getSpeedSymbol() {
+  String rtnValue = "mph";
+  if (IS_METRIC) {
+    rtnValue = "kph";
   }
   return rtnValue;
 }
@@ -876,7 +873,7 @@ void checkDisplay() {
   if (timeDisplayTurnsOn == "" || timeDisplayTurnsOff == "") {
     return; // nothing to do
   }
-  timeClient.setUtcOffset(getTimeOffset(0));
+  timeClient.setUtcOffset(getTimeOffset());
   String currentTime = timeClient.getHours() + ":" + timeClient.getMinutes(); 
 
   if (currentTime == timeDisplayTurnsOn && !displayOn) {
