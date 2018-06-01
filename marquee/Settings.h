@@ -93,6 +93,8 @@ boolean OCTOPRINT_ENABLED = false;
 String OctoPrintApiKey = "";  // ApiKey from your User Account on OctoPrint
 String OctoPrintServer = ""; // IP or Address of your OctoPrint Server (DO NOT include http://)
 int OctoPrintPort = 80; // the port you are running your OctoPrint server on (usually 80);
+String OctoAuthUser = "";      // only used if you have haproxy or basic athentintication turned on (not default)
+String OctoAuthPass = "";      // only used with haproxy or basic auth (only needed if you must authenticate)
 
 // Bitcoin Client - NONE or empty is off
 String BitcoinCurrencyCode = "NONE";  // Change to USD, GBD, EUR, or NONE -- this can be managed in the Web Interface

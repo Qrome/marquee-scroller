@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "1.8"
+#define VERSION "1.9"
 
 #define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
@@ -81,7 +81,7 @@ AdviceSlipClient adviceClient;
 OpenWeatherMapClient weatherClient(APIKEY, CityIDs, 1, IS_METRIC);
 
 // OctoPrint Client
-OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort);
+OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
 int printerCount = 0;
 
 // Bitcoin Client
@@ -117,7 +117,8 @@ const String CHANGE_FORM2 = "<input name='displayadvice' class='w3-check w3-marg
                             "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
                             "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
                             "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
-                            "<hr>"
+                            "<label>OctoPrint User (only needed if you have haproxy or basic auth turned on)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoUser' value='%OCTOUSER%' maxlength='30'>"
+                            "<label>OctoPrint Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='octoPass' value='%OCTOPASS%'><hr>"
                             "<input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes<p>"
                             "<label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'>"
                             "<label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'>"
@@ -390,6 +391,8 @@ void handleLocations() {
   OctoPrintApiKey = server.arg("octoPrintApiKey");
   OctoPrintServer = server.arg("octoPrintAddress");
   OctoPrintPort = server.arg("octoPrintPort").toInt();
+  OctoAuthUser = server.arg("octoUser");
+  OctoAuthPass = server.arg("octoPass");
   IS_BASIC_AUTH = server.hasArg("isBasicAuth");
   String temp = server.arg("userid");
   temp.toCharArray(www_username, sizeof(temp));
@@ -504,6 +507,8 @@ void handleConfigure() {
   form.replace("%OCTOKEY%", OctoPrintApiKey);
   form.replace("%OCTOADDRESS%", OctoPrintServer);
   form.replace("%OCTOPORT%", String(OctoPrintPort));
+  form.replace("%OCTOUSER%", OctoAuthUser);
+  form.replace("%OCTOPASS%", OctoAuthPass);
   String isUseSecurityChecked = "";
   if (IS_BASIC_AUTH) {
     isUseSecurityChecked = "checked='checked'";
@@ -911,6 +916,8 @@ String writeCityIds() {
     f.println("octoKey=" + OctoPrintApiKey);
     f.println("octoServer=" + OctoPrintServer);
     f.println("octoPort=" + String(OctoPrintPort));
+    f.println("octoUser=" + OctoAuthUser);
+    f.println("octoPass=" + OctoAuthPass);
     f.println("www_username=" + String(www_username));
     f.println("www_password=" + String(www_password));
     f.println("IS_BASIC_AUTH=" + String(IS_BASIC_AUTH));
@@ -996,6 +1003,16 @@ void readCityIds() {
       OctoPrintPort = line.substring(line.lastIndexOf("octoPort=") + 9).toInt();
       Serial.println("OctoPrintPort=" + String(OctoPrintPort));
     }
+    if (line.indexOf("octoUser=") >= 0) {
+      OctoAuthUser = line.substring(line.lastIndexOf("octoUser=") + 9);
+      OctoAuthUser.trim();
+      Serial.println("OctoAuthUser=" + OctoAuthUser);
+    }
+    if (line.indexOf("octoPass=") >= 0) {
+      OctoAuthPass = line.substring(line.lastIndexOf("octoPass=") + 9);
+      OctoAuthPass.trim();
+      Serial.println("OctoAuthPass=" + OctoAuthPass);
+    }
     if (line.indexOf("www_username=") >= 0) {
       String temp = line.substring(line.lastIndexOf("www_username=") + 13);
       temp.trim();
@@ -1023,7 +1040,7 @@ void readCityIds() {
   newsClient.updateNewsSource(NEWS_SOURCE);
   weatherClient.setMetric(IS_METRIC);
   weatherClient.updateCityIdList(CityIDs, 1);
-  printerClient.updateOctoPrintClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort);
+  printerClient.updateOctoPrintClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
 }
 
 void scrollMessage(String msg) {
