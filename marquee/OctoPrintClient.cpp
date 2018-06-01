@@ -39,7 +39,25 @@ void OctoPrintClient::updateOctoPrintClient(String ApiKey, String server, int po
   }
 }
 
+boolean OctoPrintClient::validate() {
+  boolean rtnValue = false;
+  printerData.error = "";
+  if (String(myServer) == "") {
+    printerData.error += "Server address is required; ";
+  }
+  if (myApiKey == "") {
+    printerData.error += "ApiKey is required; ";
+  }
+  if (printerData.error == "") {
+    rtnValue = true;
+  }
+  return rtnValue;
+}
+
 void OctoPrintClient::getPrinterJobResults() {
+  if (!validate()) {
+    return;
+  }
   WiFiClient printClient;
   printClient.setTimeout(10000);
   String apiGetData = "GET /api/job HTTP/1.1";
@@ -59,14 +77,16 @@ void OctoPrintClient::getPrinterJobResults() {
     printClient.println("Connection: close");
     if (printClient.println() == 0) {
       Serial.println("OctoPrint Connection failed.");
-      printerData.state = "";
+      resetPrintData();
+      printerData.error = "Octoprint Connection Failed";
       return;
     }
   } 
   else {
     Serial.println("Connection for OctoPrint data failed: " + String(myServer) + ":" + String(myPort)); //error message if no client connect
     Serial.println();
-    printerData.state = "";
+    resetPrintData();
+      printerData.error = "Connection for OctoPrint data failed: " + String(myServer) + ":" + String(myPort);
     return;
   }
 
@@ -76,7 +96,8 @@ void OctoPrintClient::getPrinterJobResults() {
   if (strcmp(status, "HTTP/1.1 200 OK") != 0) {
     Serial.print(F("Unexpected response: "));
     Serial.println(status);
-    printerData.state = "";
+    resetPrintData();
+    printerData.error = String(status);
     return;
   }
 
@@ -84,7 +105,8 @@ void OctoPrintClient::getPrinterJobResults() {
   char endOfHeaders[] = "\r\n\r\n";
   if (!printClient.find(endOfHeaders)) {
     Serial.println(F("Invalid response"));
-    printerData.state = "";
+    resetPrintData();
+    printerData.error = "Invalid response";
     return;
   }
 
@@ -118,6 +140,21 @@ void OctoPrintClient::getPrinterJobResults() {
   }
   
   printClient.stop(); //stop client
+}
+
+// Reset all PrinterData
+void OctoPrintClient::resetPrintData() {
+  printerData.averagePrintTime = "";
+  printerData.estimatedPrintTime = "";
+  printerData.fileName = "";
+  printerData.fileSize = "";
+  printerData.lastPrintTime = "";
+  printerData.progressCompletion = "";
+  printerData.progressFilepos = "";
+  printerData.progressPrintTime = "";
+  printerData.progressPrintTimeLeft = "";
+  printerData.state = "";
+  printerData.error = "";
 }
 
 String OctoPrintClient::getAveragePrintTime(){
@@ -174,4 +211,8 @@ boolean OctoPrintClient::isOperational() {
     operational = true;
   }
   return operational;
+}
+
+String OctoPrintClient::getError() {
+  return printerData.error;
 }

@@ -33,6 +33,9 @@ private:
   int myPort = 80;
   String myApiKey = "";
   String encodedAuth = "";
+
+  void resetPrintData();
+  boolean validate();
   
   String result;
 
@@ -47,6 +50,7 @@ private:
     String progressPrintTime;
     String progressPrintTimeLeft;
     String state;
+    String error;
   } PrinterStruct;
 
   PrinterStruct printerData;
@@ -69,5 +73,6 @@ public:
   String getState();
   boolean isPrinting();
   boolean isOperational();
+  String getError();
 };
 

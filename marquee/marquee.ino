@@ -721,8 +721,10 @@ void displayWeatherData() {
       html += printerClient.getState() + " " + printerClient.getFileName() + " (" + printerClient.getProgressCompletion() + "%)";
     } else if (printerClient.isOperational()) {
       html += printerClient.getState();
+    } else if (printerClient.getError() != "") {
+      html += printerClient.getError();
     } else {
-      html += "Not Opperational";
+      html += "Not Connected";
     }
     html += "</div><br><hr>";
     server.sendContent(String(html));
