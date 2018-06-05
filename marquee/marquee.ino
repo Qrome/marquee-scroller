@@ -315,6 +315,7 @@ void loop() {
       }
     }
     
+    displayRefreshCount --;
     lastMinute = timeClient.getMinutes();
     String temperature = weatherClient.getTempRounded(0);
     String description = weatherClient.getDescription(0);
@@ -326,7 +327,8 @@ void loop() {
     msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
     msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
     msg += marqueeMessage + " ";
-    if (NEWS_ENABLED) {
+    
+    if (NEWS_ENABLED && displayRefreshCount <= 0) {
       msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "   ";
       newsIndex += 1;
       if (newsIndex > 9) {
@@ -344,10 +346,9 @@ void loop() {
       msg += "    Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
     }
     
-    displayRefreshCount --;
     if (displayRefreshCount <= 0) {
-      scrollMessage(msg);
       displayRefreshCount = minutesBetweenDisplayRefresh;
+      scrollMessage(msg);
     }
   }
 
