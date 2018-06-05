@@ -69,7 +69,8 @@ boolean IS_BASIC_AUTH = true;  // Use Basic Authorization for Configuration secu
 char* www_username = "admin";  // User account for the Web Interface
 char* www_password = "password";  // Password for the Web Interface
 int minutesBetweenDataRefresh = 15;  // Time in minutes between data refresh (default 15 minutes)
-int minutesBetweenDisplayRefresh = 1; // Time in minutes between display refresh (default 1 minutes)
+int minutesBetweenScrolling = 1; // Time in minutes between scrolling data (default 1 minutes and max is 10)
+
 boolean NEWS_ENABLED = true;
 String NEWS_API_KEY = ""; // Get your News API Key from https://newsapi.org
 String NEWS_SOURCE = "reuters";  // https://newsapi.org/sources to get full list of news sources available
@@ -81,7 +82,7 @@ boolean ADVICE_ENABLED = false;
 // CS  -> D6 
 // DIN -> D7 (MOSI)
 const int pinCS = D6; // Attach CS to this pin, DIN to MOSI and CLK to SCK (cf http://arduino.cc/en/Reference/SPI )
-int displayIntensity = 1;  //(This can be set from 0 - 15)
+int displayIntensity = 1;  //(This can be set from 1 - 15)
 
 String timeDisplayTurnsOn = "06:30";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
 String timeDisplayTurnsOff = "23:00"; // 24 Hour Format HH:MM -- Leave blank for always on. Both must be set to work.
