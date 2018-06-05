@@ -64,6 +64,7 @@ float UtcOffset;  //time zone offsets that correspond with the CityID above (off
 // Time 
 TimeClient timeClient(UtcOffset);
 String lastMinute = "xx";
+int displayRefreshCount = 1;
 long lastEpoch = 0;
 long firstEpoch = 0;
 long displayOffEpoch = 0;
@@ -113,6 +114,7 @@ const String CHANGE_FORM2 = "<input name='displayadvice' class='w3-check w3-marg
                             "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
                             "Select Display Brightness <select class='w3-option w3-padding' name='ledintensity'>%INTENSITYOPTIONS%</select></p>"
                             "Refresh Data (minutes) <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
+                            "<p>Refresh Display (minutes) <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' value='%REFRESH_DISPLAY%'></p>"
                             "<input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status<p>"
                             "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
                             "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
@@ -313,6 +315,7 @@ void loop() {
       }
     }
     
+    displayRefreshCount --;
     lastMinute = timeClient.getMinutes();
     String temperature = weatherClient.getTempRounded(0);
     String description = weatherClient.getDescription(0);
@@ -324,7 +327,8 @@ void loop() {
     msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
     msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
     msg += marqueeMessage + " ";
-    if (NEWS_ENABLED) {
+    
+    if (NEWS_ENABLED && displayRefreshCount <= 0) {
       msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "   ";
       newsIndex += 1;
       if (newsIndex > 9) {
@@ -341,7 +345,11 @@ void loop() {
     if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
       msg += "    Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
     }
-    scrollMessage(msg);
+    
+    if (displayRefreshCount <= 0) {
+      displayRefreshCount = minutesBetweenDisplayRefresh;
+      scrollMessage(msg);
+    }
   }
 
   String hourMinutes = timeClient.getAmPmHours() + ":" + timeClient.getMinutes();
@@ -387,6 +395,7 @@ void handleLocations() {
   timeDisplayTurnsOff = decodeHtmlString(server.arg("endTime"));
   displayIntensity = server.arg("ledintensity").toInt();
   minutesBetweenDataRefresh = server.arg("refresh").toInt();
+  minutesBetweenDisplayRefresh = server.arg("refreshDisplay").toInt();
   OCTOPRINT_ENABLED = server.hasArg("displayoctoprint");
   OctoPrintApiKey = server.arg("octoPrintApiKey");
   OctoPrintServer = server.arg("octoPrintAddress");
@@ -499,6 +508,7 @@ void handleConfigure() {
   String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
   options.replace(">"+String(minutesBetweenDataRefresh)+"<", " selected>"+String(minutesBetweenDataRefresh)+"<");
   form.replace("%OPTIONS%", options);
+  form.replace("%REFRESH_DISPLAY%", String(minutesBetweenDisplayRefresh));
   String isOctoPrintDisplayedChecked = "";
   if (OCTOPRINT_ENABLED) {
     isOctoPrintDisplayedChecked = "checked='checked'";
@@ -914,6 +924,7 @@ String writeCityIds() {
     f.println("is24hour=" + String(IS_24HOUR));
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
+    f.println("refreshDisplay=" + String(minutesBetweenDisplayRefresh));
     f.println("isOctoPrint=" + String(OCTOPRINT_ENABLED));
     f.println("octoKey=" + OctoPrintApiKey);
     f.println("octoServer=" + OctoPrintServer);
@@ -967,6 +978,11 @@ void readCityIds() {
     if (line.indexOf("refreshRate=") >= 0) {
       minutesBetweenDataRefresh = line.substring(line.lastIndexOf("refreshRate=") + 12).toInt();
       Serial.println("minutesBetweenDataRefresh=" + String(minutesBetweenDataRefresh));
+    }
+    if (line.indexOf("refreshDisplay=") >= 0) {
+      displayRefreshCount = 1;
+      minutesBetweenDisplayRefresh = line.substring(line.lastIndexOf("refreshDisplay=") + 15).toInt();
+      Serial.println("minutesBetweenDisplayRefresh=" + String(minutesBetweenDisplayRefresh));
     }
     if (line.indexOf("marqueeMessage=") >= 0) {
       marqueeMessage = line.substring(line.lastIndexOf("marqueeMessage=") + 15);
