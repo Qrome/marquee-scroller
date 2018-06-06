@@ -54,7 +54,6 @@ const int numberOfHorizontalDisplays = 4;
 const int numberOfVerticalDisplays = 1;
 int refresh = 0;
 String message = "hello";
-int wait = 25; // In milliseconds -- controls speed of scroll
 int spacer = 1;  // dots between letters
 int width = 5 + spacer; // The font width is 5 pixels + spacer
 Max72xxPanel matrix = Max72xxPanel(pinCS, numberOfHorizontalDisplays, numberOfVerticalDisplays);
@@ -113,9 +112,11 @@ const String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-m
                             "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
                             "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
                             "<p>Select Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='1' max='15' value='%INTENSITYOPTIONS%'></p>"
+                            "<p>Select Display Scroll Speed <select class='w3-option w3-padding' name='scrollspeed'>%SCROLLOPTIONS%</select></p>"
                             "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
-                            "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>"
-                            "<hr><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status"
+                            "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
+
+const String CHANGE_FORM3 = "<hr><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status"
                             "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
                             "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
                             "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
@@ -397,6 +398,7 @@ void handleLocations() {
   displayIntensity = server.arg("ledintensity").toInt();
   minutesBetweenDataRefresh = server.arg("refresh").toInt();
   minutesBetweenScrolling = server.arg("refreshDisplay").toInt();
+  displayScrollSpeed = server.arg("scrollspeed").toInt();
   OCTOPRINT_ENABLED = server.hasArg("displayoctoprint");
   OctoPrintApiKey = server.arg("octoPrintApiKey");
   OctoPrintServer = server.arg("octoPrintAddress");
@@ -504,10 +506,17 @@ void handleConfigure() {
   form.replace("%STARTTIME%", timeDisplayTurnsOn);
   form.replace("%ENDTIME%", timeDisplayTurnsOff);
   form.replace("%INTENSITYOPTIONS%", String(displayIntensity));
+  String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option>";
+  scrollOptions.replace(String(displayScrollSpeed) + "'", String(displayScrollSpeed) + "' selected" );
+  form.replace("%SCROLLOPTIONS%", scrollOptions);
   String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
   options.replace(">" + String(minutesBetweenDataRefresh) + "<", " selected>" + String(minutesBetweenDataRefresh) + "<");
   form.replace("%OPTIONS%", options);
   form.replace("%REFRESH_DISPLAY%", String(minutesBetweenScrolling));
+  
+  server.sendContent(form); //Send another chunk of the form
+
+  form = String(CHANGE_FORM3);
   String isOctoPrintDisplayedChecked = "";
   if (OCTOPRINT_ENABLED) {
     isOctoPrintDisplayedChecked = "checked='checked'";
@@ -918,6 +927,7 @@ String writeCityIds() {
     f.println("timeDisplayTurnsOn=" + timeDisplayTurnsOn);
     f.println("timeDisplayTurnsOff=" + timeDisplayTurnsOff);
     f.println("ledIntensity=" + String(displayIntensity));
+    f.println("scrollSpeed=" + String(displayScrollSpeed));
     f.println("isNews=" + String(NEWS_ENABLED));
     f.println("isAdvice=" + String(ADVICE_ENABLED));
     f.println("is24hour=" + String(IS_24HOUR));
@@ -1001,6 +1011,10 @@ void readCityIds() {
     if (line.indexOf("ledIntensity=") >= 0) {
       displayIntensity = line.substring(line.lastIndexOf("ledIntensity=") + 13).toInt();
       Serial.println("displayIntensity=" + String(displayIntensity));
+    }
+    if (line.indexOf("scrollSpeed=") >= 0) {
+      displayScrollSpeed = line.substring(line.lastIndexOf("scrollSpeed=") + 12).toInt();
+      Serial.println("displayScrollSpeed=" + String(displayScrollSpeed));
     }
     if (line.indexOf("isOctoPrint=") >= 0) {
       OCTOPRINT_ENABLED = line.substring(line.lastIndexOf("isOctoPrint=") + 12).toInt();
@@ -1087,7 +1101,7 @@ void scrollMessage(String msg) {
     }
 
     matrix.write(); // Send bitmap to display
-    delay(wait);
+    delay(displayScrollSpeed);
   }
   matrix.setCursor(0,0);
 }
