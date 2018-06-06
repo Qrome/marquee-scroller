@@ -69,6 +69,8 @@ boolean IS_BASIC_AUTH = true;  // Use Basic Authorization for Configuration secu
 char* www_username = "admin";  // User account for the Web Interface
 char* www_password = "password";  // Password for the Web Interface
 int minutesBetweenDataRefresh = 15;  // Time in minutes between data refresh (default 15 minutes)
+int minutesBetweenScrolling = 1; // Time in minutes between scrolling data (default 1 minutes and max is 10)
+int displayScrollSpeed = 25; // In milliseconds -- Configurable by the web UI (slow = 35, normal = 25, fast = 15)
 
 boolean NEWS_ENABLED = true;
 String NEWS_API_KEY = ""; // Get your News API Key from https://newsapi.org
@@ -81,7 +83,7 @@ boolean ADVICE_ENABLED = false;
 // CS  -> D6 
 // DIN -> D7 (MOSI)
 const int pinCS = D6; // Attach CS to this pin, DIN to MOSI and CLK to SCK (cf http://arduino.cc/en/Reference/SPI )
-int displayIntensity = 1;  //(This can be set from 0 - 15)
+int displayIntensity = 1;  //(This can be set from 1 - 15)
 
 String timeDisplayTurnsOn = "06:30";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
 String timeDisplayTurnsOff = "23:00"; // 24 Hour Format HH:MM -- Leave blank for always on. Both must be set to work.
@@ -93,6 +95,8 @@ boolean OCTOPRINT_ENABLED = false;
 String OctoPrintApiKey = "";  // ApiKey from your User Account on OctoPrint
 String OctoPrintServer = ""; // IP or Address of your OctoPrint Server (DO NOT include http://)
 int OctoPrintPort = 80; // the port you are running your OctoPrint server on (usually 80);
+String OctoAuthUser = "";      // only used if you have haproxy or basic athentintication turned on (not default)
+String OctoAuthPass = "";      // only used with haproxy or basic auth (only needed if you must authenticate)
 
 // Bitcoin Client - NONE or empty is off
 String BitcoinCurrencyCode = "NONE";  // Change to USD, GBD, EUR, or NONE -- this can be managed in the Web Interface
