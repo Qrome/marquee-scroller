@@ -62,7 +62,7 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 Use the Arduino guide for details on how to installing and manage libraries https://www.arduino.cc/en/Guide/Libraries  
 **Packages** -- the following packages and libraries are used (download and install):  
 <ESP8266WiFi.h>  
-<ArduinoJson.h>  --> https://github.com/bblanchon/ArduinoJson  
+<ArduinoJson.h>  --> https://github.com/bblanchon/ArduinoJson (version 5.13.X)  
 <ESP8266WebServer.h>  
 <WiFiManager.h> --> https://github.com/tzapu/WiFiManager  
 "FS.h"  
