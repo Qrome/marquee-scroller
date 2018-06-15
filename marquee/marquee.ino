@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "1.9"
+#define VERSION "2.0"
 
 #define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
@@ -178,6 +178,7 @@ void setup() {
 
   readCityIds();
 
+  Serial.println("Number os LED Displays: " + String(numberOfHorizontalDisplays));
   // initialize dispaly
   matrix.setIntensity(0); // Use a value between 0 and 15 for brightness
 
@@ -255,6 +256,9 @@ void setup() {
       else if (error == OTA_END_ERROR) Serial.println("End Failed");
     });
     ArduinoOTA.setHostname((const char *)hostname.c_str());
+    if (OTA_Password != "") {
+      ArduinoOTA.setPassword(((const char *)OTA_Password.c_str()));
+    }
     ArduinoOTA.begin();
   }
   
@@ -500,11 +504,13 @@ void handleConfigure() {
   form.replace("%STARTTIME%", timeDisplayTurnsOn);
   form.replace("%ENDTIME%", timeDisplayTurnsOff);
   form.replace("%INTENSITYOPTIONS%", String(displayIntensity));
+  String dSpeed = String(displayScrollSpeed);
   String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option>";
-  scrollOptions.replace(String(displayScrollSpeed) + "'", String(displayScrollSpeed) + "' selected" );
+  scrollOptions.replace(dSpeed + "'", dSpeed + "' selected" );
   form.replace("%SCROLLOPTIONS%", scrollOptions);
+  String minutes = String(minutesBetweenDataRefresh);
   String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
-  options.replace(">" + String(minutesBetweenDataRefresh) + "<", " selected>" + String(minutesBetweenDataRefresh) + "<");
+  options.replace(">" + minutes + "<", " selected>" + minutes + "<");
   form.replace("%OPTIONS%", options);
   form.replace("%REFRESH_DISPLAY%", String(minutesBetweenScrolling));
   
