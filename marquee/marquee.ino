@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "1.9"
+#define VERSION "2.0"
 
 #define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
@@ -50,8 +50,6 @@ int8_t getWifiQuality();
 
 // LED Settings
 const int offset = 1;
-const int numberOfHorizontalDisplays = 4;
-const int numberOfVerticalDisplays = 1;
 int refresh = 0;
 String message = "hello";
 int spacer = 1;  // dots between letters
@@ -180,19 +178,16 @@ void setup() {
 
   readCityIds();
 
+  Serial.println("Number os LED Displays: " + String(numberOfHorizontalDisplays));
   // initialize dispaly
   matrix.setIntensity(0); // Use a value between 0 and 15 for brightness
-  matrix.setRotation(0,3);
-  matrix.setRotation(1,3);
-  matrix.setRotation(2,3);
-  matrix.setRotation(3,3);
 
+  int maxPos = numberOfHorizontalDisplays * numberOfVerticalDisplays;
+  for (int i = 0; i < maxPos; i++) {
+    matrix.setRotation(i,3);
+    matrix.setPosition(i, maxPos - i - 1, 0);
+  }
 
-// Adjust to your own needs
-  matrix.setPosition(0, 3, 0); // The first display is at <0, 7>
-  matrix.setPosition(1, 2, 0); // The second display is at <1, 0>
-  matrix.setPosition(2, 1, 0); // The third display is at <2, 0>
-  matrix.setPosition(3, 0, 0); // And the last display is at <3, 0>
   Serial.println("matrix created");
   matrix.fillScreen(LOW); // show black
   centerPrint("hello");
@@ -261,6 +256,9 @@ void setup() {
       else if (error == OTA_END_ERROR) Serial.println("End Failed");
     });
     ArduinoOTA.setHostname((const char *)hostname.c_str());
+    if (OTA_Password != "") {
+      ArduinoOTA.setPassword(((const char *)OTA_Password.c_str()));
+    }
     ArduinoOTA.begin();
   }
   
@@ -506,11 +504,13 @@ void handleConfigure() {
   form.replace("%STARTTIME%", timeDisplayTurnsOn);
   form.replace("%ENDTIME%", timeDisplayTurnsOff);
   form.replace("%INTENSITYOPTIONS%", String(displayIntensity));
+  String dSpeed = String(displayScrollSpeed);
   String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option>";
-  scrollOptions.replace(String(displayScrollSpeed) + "'", String(displayScrollSpeed) + "' selected" );
+  scrollOptions.replace(dSpeed + "'", dSpeed + "' selected" );
   form.replace("%SCROLLOPTIONS%", scrollOptions);
+  String minutes = String(minutesBetweenDataRefresh);
   String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
-  options.replace(">" + String(minutesBetweenDataRefresh) + "<", " selected>" + String(minutesBetweenDataRefresh) + "<");
+  options.replace(">" + minutes + "<", " selected>" + minutes + "<");
   form.replace("%OPTIONS%", options);
   form.replace("%REFRESH_DISPLAY%", String(minutesBetweenScrolling));
   
