@@ -102,6 +102,7 @@ String OctoAuthPass = "";      // only used with haproxy or basic auth (only nee
 String BitcoinCurrencyCode = "NONE";  // Change to USD, GBD, EUR, or NONE -- this can be managed in the Web Interface
 
 boolean ENABLE_OTA = true;  // this will allow you to load firmware to the device over WiFi (see OTA for ESP8266)
+String OTA_Password = "";      // Set an OTA password here -- leave blank if you don't want to be prompted for password
 //******************************
 // End Settings
 //******************************
