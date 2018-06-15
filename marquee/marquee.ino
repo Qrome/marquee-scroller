@@ -50,8 +50,6 @@ int8_t getWifiQuality();
 
 // LED Settings
 const int offset = 1;
-const int numberOfHorizontalDisplays = 4;
-const int numberOfVerticalDisplays = 1;
 int refresh = 0;
 String message = "hello";
 int spacer = 1;  // dots between letters
@@ -183,17 +181,13 @@ void setup() {
   Serial.println("Number os LED Displays: " + String(numberOfHorizontalDisplays));
   // initialize dispaly
   matrix.setIntensity(0); // Use a value between 0 and 15 for brightness
-  matrix.setRotation(0,3);
-  matrix.setRotation(1,3);
-  matrix.setRotation(2,3);
-  matrix.setRotation(3,3);
 
+  int maxPos = numberOfHorizontalDisplays * numberOfVerticalDisplays;
+  for (int i = 0; i < maxPos; i++) {
+    matrix.setRotation(i,3);
+    matrix.setPosition(i, maxPos - i - 1, 0);
+  }
 
-// Adjust to your own needs
-  matrix.setPosition(0, 3, 0); // The first display is at <0, 7>
-  matrix.setPosition(1, 2, 0); // The second display is at <1, 0>
-  matrix.setPosition(2, 1, 0); // The third display is at <2, 0>
-  matrix.setPosition(3, 0, 0); // And the last display is at <3, 0>
   Serial.println("matrix created");
   matrix.fillScreen(LOW); // show black
   centerPrint("hello");
