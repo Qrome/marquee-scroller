@@ -59,6 +59,7 @@ private:
 public:
   OpenWeatherMapClient(String ApiKey, int CityIDs[], int cityCount, boolean isMetric);
   void updateWeather();
+  void updateWeatherApiKey(String ApiKey);
   void updateCityIdList(int CityIDs[], int cityCount);
   void setMetric(boolean isMetric);
 

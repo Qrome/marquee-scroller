@@ -29,10 +29,12 @@ SOFTWARE.
 #define arr_len( x )  ( sizeof( x ) / sizeof( *x ) )
 
 NewsApiClient::NewsApiClient(String ApiKey, String NewsSource) {
-  
+  updateNewsClient(ApiKey, NewsSource);
+}
+
+void NewsApiClient::updateNewsClient(String ApiKey, String NewsSource) {
   mySource = NewsSource;
   myApiKey = ApiKey;
-
 }
 
 void NewsApiClient::updateNews() {

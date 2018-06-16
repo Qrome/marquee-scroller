@@ -29,6 +29,10 @@ OpenWeatherMapClient::OpenWeatherMapClient(String ApiKey, int CityIDs[], int cit
   setMetric(isMetric);
 }
 
+void OpenWeatherMapClient::updateWeatherApiKey(String ApiKey) {
+  myApiKey = ApiKey;
+}
+
 void OpenWeatherMapClient::updateWeather() {
   WiFiClient weatherClient;
   String apiGetData = "GET /data/2.5/group?id=" + myCityIDs + "&units=" + units + "&cnt=1&APPID=" + myApiKey + " HTTP/1.1";
