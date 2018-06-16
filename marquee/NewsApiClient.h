@@ -48,6 +48,7 @@ class NewsApiClient: public JsonListener {
   
   public:
     NewsApiClient(String ApiKey, String NewsSource);
+    void updateNewsClient(String ApiKey, String NewsSource);
     void updateNews();
     void updateNewsSource(String source);
     

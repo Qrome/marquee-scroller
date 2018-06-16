@@ -72,11 +72,12 @@ Use the Arduino guide for details on how to installing and manage libraries http
 <JsonStreamingParser.h> --> https://github.com/squix78/json-streaming-parser  
 
 ## Initial Configuration
-You will need to update the **Settings.h** file with your API Keys for the following:  
-* Open Weather API Key: http://openweathermap.org/
-* News API Key: https://newsapi.org/sources
-* GeoNames Key (optional as you can use mine or create your own) http://www.geonames.org/
-* Your OctoPrint API Key (optional if you use the OctoPrint status)  
+Starting with version 2.0 editing the **Settings.h** file is optional.  All API Keys are now managed in the Web Interface except for the GeoNames Key. It is not required to edit the Settings.h file before loading and running the code.  
+* Open Weather Map API Key: http://openweathermap.org/
+* News API Key: https://newsapi.org/
+* GeoNames Key (optional as you can use mine or create your own) http://www.geonames.org/ -- this key is only managed in the Settings.h file.
+* Your OctoPrint API Key (optional if you use the OctoPrint status)
+* Version 2.0 supports Chained 4x1 LED displayes -- configure in the Settigns.h file  
 
 NOTE: The settings in the Settings.h are the default settings for the first loading. After loading you will manage changes to the settings via the Web Interface. If you want to change settings again in the settings.h, you will need to erase the file system on the Wemos or use the “Reset Settings” option in the Web Interface.  
 
@@ -85,7 +86,7 @@ The Marquee Scroller uses the **WiFiManager** so when it can't find the last net
 it will become a **AP Hotspot** -- connect to it with your phone and you can then enter your WiFi connection information.
 
 After connected to your WiFi network it will display the IP addressed assigned to it and that can be 
-used to open a browser to the Web Interface.  Most everything can be configured there.
+used to open a browser to the Web Interface.  You will be able to manage your API Keys through the web interface.
 
 The Clock will display the time of the City selected for the weather.  
 
@@ -100,6 +101,8 @@ The Clock will display the time of the City selected for the weather.
 David Payne  
 Nathan Glaus  
 Daniel Eichhorn -- Author of the TimeClient class  
+yanvigdev  
+nashiko-s  
 
 ![Marquee Scroller](/images/5d7f02ccbf01125cabbf246f97f2ead1_preview_featured.jpg)  
 ![Marquee Parts](/images/1ffa0c835554d280258c13be5513c4fe_preview_featured.jpg)
