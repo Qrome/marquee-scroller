@@ -86,7 +86,8 @@ The Marquee Scroller uses the **WiFiManager** so when it can't find the last net
 it will become a **AP Hotspot** -- connect to it with your phone and you can then enter your WiFi connection information.
 
 After connected to your WiFi network it will display the IP addressed assigned to it and that can be 
-used to open a browser to the Web Interface.  You will be able to manage your API Keys through the web interface.
+used to open a browser to the Web Interface.  You will be able to manage your API Keys through the web interface.  
+The default user / password for the configuration page is: admin / password  
 
 The Clock will display the time of the City selected for the weather.  
 
