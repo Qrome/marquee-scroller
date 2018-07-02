@@ -98,6 +98,9 @@ The Clock will display the time of the City selected for the weather.
   <img src="/images/2018-04-19%2006.58.58.png" width="200"/>
 </p>
 
+## Donation or Tip
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A82AT6FLN2MPY)
+
 ## Contributors
 David Payne  
 Nathan Glaus  
