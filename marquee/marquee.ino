@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "2.0"
+#define VERSION "2.1"
 
 #define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
@@ -359,6 +359,15 @@ void loop() {
   String hourMinutes = timeClient.getAmPmHours() + ":" + timeClient.getMinutes();
   if (IS_24HOUR) {
     hourMinutes = timeClient.getHours() + ":" + timeClient.getMinutes();
+  }
+  if (numberOfHorizontalDisplays >= 8) {
+    // On Wide Display -- show the current temperature as well
+    String currentTemp = weatherClient.getTempRounded(0);
+    String timeSpacer = "  ";
+    if (currentTemp.length() >= 3) {
+      timeSpacer = " ";
+    }
+    hourMinutes += timeSpacer + currentTemp + getTempSymbol();
   }
   centerPrint(hourMinutes);
   
