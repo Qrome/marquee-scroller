@@ -23,7 +23,7 @@ SOFTWARE.
 
 # Marquee Scroller (Clock, Weather, News, and More)
 
-## Features Displays the following every 60 seconds:
+## Features include:
 * Accurate Clock refresh off Internet Time Servers
 * Local Weather and conditions (refreshed every 10 - 30 minutes)
 * News Headlines from all the major sources
@@ -33,6 +33,9 @@ SOFTWARE.
 * Option to display Bitcoin current value
 * Basic Authorization around Configuration web interface
 * Support for OTA (loading firmware over WiFi)
+* Configurable scroll speed
+* Configurable scrolling frequency
+* Configurable number of LED panels
 * Video: https://youtu.be/DsThufRpoiQ
 
 ## Required Parts:
@@ -49,7 +52,8 @@ GND -> GND-
 ![Marquee Scroller Wiring](/images/marquee_scroller_pins.png)  
 
 ## 3D Printed Case by David Payne:  
-https://www.thingiverse.com/thing:2867294
+Original Single Panel version: https://www.thingiverse.com/thing:2867294  
+Double Wide LED version: https://www.thingiverse.com/thing:2989552  
 
 ## Compiling and Loading to Wemos D1
 It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.  
