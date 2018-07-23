@@ -45,6 +45,7 @@ SOFTWARE.
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Max72xxPanel.h>
+#include <pgmspace.h>
 #include "OpenWeatherMapClient.h"
 #include "GeoNamesClient.h"
 #include "TimeClient.h" // Using updated lib by Qrome

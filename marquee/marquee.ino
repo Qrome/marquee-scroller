@@ -375,6 +375,7 @@ void loop() {
     }
     if (Wide_Clock_Style == "2") {
       hourMinutes += ":" + timeClient.getSeconds();
+      matrix.fillScreen(LOW); // show black
     }
     if (Wide_Clock_Style == "3") {
       // No change this is normal clock display
@@ -530,7 +531,7 @@ void handleConfigure() {
   server.sendContent(form); //Send first Chunk of form
 
   form = BITCOIN_FORM;
-  String bitcoinOptions = String(CURRENCY_OPTIONS);
+  String bitcoinOptions = CURRENCY_OPTIONS;
   bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
   form.replace("%BITCOINOPTIONS%", bitcoinOptions);
   server.sendContent(form); //Send another Chunk of form
@@ -552,6 +553,8 @@ void handleConfigure() {
   String minutes = String(minutesBetweenDataRefresh);
   String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
   options.replace(">" + minutes + "<", " selected>" + minutes + "<");
+  Serial.println(options);
+  Serial.println(form.length());
   form.replace("%OPTIONS%", options);
   form.replace("%REFRESH_DISPLAY%", String(minutesBetweenScrolling));
   
@@ -690,7 +693,7 @@ void redirectHome() {
 }
 
 String getHeader() {
-  String menu = String(WEB_ACTIONS);
+  String menu = WEB_ACTIONS;
   menu.replace("%TOGGLEDISPLAY%", (displayOn) ? "<i class='fa fa-eye-slash'></i> Turn Display OFF" : "<i class='fa fa-eye'></i> Turn Display ON");
   String html = "<!DOCTYPE HTML>";
   html += "<html><head><title>Marquee Scroller</title><link rel='icon' href='data:;base64,='>";
@@ -1059,6 +1062,9 @@ void readCityIds() {
     }
     if (line.indexOf("refreshRate=") >= 0) {
       minutesBetweenDataRefresh = line.substring(line.lastIndexOf("refreshRate=") + 12).toInt();
+      if (minutesBetweenDataRefresh == 0) {
+        minutesBetweenDataRefresh = 15; // can't be zero
+      }
       Serial.println("minutesBetweenDataRefresh=" + String(minutesBetweenDataRefresh));
     }
     if (line.indexOf("minutesBetweenScrolling=") >= 0) {
