@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "2.1"
+#define VERSION "2.2"
 
 #define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
@@ -55,7 +55,7 @@ String message = "hello";
 int spacer = 1;  // dots between letters
 int width = 5 + spacer; // The font width is 5 pixels + spacer
 Max72xxPanel matrix = Max72xxPanel(pinCS, numberOfHorizontalDisplays, numberOfVerticalDisplays);
-
+String Wide_Clock_Style = "1";  //1="hh:mm Temp", 2="hh:mm:ss", 3="hh:mm"
 float UtcOffset;  //time zone offsets that correspond with the CityID above (offset from GMT)
 
 // Time 
@@ -93,15 +93,18 @@ String WEB_ACTIONS =  "<a class='w3-bar-item w3-button' href='/'><i class='fa fa
                       "<a class='w3-bar-item w3-button' href='/display'>%TOGGLEDISPLAY%</a>"
                       "<a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
                       "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
-                      "<a class='w3-bar-item w3-button' href='https://www.thingiverse.com/thing:2867294' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
+                      "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
                       
 String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
                       "<label>OpenWeahterMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
                       "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
-                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
-                      "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
+                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
+
+String WIDECLOCK_FORM = "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>";
+                     
+String METRIC_FORM =  "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
                       "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
                       "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
@@ -361,13 +364,21 @@ void loop() {
     hourMinutes = timeClient.getHours() + ":" + timeClient.getMinutes();
   }
   if (numberOfHorizontalDisplays >= 8) {
-    // On Wide Display -- show the current temperature as well
-    String currentTemp = weatherClient.getTempRounded(0);
-    String timeSpacer = "  ";
-    if (currentTemp.length() >= 3) {
-      timeSpacer = " ";
+    if (Wide_Clock_Style == "1") {
+      // On Wide Display -- show the current temperature as well
+      String currentTemp = weatherClient.getTempRounded(0);
+      String timeSpacer = "  ";
+      if (currentTemp.length() >= 3) {
+        timeSpacer = " ";
+      }
+      hourMinutes += timeSpacer + currentTemp + getTempSymbol();
     }
-    hourMinutes += timeSpacer + currentTemp + getTempSymbol();
+    if (Wide_Clock_Style == "2") {
+      hourMinutes += ":" + timeClient.getSeconds();
+    }
+    if (Wide_Clock_Style == "3") {
+      // No change this is normal clock display
+    }
   }
   centerPrint(hourMinutes);
   
@@ -405,6 +416,9 @@ void handleLocations() {
   IS_METRIC = server.hasArg("metric");
   NEWS_SOURCE = server.arg("newssource");
   BitcoinCurrencyCode = server.arg("bitcoincurrency");
+  if (numberOfHorizontalDisplays >= 8) {
+    Wide_Clock_Style = server.arg("wideclockformat");
+  }
   marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
   timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
   timeDisplayTurnsOff = decodeHtmlString(server.arg("endTime"));
@@ -487,6 +501,18 @@ void handleConfigure() {
     is24hourChecked = "checked='checked'";
   }
   form.replace("%IS_24HOUR_CHECKED%", is24hourChecked);
+  server.sendContent(form);
+
+  if (numberOfHorizontalDisplays >= 8) {
+    // Wide display options
+    form = WIDECLOCK_FORM;
+    String clockOptions = "<option value='1'>HH:MM Temperature</option><option value='2'>HH:MM:SS</option><option value='3'>HH:MM</option>";
+    clockOptions.replace(Wide_Clock_Style + "'", Wide_Clock_Style + "' selected");
+    form.replace("%WIDECLOCKOPTIONS%", clockOptions); 
+    server.sendContent(form);
+  }
+  
+  form = METRIC_FORM;
   String checked = "";
   if (IS_METRIC) {
     checked = "checked='checked'";
@@ -962,6 +988,7 @@ String writeCityIds() {
     f.println("newsApiKey=" + NEWS_API_KEY);
     f.println("isAdvice=" + String(ADVICE_ENABLED));
     f.println("is24hour=" + String(IS_24HOUR));
+    f.println("wideclockformat=" + Wide_Clock_Style);
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
     f.println("minutesBetweenScrolling=" + String(minutesBetweenScrolling));
@@ -1020,6 +1047,11 @@ void readCityIds() {
     if (line.indexOf("is24hour=") >= 0) {
       IS_24HOUR = line.substring(line.lastIndexOf("is24hour=") + 9).toInt();
       Serial.println("IS_24HOUR=" + String(IS_24HOUR));
+    }
+    if (line.indexOf("wideclockformat=") >= 0) {
+      Wide_Clock_Style = line.substring(line.lastIndexOf("wideclockformat=") + 16);
+      Wide_Clock_Style.trim();
+      Serial.println("Wide_Clock_Style=" + Wide_Clock_Style);
     }
     if (line.indexOf("isMetric=") >= 0) {
       IS_METRIC = line.substring(line.lastIndexOf("isMetric=") + 9).toInt();
