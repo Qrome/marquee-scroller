@@ -86,17 +86,6 @@ int printerCount = 0;
 BitcoinApiClient bitcoinClient;
 
 ESP8266WebServer server(WEBSERVER_PORT);
-
-String WEB_ACTIONS1 = "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
-                      "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
-                      "<a class='w3-bar-item w3-button' href='/configurenews'><i class='fa fa-newspaper-o'></i> News</a>";
-
-String WEB_ACTIONS2 = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fa fa-usd'></i> Bitcoin</a>"
-                      "<a class='w3-bar-item w3-button' href='/pull'><i class='fa fa-cloud-download'></i> Refresh Data</a>"
-                      "<a class='w3-bar-item w3-button' href='/display'>%TOGGLEDISPLAY%</a>"
-                      "<a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
-                      "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
-                      "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
                       
 String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
                       "<label>OpenWeahterMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
@@ -105,23 +94,6 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
                       "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>";
-
-String WIDECLOCK_FORM = "<form class='w3-container' action='/savewideclock' method='get'><h2>Wide Clock Configuration:</h2>"
-                      "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>"
-                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
-                      
-String NEWS_FORM1 =   "<form class='w3-container' action='/savenews' method='get'><h2>News Configuration:</h2>"
-                      "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
-                      "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
-                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
-                      "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>";
-
-String NEWS_FORM2 =   "</select></p>"
-                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
-                     
-String BITCOIN_FORM = "<form class='w3-container' action='/savebitcoin' method='get'><h2>Bitcoin Configuration:</h2>"
-                      "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>"
-                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
                             
 String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
@@ -132,13 +104,7 @@ String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
                       "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
 
-String CHANGE_FORM3 = "<hr><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status"
-                      "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
-                      "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
-                      "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
-                      "<label>OctoPrint User (only needed if you have haproxy or basic auth turned on)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoUser' value='%OCTOUSER%' maxlength='30'>"
-                      "<label>OctoPrint Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='octoPass' value='%OCTOPASS%'><hr>"
-                      "<input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes"
+String CHANGE_FORM3 = "<hr><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes"
                       "<label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'>"
                       "<label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'>"
                       "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
@@ -288,12 +254,14 @@ void setup() {
     server.on("/savebitcoin", handleSaveBitcoin);
     server.on("/savewideclock", handleSaveWideClock);
     server.on("/savenews", handleSaveNews);
+    server.on("/saveoctoprint", handleSaveOctoprint);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
     server.on("/configure", handleConfigure);
     server.on("/configurebitcoin", handleBitcoinConfigure);
     server.on("/configurewideclock", handleWideClockConfigure);
     server.on("/configurenews", handleNewsConfigure);
+    server.on("/configureoctoprint", handleOctoprintConfigure);
     server.on("/display", handleDisplay);
     server.onNotFound(redirectHome);
     // Start the server
@@ -456,6 +424,24 @@ void handleSaveNews() {
   redirectHome();
 }
 
+void handleSaveOctoprint() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  OCTOPRINT_ENABLED = server.hasArg("displayoctoprint");
+  OctoPrintApiKey = server.arg("octoPrintApiKey");
+  OctoPrintServer = server.arg("octoPrintAddress");
+  OctoPrintPort = server.arg("octoPrintPort").toInt();
+  OctoAuthUser = server.arg("octoUser");
+  OctoAuthPass = server.arg("octoPass");
+  matrix.fillScreen(LOW); // show black
+  writeCityIds();
+  if (OCTOPRINT_ENABLED) {
+    printerClient.getPrinterJobResults();
+  }
+  redirectHome();
+}
+
 void handleLocations() {
   if (!athentication()) {
     return server.requestAuthentication();
@@ -472,12 +458,6 @@ void handleLocations() {
   minutesBetweenDataRefresh = server.arg("refresh").toInt();
   minutesBetweenScrolling = server.arg("refreshDisplay").toInt();
   displayScrollSpeed = server.arg("scrollspeed").toInt();
-  OCTOPRINT_ENABLED = server.hasArg("displayoctoprint");
-  OctoPrintApiKey = server.arg("octoPrintApiKey");
-  OctoPrintServer = server.arg("octoPrintAddress");
-  OctoPrintPort = server.arg("octoPrintPort").toInt();
-  OctoAuthUser = server.arg("octoUser");
-  OctoAuthPass = server.arg("octoPass");
   IS_BASIC_AUTH = server.hasArg("isBasicAuth");
   String temp = server.arg("userid");
   temp.toCharArray(www_username, sizeof(temp));
@@ -487,9 +467,6 @@ void handleLocations() {
   matrix.fillScreen(LOW); // show black
   writeCityIds();
   getWeatherData(); // this will force a data pull for new weather
-  if (OCTOPRINT_ENABLED) {
-    printerClient.getPrinterJobResults();
-  }
   redirectHome();
 }
 
@@ -530,6 +507,10 @@ void handleBitcoinConfigure() {
   server.send(200, "text/html", "");
 
   sendHeader();
+                   
+  String BITCOIN_FORM = "<form class='w3-container' action='/savebitcoin' method='get'><h2>Bitcoin Configuration:</h2>"
+                      "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>"
+                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
   
   String form = BITCOIN_FORM;
   String bitcoinOptions = CURRENCY_OPTIONS;
@@ -537,8 +518,8 @@ void handleBitcoinConfigure() {
   form.replace("%BITCOINOPTIONS%", bitcoinOptions);
   server.sendContent(form); //Send another Chunk of form
 
-  html = getFooter();
-  server.sendContent(html);
+  sendFooter();
+
   server.sendContent("");
   server.client().stop();
   digitalWrite(externalLight, HIGH);
@@ -549,7 +530,10 @@ void handleWideClockConfigure() {
     return server.requestAuthentication();
   }
   digitalWrite(externalLight, LOW);
-  String html = "";
+
+  String WIDECLOCK_FORM = "<form class='w3-container' action='/savewideclock' method='get'><h2>Wide Clock Configuration:</h2>"
+                      "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>"
+                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
 
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
@@ -568,8 +552,8 @@ void handleWideClockConfigure() {
     server.sendContent(form);
   }
 
-  html = getFooter();
-  server.sendContent(html);
+  sendFooter();
+
   server.sendContent("");
   server.client().stop();
   digitalWrite(externalLight, HIGH);
@@ -580,7 +564,15 @@ void handleNewsConfigure() {
     return server.requestAuthentication();
   }
   digitalWrite(externalLight, LOW);
-  String html = "";
+
+  String NEWS_FORM1 =   "<form class='w3-container' action='/savenews' method='get'><h2>News Configuration:</h2>"
+                      "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
+                      "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
+                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
+                      "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>";
+
+  String NEWS_FORM2 =   "</select></p>"
+                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
 
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
@@ -603,8 +595,52 @@ void handleNewsConfigure() {
   server.sendContent(newsOptions);
   server.sendContent(NEWS_FORM2);
   
-  html = getFooter();
-  server.sendContent(html);
+  sendFooter();
+
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
+void handleOctoprintConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+
+  String OCTO_FORM =    "<form class='w3-container' action='/saveoctoprint' method='get'><h2>OctoPrint Configuration:</h2>"
+                      "<p><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status</p>"
+                      "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
+                      "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
+                      "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                      "<label>OctoPrint User (only needed if you have haproxy or basic auth turned on)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoUser' value='%OCTOUSER%' maxlength='30'>"
+                      "<label>OctoPrint Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='octoPass' value='%OCTOPASS%'>"
+                      "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
+                      "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";      
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+  
+  String form = OCTO_FORM;
+  String isOctoPrintDisplayedChecked = "";
+  if (OCTOPRINT_ENABLED) {
+    isOctoPrintDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%OCTOCHECKED%", isOctoPrintDisplayedChecked);
+  form.replace("%OCTOKEY%", OctoPrintApiKey);
+  form.replace("%OCTOADDRESS%", OctoPrintServer);
+  form.replace("%OCTOPORT%", String(OctoPrintPort));
+  form.replace("%OCTOUSER%", OctoAuthUser);
+  form.replace("%OCTOPASS%", OctoAuthPass);
+  server.sendContent(form);
+  
+  sendFooter();
+
   server.sendContent("");
   server.client().stop();
   digitalWrite(externalLight, HIGH);
@@ -672,16 +708,6 @@ void handleConfigure() {
   server.sendContent(form); //Send another chunk of the form
 
   form = CHANGE_FORM3;
-  String isOctoPrintDisplayedChecked = "";
-  if (OCTOPRINT_ENABLED) {
-    isOctoPrintDisplayedChecked = "checked='checked'";
-  }
-  form.replace("%OCTOCHECKED%", isOctoPrintDisplayedChecked);
-  form.replace("%OCTOKEY%", OctoPrintApiKey);
-  form.replace("%OCTOADDRESS%", OctoPrintServer);
-  form.replace("%OCTOPORT%", String(OctoPrintPort));
-  form.replace("%OCTOUSER%", OctoAuthUser);
-  form.replace("%OCTOPASS%", OctoAuthPass);
   String isUseSecurityChecked = "";
   if (IS_BASIC_AUTH) {
     isUseSecurityChecked = "checked='checked'";
@@ -692,8 +718,8 @@ void handleConfigure() {
 
   server.sendContent(form); // Send the second chunk of Data
 
-  html = getFooter();
-  server.sendContent(html);
+  sendFooter();
+
   server.sendContent("");
   server.client().stop();
   digitalWrite(externalLight, HIGH);
@@ -783,8 +809,7 @@ void displayMessage(String message) {
   server.send(200, "text/html", "");
   sendHeader();
   server.sendContent(message);
-  String html = getFooter();
-  server.sendContent(html);
+  sendFooter();
   server.sendContent("");
   server.client().stop();
   
@@ -803,13 +828,31 @@ void redirectHome() {
 }
 
 void sendHeader() {
+  String WEB_ACTIONS1 = "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
+                      "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
+                      "<a class='w3-bar-item w3-button' href='/configurenews'><i class='fa fa-newspaper-o'></i> News</a>"
+                      "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fa fa-cube'></i> OctoPrint</a>";
+
+  String WEB_ACTIONS2 = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fa fa-usd'></i> Bitcoin</a>"
+                      "<a class='w3-bar-item w3-button' href='/pull'><i class='fa fa-cloud-download'></i> Refresh Data</a>"
+                      "<a class='w3-bar-item w3-button' href='/display'>";
+                      
+  String WEB_ACTION3 = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
+                      "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
+                      "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
+  
   String menu = WEB_ACTIONS1;
   if (numberOfHorizontalDisplays >= 8) {
     menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='fa fa-clock-o'></i> Wide Clock</a>";
   }
-  String menu2 = WEB_ACTIONS2;
-  menu2.replace("%TOGGLEDISPLAY%", (displayOn) ? "<i class='fa fa-eye-slash'></i> Turn Display OFF" : "<i class='fa fa-eye'></i> Turn Display ON");
-  menu += menu2;
+  menu += WEB_ACTIONS2;
+  if (displayOn) {
+    menu += "<i class='fa fa-eye-slash'></i> Turn Display OFF";
+  } else {
+    menu += "<i class='fa fa-eye'></i> Turn Display ON";
+  }
+
+  menu += WEB_ACTION3;
   
   String html = "<!DOCTYPE HTML>";
   html += "<html><head><title>Marquee Scroller</title><link rel='icon' href='data:;base64,='>";
@@ -818,15 +861,16 @@ void sendHeader() {
   html += "<link rel='stylesheet' href='https://www.w3schools.com/lib/w3-theme-blue-grey.css'>";
   html += "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>";
   html += "</head><body>";
-  html += "<nav class='w3-sidebar w3-bar-block w3-card' style='margin-top:88px' id='mySidebar'>";
+  server.sendContent(html);
+  html = "<nav class='w3-sidebar w3-bar-block w3-card' style='margin-top:88px' id='mySidebar'>";
   html += "<div class='w3-container w3-theme-d2'>";
   html += "<span onclick='closeSidebar()' class='w3-button w3-display-topright w3-large'><i class='fa fa-times'></i></span>";
   html += "<div class='w3-left'><img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'></div>";
   html += "<div class='w3-padding'>Menu</div></div>";
+  html += menu;
+  html += "</nav>";
   server.sendContent(html);
-  server.sendContent(menu);
-  html = "</nav>";
-  html += "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fa fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
+  html = "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fa fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
   html += "<script>";
   html += "function openSidebar(){document.getElementById('mySidebar').style.display='block'}function closeSidebar(){document.getElementById('mySidebar').style.display='none'}closeSidebar();";
   html += "</script>";
@@ -834,7 +878,7 @@ void sendHeader() {
   server.sendContent(html);
 }
 
-String getFooter() {
+void sendFooter() {
   int8_t rssi = getWifiQuality();
   Serial.print("Signal Strength (RSSI): ");
   Serial.print(rssi);
@@ -848,7 +892,7 @@ String getFooter() {
   html += String(rssi) + "%";
   html += "</footer>";
   html += "</body></html>";
-  return html;
+  server.sendContent(html);
 }
 
 void displayWeatherData() {
@@ -948,7 +992,7 @@ void displayWeatherData() {
     html = "";
   }
   
-  server.sendContent(String(getFooter()));
+  sendFooter();
   server.sendContent("");
   server.client().stop();
   digitalWrite(externalLight, HIGH);
