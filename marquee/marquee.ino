@@ -87,8 +87,11 @@ BitcoinApiClient bitcoinClient;
 
 ESP8266WebServer server(WEBSERVER_PORT);
 
-String WEB_ACTIONS =  "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
+String WEB_ACTIONS1 = "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
                       "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
+                      "<a class='w3-bar-item w3-button' href='/configurenews'><i class='fa fa-newspaper-o'></i> News</a>";
+
+String WEB_ACTIONS2 = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fa fa-usd'></i> Bitcoin</a>"
                       "<a class='w3-bar-item w3-button' href='/pull'><i class='fa fa-cloud-download'></i> Refresh Data</a>"
                       "<a class='w3-bar-item w3-button' href='/display'>%TOGGLEDISPLAY%</a>"
                       "<a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
@@ -100,17 +103,25 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
                       "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
-                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
+                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
+                      "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>";
 
-String WIDECLOCK_FORM = "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>";
-                     
-String METRIC_FORM =  "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
+String WIDECLOCK_FORM = "<form class='w3-container' action='/savewideclock' method='get'><h2>Wide Clock Configuration:</h2>"
+                      "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>"
+                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+                      
+String NEWS_FORM1 =   "<form class='w3-container' action='/savenews' method='get'><h2>News Configuration:</h2>"
                       "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
                       "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
-                      "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>%NEWSOPTIONS%</select></p>";
+                      "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>";
+
+String NEWS_FORM2 =   "</select></p>"
+                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
                      
-String BITCOIN_FORM = "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>";
+String BITCOIN_FORM = "<form class='w3-container' action='/savebitcoin' method='get'><h2>Bitcoin Configuration:</h2>"
+                      "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>"
+                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
                             
 String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
@@ -274,9 +285,15 @@ void setup() {
     server.on("/", displayWeatherData);
     server.on("/pull", handlePull);
     server.on("/locations", handleLocations);
+    server.on("/savebitcoin", handleSaveBitcoin);
+    server.on("/savewideclock", handleSaveWideClock);
+    server.on("/savenews", handleSaveNews);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
     server.on("/configure", handleConfigure);
+    server.on("/configurebitcoin", handleBitcoinConfigure);
+    server.on("/configurewideclock", handleWideClockConfigure);
+    server.on("/configurenews", handleNewsConfigure);
     server.on("/display", handleDisplay);
     server.onNotFound(redirectHome);
     // Start the server
@@ -404,22 +421,50 @@ void handlePull() {
   displayWeatherData();
 }
 
+void handleSaveBitcoin() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  BitcoinCurrencyCode = server.arg("bitcoincurrency");
+  writeCityIds();
+  bitcoinClient.updateBitcoinData(BitcoinCurrencyCode);  // does nothing if BitCoinCurrencyCode is "NONE" or empty
+  redirectHome();
+}
+
+void handleSaveWideClock() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  if (numberOfHorizontalDisplays >= 8) {
+    Wide_Clock_Style = server.arg("wideclockformat");
+    writeCityIds();
+    matrix.fillScreen(LOW); // show black
+  }
+  redirectHome();
+}
+
+void handleSaveNews() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  NEWS_ENABLED = server.hasArg("displaynews");
+  NEWS_API_KEY = server.arg("newsApiKey");
+  NEWS_SOURCE = server.arg("newssource");
+  matrix.fillScreen(LOW); // show black
+  writeCityIds();
+  newsClient.updateNews();
+  redirectHome();
+}
+
 void handleLocations() {
   if (!athentication()) {
     return server.requestAuthentication();
   }
   APIKEY = server.arg("openWeatherMapApiKey");
   CityIDs[0] = server.arg("city1").toInt();
-  NEWS_ENABLED = server.hasArg("displaynews");
-  NEWS_API_KEY = server.arg("newsApiKey");
   ADVICE_ENABLED = server.hasArg("displayadvice");
   IS_24HOUR = server.hasArg("is24hour");
   IS_METRIC = server.hasArg("metric");
-  NEWS_SOURCE = server.arg("newssource");
-  BitcoinCurrencyCode = server.arg("bitcoincurrency");
-  if (numberOfHorizontalDisplays >= 8) {
-    Wide_Clock_Style = server.arg("wideclockformat");
-  }
   marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
   timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
   timeDisplayTurnsOff = decodeHtmlString(server.arg("endTime"));
@@ -471,6 +516,100 @@ void handleForgetWifi() {
   ESP.restart();
 }
 
+void handleBitcoinConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+  String html = "";
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+  
+  String form = BITCOIN_FORM;
+  String bitcoinOptions = CURRENCY_OPTIONS;
+  bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
+  form.replace("%BITCOINOPTIONS%", bitcoinOptions);
+  server.sendContent(form); //Send another Chunk of form
+
+  html = getFooter();
+  server.sendContent(html);
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
+void handleWideClockConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+  String html = "";
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+  
+  if (numberOfHorizontalDisplays >= 8) {
+    // Wide display options
+    String form = WIDECLOCK_FORM;
+    String clockOptions = "<option value='1'>HH:MM Temperature</option><option value='2'>HH:MM:SS</option><option value='3'>HH:MM</option>";
+    clockOptions.replace(Wide_Clock_Style + "'", Wide_Clock_Style + "' selected");
+    form.replace("%WIDECLOCKOPTIONS%", clockOptions); 
+    server.sendContent(form);
+  }
+
+  html = getFooter();
+  server.sendContent(html);
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
+void handleNewsConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+  String html = "";
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+
+  String form = NEWS_FORM1;
+  String isNewsDisplayedChecked = "";
+  if (NEWS_ENABLED) {
+    isNewsDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
+  form.replace("%NEWSKEY%", NEWS_API_KEY);
+  server.sendContent(form); //Send first Chunk of form
+  String newsOptions = NEWS_OPTIONS;
+  newsOptions.replace(">" + NEWS_SOURCE + "<", " selected>" + NEWS_SOURCE + "<");
+  server.sendContent(newsOptions);
+  server.sendContent(NEWS_FORM2);
+  
+  html = getFooter();
+  server.sendContent(html);
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
 void handleConfigure() {
   if (!athentication()) {
     return server.requestAuthentication();
@@ -484,58 +623,30 @@ void handleConfigure() {
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html", "");
 
-  html = getHeader();
-  server.sendContent(html);
+  sendHeader();
 
   String form = CHANGE_FORM1;
   form.replace("%WEATHERKEY%", APIKEY);
-  for (int inx = 0; inx < 1; inx++) {
-    String cityName = "";
-    if (CityIDs[inx] > 0 && weatherClient.getCity(inx) != "") {
-      cityName = weatherClient.getCity(inx) + ", " + weatherClient.getCountry(inx);
-    }
-    form.replace(String("%CITYNAME" + String(inx +1) + "%"), cityName);
-    form.replace(String("%CITY" + String(inx +1) + "%"), String(CityIDs[inx]));
+
+  String cityName = "";
+  if (weatherClient.getCity(0) != "") {
+    cityName = weatherClient.getCity(0) + ", " + weatherClient.getCountry(0);
   }
+  form.replace("%CITYNAME1%", cityName);
+  form.replace("%CITY1%", String(CityIDs[0]));
+  
   String is24hourChecked = "";
   if (IS_24HOUR) {
     is24hourChecked = "checked='checked'";
   }
   form.replace("%IS_24HOUR_CHECKED%", is24hourChecked);
-  server.sendContent(form);
-
-  if (numberOfHorizontalDisplays >= 8) {
-    // Wide display options
-    form = WIDECLOCK_FORM;
-    String clockOptions = "<option value='1'>HH:MM Temperature</option><option value='2'>HH:MM:SS</option><option value='3'>HH:MM</option>";
-    clockOptions.replace(Wide_Clock_Style + "'", Wide_Clock_Style + "' selected");
-    form.replace("%WIDECLOCKOPTIONS%", clockOptions); 
-    server.sendContent(form);
-  }
-  
-  form = METRIC_FORM;
   String checked = "";
   if (IS_METRIC) {
     checked = "checked='checked'";
   }
   form.replace("%CHECKED%", checked);
-  String isNewsDisplayedChecked = "";
-  if (NEWS_ENABLED) {
-    isNewsDisplayedChecked = "checked='checked'";
-  }
-  form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
-  form.replace("%NEWSKEY%", NEWS_API_KEY);
-  String newsOptions = String(NEWS_OPTIONS);
-  newsOptions.replace(">" + String(NEWS_SOURCE) + "<", " selected>" + String(NEWS_SOURCE) + "<");
-  form.replace("%NEWSOPTIONS%", newsOptions);
-  server.sendContent(form); //Send first Chunk of form
-
-  form = BITCOIN_FORM;
-  String bitcoinOptions = CURRENCY_OPTIONS;
-  bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
-  form.replace("%BITCOINOPTIONS%", bitcoinOptions);
-  server.sendContent(form); //Send another Chunk of form
-
+  server.sendContent(form);
+  
   form = CHANGE_FORM2;
   String isAdviceDisplayedChecked = "";
   if (ADVICE_ENABLED) {
@@ -670,11 +781,10 @@ void displayMessage(String message) {
   server.sendHeader("Expires", "-1");
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html", "");
-  String html = getHeader();
-  server.sendContent(String(html));
-  server.sendContent(String(message));
-  html = getFooter();
-  server.sendContent(String(html));
+  sendHeader();
+  server.sendContent(message);
+  String html = getFooter();
+  server.sendContent(html);
   server.sendContent("");
   server.client().stop();
   
@@ -692,9 +802,15 @@ void redirectHome() {
   delay(1000);
 }
 
-String getHeader() {
-  String menu = WEB_ACTIONS;
-  menu.replace("%TOGGLEDISPLAY%", (displayOn) ? "<i class='fa fa-eye-slash'></i> Turn Display OFF" : "<i class='fa fa-eye'></i> Turn Display ON");
+void sendHeader() {
+  String menu = WEB_ACTIONS1;
+  if (numberOfHorizontalDisplays >= 8) {
+    menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='fa fa-clock-o'></i> Wide Clock</a>";
+  }
+  String menu2 = WEB_ACTIONS2;
+  menu2.replace("%TOGGLEDISPLAY%", (displayOn) ? "<i class='fa fa-eye-slash'></i> Turn Display OFF" : "<i class='fa fa-eye'></i> Turn Display ON");
+  menu += menu2;
+  
   String html = "<!DOCTYPE HTML>";
   html += "<html><head><title>Marquee Scroller</title><link rel='icon' href='data:;base64,='>";
   html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
@@ -707,14 +823,15 @@ String getHeader() {
   html += "<span onclick='closeSidebar()' class='w3-button w3-display-topright w3-large'><i class='fa fa-times'></i></span>";
   html += "<div class='w3-left'><img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'></div>";
   html += "<div class='w3-padding'>Menu</div></div>";
-  html += menu;
-  html += "</nav>";
+  server.sendContent(html);
+  server.sendContent(menu);
+  html = "</nav>";
   html += "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fa fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
   html += "<script>";
   html += "function openSidebar(){document.getElementById('mySidebar').style.display='block'}function closeSidebar(){document.getElementById('mySidebar').style.display='none'}closeSidebar();";
   html += "</script>";
   html += "<br><div class='w3-container w3-large' style='margin-top:88px'>";
-  return html;
+  server.sendContent(html);
 }
 
 String getFooter() {
@@ -743,7 +860,7 @@ void displayWeatherData() {
   server.sendHeader("Expires", "-1");
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html", "");
-  server.sendContent(String(getHeader()));
+  sendHeader();
   
   String temperature = weatherClient.getTemp(0);
 
@@ -1221,3 +1338,4 @@ String decodeHtmlString(String msg) {
   decodedMsg.trim();
   return decodedMsg;
 }
+
