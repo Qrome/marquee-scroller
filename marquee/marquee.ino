@@ -77,6 +77,11 @@ AdviceSlipClient adviceClient;
 
 // Weather Client
 OpenWeatherMapClient weatherClient(APIKEY, CityIDs, 1, IS_METRIC);
+// (some) Default Weather Settings
+boolean SHOW_CITY = true;
+boolean SHOW_CONDITION = true;
+boolean SHOW_HUMIDITY = true;
+boolean SHOW_WIND = true;
 
 // OctoPrint Client
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
@@ -92,8 +97,12 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
                       "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
-                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
-                      "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>";
+                      "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
+                      "<p><input name='showcity' class='w3-check w3-margin-top' type='checkbox' %CITY_CHECKED%> Display City Name</p>"
+                      "<p><input name='showcondition' class='w3-check w3-margin-top' type='checkbox' %CONDITION_CHECKED%> Display Weather Condition</p>"
+                      "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
+                      "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
+                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
                             
 String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
@@ -315,11 +324,22 @@ void loop() {
       String description = weatherClient.getDescription(0);
       description.toUpperCase();
       String msg;
-      msg += " " + weatherClient.getCity(0) + "    ";
+      msg += " ";
+
+      if (SHOW_CITY) {
+        msg += weatherClient.getCity(0) + "    ";
+      }
       msg += temperature + getTempSymbol() + "    ";
-      msg += description + "    ";
-      msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
-      msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
+      if (SHOW_CONDITION) {
+        msg += description + "    ";
+      }
+      if (SHOW_HUMIDITY) {
+        msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
+      }
+      if (SHOW_WIND) {
+        msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
+      }
+      
       msg += marqueeMessage + " ";
 
       if (NEWS_ENABLED) {
@@ -450,6 +470,10 @@ void handleLocations() {
   CityIDs[0] = server.arg("city1").toInt();
   ADVICE_ENABLED = server.hasArg("displayadvice");
   IS_24HOUR = server.hasArg("is24hour");
+  SHOW_CITY = server.hasArg("showcity");
+  SHOW_CONDITION = server.hasArg("showcondition");
+  SHOW_HUMIDITY = server.hasArg("showhumidity");
+  SHOW_WIND = server.hasArg("showwind");  
   IS_METRIC = server.hasArg("metric");
   marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
   timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
@@ -670,7 +694,26 @@ void handleConfigure() {
   }
   form.replace("%CITYNAME1%", cityName);
   form.replace("%CITY1%", String(CityIDs[0]));
-  
+  String isCityChecked = "";
+  if (SHOW_CITY) {
+    isCityChecked = "checked='checked'";
+  }
+  form.replace("%CITY_CHECKED%", isCityChecked);
+  String isConditionChecked = "";
+  if (SHOW_CONDITION) {
+    isConditionChecked = "checked='checked'";
+  }
+  form.replace("%CONDITION_CHECKED%", isConditionChecked);
+  String isHumidityChecked = "";
+  if (SHOW_HUMIDITY) {
+    isHumidityChecked = "checked='checked'";
+  }
+  form.replace("%HUMIDITY_CHECKED%", isHumidityChecked);
+  String isWindChecked = "";
+  if (SHOW_WIND) {
+    isWindChecked = "checked='checked'";
+  }
+  form.replace("%WIND_CHECKED%", isWindChecked);
   String is24hourChecked = "";
   if (IS_24HOUR) {
     is24hourChecked = "checked='checked'";
@@ -1166,6 +1209,10 @@ String writeCityIds() {
     f.println("www_password=" + String(www_password));
     f.println("IS_BASIC_AUTH=" + String(IS_BASIC_AUTH));
     f.println("BitcoinCurrencyCode=" + BitcoinCurrencyCode);
+    f.println("SHOW_CITY=" + String(SHOW_CITY));
+    f.println("SHOW_CONDITION=" + String(SHOW_CONDITION));
+    f.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
+    f.println("SHOW_WIND=" + String(SHOW_WIND));
   }
   f.close();
   readCityIds();
@@ -1304,6 +1351,22 @@ void readCityIds() {
       BitcoinCurrencyCode = line.substring(line.lastIndexOf("BitcoinCurrencyCode=") + 20);
       BitcoinCurrencyCode.trim();
       Serial.println("BitcoinCurrencyCode=" + BitcoinCurrencyCode);
+    }
+    if (line.indexOf("SHOW_CITY=") >= 0) {
+      SHOW_CITY = line.substring(line.lastIndexOf("SHOW_CITY=") + 10).toInt();
+      Serial.println("SHOW_CITY=" + String(SHOW_CITY));
+    }
+    if (line.indexOf("SHOW_CONDITION=") >= 0) {
+      SHOW_CONDITION = line.substring(line.lastIndexOf("SHOW_CONDITION=") + 15).toInt();
+      Serial.println("SHOW_CONDITION=" + String(SHOW_CONDITION));
+    }
+    if (line.indexOf("SHOW_HUMIDITY=") >= 0) {
+      SHOW_HUMIDITY = line.substring(line.lastIndexOf("SHOW_HUMIDITY=") + 14).toInt();
+      Serial.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
+    }
+    if (line.indexOf("SHOW_WIND=") >= 0) {
+      SHOW_WIND = line.substring(line.lastIndexOf("SHOW_WIND=") + 10).toInt();
+      Serial.println("SHOW_WIND=" + String(SHOW_WIND));
     }
   }
   fr.close();
