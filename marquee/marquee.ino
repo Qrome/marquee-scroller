@@ -899,6 +899,7 @@ void sendHeader() {
   
   String html = "<!DOCTYPE HTML>";
   html += "<html><head><title>Marquee Scroller</title><link rel='icon' href='data:;base64,='>";
+  html += "<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />";
   html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
   html += "<link rel='stylesheet' href='https://www.w3schools.com/w3css/4/w3.css'>";
   html += "<link rel='stylesheet' href='https://www.w3schools.com/lib/w3-theme-blue-grey.css'>";
@@ -910,7 +911,8 @@ void sendHeader() {
   html += "<span onclick='closeSidebar()' class='w3-button w3-display-topright w3-large'><i class='fa fa-times'></i></span>";
   html += "<div class='w3-left'><img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'></div>";
   html += "<div class='w3-padding'>Menu</div></div>";
-  html += menu;
+  server.sendContent(html);
+  html = menu;
   html += "</nav>";
   server.sendContent(html);
   html = "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fa fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
