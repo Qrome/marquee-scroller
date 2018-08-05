@@ -81,7 +81,7 @@ Starting with version 2.0 editing the **Settings.h** file is optional.  All API 
 * News API Key: https://newsapi.org/
 * GeoNames Key (optional as you can use mine or create your own) http://www.geonames.org/ -- this key is only managed in the Settings.h file.
 * Your OctoPrint API Key (optional if you use the OctoPrint status)
-* Version 2.0 supports Chained 4x1 LED displayes -- configure in the Settigns.h file limited to 16 wide currently.  
+* Version 2.0 supports Chained 4x1 LED displayes -- configure in the Settigns.h file.  
 
 NOTE: The settings in the Settings.h are the default settings for the first loading. After loading you will manage changes to the settings via the Web Interface. If you want to change settings again in the settings.h, you will need to erase the file system on the Wemos or use the “Reset Settings” option in the Web Interface.  
 
