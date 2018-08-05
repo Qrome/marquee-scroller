@@ -36,6 +36,7 @@ SOFTWARE.
 * Configurable scroll speed
 * Configurable scrolling frequency
 * Configurable number of LED panels
+* Options of different types of Clock Displays (display seconds or temperature) -- only on 8 or more display panels
 * Video: https://youtu.be/DsThufRpoiQ
 
 ## Required Parts:
