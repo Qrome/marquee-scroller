@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "2.1"
+#define VERSION "2.2"
 
 #define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
@@ -55,7 +55,7 @@ String message = "hello";
 int spacer = 1;  // dots between letters
 int width = 5 + spacer; // The font width is 5 pixels + spacer
 Max72xxPanel matrix = Max72xxPanel(pinCS, numberOfHorizontalDisplays, numberOfVerticalDisplays);
-
+String Wide_Clock_Style = "1";  //1="hh:mm Temp", 2="hh:mm:ss", 3="hh:mm"
 float UtcOffset;  //time zone offsets that correspond with the CityID above (offset from GMT)
 
 // Time 
@@ -77,6 +77,11 @@ AdviceSlipClient adviceClient;
 
 // Weather Client
 OpenWeatherMapClient weatherClient(APIKEY, CityIDs, 1, IS_METRIC);
+// (some) Default Weather Settings
+boolean SHOW_CITY = true;
+boolean SHOW_CONDITION = true;
+boolean SHOW_HUMIDITY = true;
+boolean SHOW_WIND = true;
 
 // OctoPrint Client
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
@@ -86,28 +91,18 @@ int printerCount = 0;
 BitcoinApiClient bitcoinClient;
 
 ESP8266WebServer server(WEBSERVER_PORT);
-
-String WEB_ACTIONS =  "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
-                      "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
-                      "<a class='w3-bar-item w3-button' href='/pull'><i class='fa fa-cloud-download'></i> Refresh Data</a>"
-                      "<a class='w3-bar-item w3-button' href='/display'>%TOGGLEDISPLAY%</a>"
-                      "<a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
-                      "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
-                      "<a class='w3-bar-item w3-button' href='https://www.thingiverse.com/thing:2867294' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
                       
 String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
                       "<label>OpenWeahterMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
                       "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
-                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
                       "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
-                      "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
-                      "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
-                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
-                      "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>%NEWSOPTIONS%</select></p>";
-                     
-String BITCOIN_FORM = "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>";
+                      "<p><input name='showcity' class='w3-check w3-margin-top' type='checkbox' %CITY_CHECKED%> Display City Name</p>"
+                      "<p><input name='showcondition' class='w3-check w3-margin-top' type='checkbox' %CONDITION_CHECKED%> Display Weather Condition</p>"
+                      "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
+                      "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
+                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
                             
 String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
@@ -118,13 +113,7 @@ String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
                       "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
 
-String CHANGE_FORM3 = "<hr><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status"
-                      "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
-                      "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
-                      "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
-                      "<label>OctoPrint User (only needed if you have haproxy or basic auth turned on)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoUser' value='%OCTOUSER%' maxlength='30'>"
-                      "<label>OctoPrint Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='octoPass' value='%OCTOPASS%'><hr>"
-                      "<input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes"
+String CHANGE_FORM3 = "<hr><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes"
                       "<label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'>"
                       "<label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'>"
                       "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
@@ -271,9 +260,17 @@ void setup() {
     server.on("/", displayWeatherData);
     server.on("/pull", handlePull);
     server.on("/locations", handleLocations);
+    server.on("/savebitcoin", handleSaveBitcoin);
+    server.on("/savewideclock", handleSaveWideClock);
+    server.on("/savenews", handleSaveNews);
+    server.on("/saveoctoprint", handleSaveOctoprint);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
     server.on("/configure", handleConfigure);
+    server.on("/configurebitcoin", handleBitcoinConfigure);
+    server.on("/configurewideclock", handleWideClockConfigure);
+    server.on("/configurenews", handleNewsConfigure);
+    server.on("/configureoctoprint", handleOctoprintConfigure);
     server.on("/display", handleDisplay);
     server.onNotFound(redirectHome);
     // Start the server
@@ -327,11 +324,22 @@ void loop() {
       String description = weatherClient.getDescription(0);
       description.toUpperCase();
       String msg;
-      msg += " " + weatherClient.getCity(0) + "    ";
+      msg += " ";
+
+      if (SHOW_CITY) {
+        msg += weatherClient.getCity(0) + "    ";
+      }
       msg += temperature + getTempSymbol() + "    ";
-      msg += description + "    ";
-      msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
-      msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
+      if (SHOW_CONDITION) {
+        msg += description + "    ";
+      }
+      if (SHOW_HUMIDITY) {
+        msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
+      }
+      if (SHOW_WIND) {
+        msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
+      }
+      
       msg += marqueeMessage + " ";
 
       if (NEWS_ENABLED) {
@@ -361,13 +369,22 @@ void loop() {
     hourMinutes = timeClient.getHours() + ":" + timeClient.getMinutes();
   }
   if (numberOfHorizontalDisplays >= 8) {
-    // On Wide Display -- show the current temperature as well
-    String currentTemp = weatherClient.getTempRounded(0);
-    String timeSpacer = "  ";
-    if (currentTemp.length() >= 3) {
-      timeSpacer = " ";
+    if (Wide_Clock_Style == "1") {
+      // On Wide Display -- show the current temperature as well
+      String currentTemp = weatherClient.getTempRounded(0);
+      String timeSpacer = "  ";
+      if (currentTemp.length() >= 3) {
+        timeSpacer = " ";
+      }
+      hourMinutes += timeSpacer + currentTemp + getTempSymbol();
     }
-    hourMinutes += timeSpacer + currentTemp + getTempSymbol();
+    if (Wide_Clock_Style == "2") {
+      hourMinutes += ":" + timeClient.getSeconds();
+      matrix.fillScreen(LOW); // show black
+    }
+    if (Wide_Clock_Style == "3") {
+      // No change this is normal clock display
+    }
   }
   centerPrint(hourMinutes);
   
@@ -392,19 +409,72 @@ void handlePull() {
   displayWeatherData();
 }
 
+void handleSaveBitcoin() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  BitcoinCurrencyCode = server.arg("bitcoincurrency");
+  writeCityIds();
+  bitcoinClient.updateBitcoinData(BitcoinCurrencyCode);  // does nothing if BitCoinCurrencyCode is "NONE" or empty
+  redirectHome();
+}
+
+void handleSaveWideClock() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  if (numberOfHorizontalDisplays >= 8) {
+    Wide_Clock_Style = server.arg("wideclockformat");
+    writeCityIds();
+    matrix.fillScreen(LOW); // show black
+  }
+  redirectHome();
+}
+
+void handleSaveNews() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  NEWS_ENABLED = server.hasArg("displaynews");
+  NEWS_API_KEY = server.arg("newsApiKey");
+  NEWS_SOURCE = server.arg("newssource");
+  matrix.fillScreen(LOW); // show black
+  writeCityIds();
+  newsClient.updateNews();
+  redirectHome();
+}
+
+void handleSaveOctoprint() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  OCTOPRINT_ENABLED = server.hasArg("displayoctoprint");
+  OctoPrintApiKey = server.arg("octoPrintApiKey");
+  OctoPrintServer = server.arg("octoPrintAddress");
+  OctoPrintPort = server.arg("octoPrintPort").toInt();
+  OctoAuthUser = server.arg("octoUser");
+  OctoAuthPass = server.arg("octoPass");
+  matrix.fillScreen(LOW); // show black
+  writeCityIds();
+  if (OCTOPRINT_ENABLED) {
+    printerClient.getPrinterJobResults();
+  }
+  redirectHome();
+}
+
 void handleLocations() {
   if (!athentication()) {
     return server.requestAuthentication();
   }
   APIKEY = server.arg("openWeatherMapApiKey");
   CityIDs[0] = server.arg("city1").toInt();
-  NEWS_ENABLED = server.hasArg("displaynews");
-  NEWS_API_KEY = server.arg("newsApiKey");
   ADVICE_ENABLED = server.hasArg("displayadvice");
   IS_24HOUR = server.hasArg("is24hour");
+  SHOW_CITY = server.hasArg("showcity");
+  SHOW_CONDITION = server.hasArg("showcondition");
+  SHOW_HUMIDITY = server.hasArg("showhumidity");
+  SHOW_WIND = server.hasArg("showwind");  
   IS_METRIC = server.hasArg("metric");
-  NEWS_SOURCE = server.arg("newssource");
-  BitcoinCurrencyCode = server.arg("bitcoincurrency");
   marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
   timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
   timeDisplayTurnsOff = decodeHtmlString(server.arg("endTime"));
@@ -412,12 +482,6 @@ void handleLocations() {
   minutesBetweenDataRefresh = server.arg("refresh").toInt();
   minutesBetweenScrolling = server.arg("refreshDisplay").toInt();
   displayScrollSpeed = server.arg("scrollspeed").toInt();
-  OCTOPRINT_ENABLED = server.hasArg("displayoctoprint");
-  OctoPrintApiKey = server.arg("octoPrintApiKey");
-  OctoPrintServer = server.arg("octoPrintAddress");
-  OctoPrintPort = server.arg("octoPrintPort").toInt();
-  OctoAuthUser = server.arg("octoUser");
-  OctoAuthPass = server.arg("octoPass");
   IS_BASIC_AUTH = server.hasArg("isBasicAuth");
   String temp = server.arg("userid");
   temp.toCharArray(www_username, sizeof(temp));
@@ -427,9 +491,6 @@ void handleLocations() {
   matrix.fillScreen(LOW); // show black
   writeCityIds();
   getWeatherData(); // this will force a data pull for new weather
-  if (OCTOPRINT_ENABLED) {
-    printerClient.getPrinterJobResults();
-  }
   redirectHome();
 }
 
@@ -456,6 +517,159 @@ void handleForgetWifi() {
   ESP.restart();
 }
 
+void handleBitcoinConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+  String html = "";
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+                   
+  String BITCOIN_FORM = "<form class='w3-container' action='/savebitcoin' method='get'><h2>Bitcoin Configuration:</h2>"
+                      "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>"
+                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+  
+  String form = BITCOIN_FORM;
+  String bitcoinOptions = CURRENCY_OPTIONS;
+  bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
+  form.replace("%BITCOINOPTIONS%", bitcoinOptions);
+  server.sendContent(form); //Send another Chunk of form
+
+  sendFooter();
+
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
+void handleWideClockConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+
+  String WIDECLOCK_FORM = "<form class='w3-container' action='/savewideclock' method='get'><h2>Wide Clock Configuration:</h2>"
+                      "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>"
+                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+  
+  if (numberOfHorizontalDisplays >= 8) {
+    // Wide display options
+    String form = WIDECLOCK_FORM;
+    String clockOptions = "<option value='1'>HH:MM Temperature</option><option value='2'>HH:MM:SS</option><option value='3'>HH:MM</option>";
+    clockOptions.replace(Wide_Clock_Style + "'", Wide_Clock_Style + "' selected");
+    form.replace("%WIDECLOCKOPTIONS%", clockOptions); 
+    server.sendContent(form);
+  }
+
+  sendFooter();
+
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
+void handleNewsConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+
+  String NEWS_FORM1 =   "<form class='w3-container' action='/savenews' method='get'><h2>News Configuration:</h2>"
+                      "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
+                      "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
+                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
+                      "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>";
+
+  String NEWS_FORM2 =   "</select></p>"
+                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+
+  String form = NEWS_FORM1;
+  String isNewsDisplayedChecked = "";
+  if (NEWS_ENABLED) {
+    isNewsDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
+  form.replace("%NEWSKEY%", NEWS_API_KEY);
+  server.sendContent(form); //Send first Chunk of form
+  String newsOptions = NEWS_OPTIONS;
+  newsOptions.replace(">" + NEWS_SOURCE + "<", " selected>" + NEWS_SOURCE + "<");
+  server.sendContent(newsOptions);
+  server.sendContent(NEWS_FORM2);
+  
+  sendFooter();
+
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
+void handleOctoprintConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+
+  String OCTO_FORM =    "<form class='w3-container' action='/saveoctoprint' method='get'><h2>OctoPrint Configuration:</h2>"
+                      "<p><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status</p>"
+                      "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
+                      "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
+                      "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                      "<label>OctoPrint User (only needed if you have haproxy or basic auth turned on)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoUser' value='%OCTOUSER%' maxlength='30'>"
+                      "<label>OctoPrint Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='octoPass' value='%OCTOPASS%'>"
+                      "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
+                      "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";      
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+  
+  String form = OCTO_FORM;
+  String isOctoPrintDisplayedChecked = "";
+  if (OCTOPRINT_ENABLED) {
+    isOctoPrintDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%OCTOCHECKED%", isOctoPrintDisplayedChecked);
+  form.replace("%OCTOKEY%", OctoPrintApiKey);
+  form.replace("%OCTOADDRESS%", OctoPrintServer);
+  form.replace("%OCTOPORT%", String(OctoPrintPort));
+  form.replace("%OCTOUSER%", OctoAuthUser);
+  form.replace("%OCTOPASS%", OctoAuthPass);
+  server.sendContent(form);
+  
+  sendFooter();
+
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
 void handleConfigure() {
   if (!athentication()) {
     return server.requestAuthentication();
@@ -469,19 +683,37 @@ void handleConfigure() {
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html", "");
 
-  html = getHeader();
-  server.sendContent(html);
+  sendHeader();
 
   String form = CHANGE_FORM1;
   form.replace("%WEATHERKEY%", APIKEY);
-  for (int inx = 0; inx < 1; inx++) {
-    String cityName = "";
-    if (CityIDs[inx] > 0 && weatherClient.getCity(inx) != "") {
-      cityName = weatherClient.getCity(inx) + ", " + weatherClient.getCountry(inx);
-    }
-    form.replace(String("%CITYNAME" + String(inx +1) + "%"), cityName);
-    form.replace(String("%CITY" + String(inx +1) + "%"), String(CityIDs[inx]));
+
+  String cityName = "";
+  if (weatherClient.getCity(0) != "") {
+    cityName = weatherClient.getCity(0) + ", " + weatherClient.getCountry(0);
   }
+  form.replace("%CITYNAME1%", cityName);
+  form.replace("%CITY1%", String(CityIDs[0]));
+  String isCityChecked = "";
+  if (SHOW_CITY) {
+    isCityChecked = "checked='checked'";
+  }
+  form.replace("%CITY_CHECKED%", isCityChecked);
+  String isConditionChecked = "";
+  if (SHOW_CONDITION) {
+    isConditionChecked = "checked='checked'";
+  }
+  form.replace("%CONDITION_CHECKED%", isConditionChecked);
+  String isHumidityChecked = "";
+  if (SHOW_HUMIDITY) {
+    isHumidityChecked = "checked='checked'";
+  }
+  form.replace("%HUMIDITY_CHECKED%", isHumidityChecked);
+  String isWindChecked = "";
+  if (SHOW_WIND) {
+    isWindChecked = "checked='checked'";
+  }
+  form.replace("%WIND_CHECKED%", isWindChecked);
   String is24hourChecked = "";
   if (IS_24HOUR) {
     is24hourChecked = "checked='checked'";
@@ -492,23 +724,8 @@ void handleConfigure() {
     checked = "checked='checked'";
   }
   form.replace("%CHECKED%", checked);
-  String isNewsDisplayedChecked = "";
-  if (NEWS_ENABLED) {
-    isNewsDisplayedChecked = "checked='checked'";
-  }
-  form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
-  form.replace("%NEWSKEY%", NEWS_API_KEY);
-  String newsOptions = String(NEWS_OPTIONS);
-  newsOptions.replace(">" + String(NEWS_SOURCE) + "<", " selected>" + String(NEWS_SOURCE) + "<");
-  form.replace("%NEWSOPTIONS%", newsOptions);
-  server.sendContent(form); //Send first Chunk of form
-
-  form = BITCOIN_FORM;
-  String bitcoinOptions = String(CURRENCY_OPTIONS);
-  bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
-  form.replace("%BITCOINOPTIONS%", bitcoinOptions);
-  server.sendContent(form); //Send another Chunk of form
-
+  server.sendContent(form);
+  
   form = CHANGE_FORM2;
   String isAdviceDisplayedChecked = "";
   if (ADVICE_ENABLED) {
@@ -532,16 +749,6 @@ void handleConfigure() {
   server.sendContent(form); //Send another chunk of the form
 
   form = CHANGE_FORM3;
-  String isOctoPrintDisplayedChecked = "";
-  if (OCTOPRINT_ENABLED) {
-    isOctoPrintDisplayedChecked = "checked='checked'";
-  }
-  form.replace("%OCTOCHECKED%", isOctoPrintDisplayedChecked);
-  form.replace("%OCTOKEY%", OctoPrintApiKey);
-  form.replace("%OCTOADDRESS%", OctoPrintServer);
-  form.replace("%OCTOPORT%", String(OctoPrintPort));
-  form.replace("%OCTOUSER%", OctoAuthUser);
-  form.replace("%OCTOPASS%", OctoAuthPass);
   String isUseSecurityChecked = "";
   if (IS_BASIC_AUTH) {
     isUseSecurityChecked = "checked='checked'";
@@ -552,8 +759,8 @@ void handleConfigure() {
 
   server.sendContent(form); // Send the second chunk of Data
 
-  html = getFooter();
-  server.sendContent(html);
+  sendFooter();
+
   server.sendContent("");
   server.client().stop();
   digitalWrite(externalLight, HIGH);
@@ -641,11 +848,9 @@ void displayMessage(String message) {
   server.sendHeader("Expires", "-1");
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html", "");
-  String html = getHeader();
-  server.sendContent(String(html));
-  server.sendContent(String(message));
-  html = getFooter();
-  server.sendContent(String(html));
+  sendHeader();
+  server.sendContent(message);
+  sendFooter();
   server.sendContent("");
   server.client().stop();
   
@@ -663,32 +868,59 @@ void redirectHome() {
   delay(1000);
 }
 
-String getHeader() {
-  String menu = String(WEB_ACTIONS);
-  menu.replace("%TOGGLEDISPLAY%", (displayOn) ? "<i class='fa fa-eye-slash'></i> Turn Display OFF" : "<i class='fa fa-eye'></i> Turn Display ON");
+void sendHeader() {
+  String WEB_ACTIONS1 = "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
+                      "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
+                      "<a class='w3-bar-item w3-button' href='/configurenews'><i class='fa fa-newspaper-o'></i> News</a>"
+                      "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fa fa-cube'></i> OctoPrint</a>";
+
+  String WEB_ACTIONS2 = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fa fa-usd'></i> Bitcoin</a>"
+                      "<a class='w3-bar-item w3-button' href='/pull'><i class='fa fa-cloud-download'></i> Refresh Data</a>"
+                      "<a class='w3-bar-item w3-button' href='/display'>";
+                      
+  String WEB_ACTION3 = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
+                      "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
+                      "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
+  
+  String menu = WEB_ACTIONS1;
+  if (numberOfHorizontalDisplays >= 8) {
+    menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='fa fa-clock-o'></i> Wide Clock</a>";
+  }
+  menu += WEB_ACTIONS2;
+  if (displayOn) {
+    menu += "<i class='fa fa-eye-slash'></i> Turn Display OFF";
+  } else {
+    menu += "<i class='fa fa-eye'></i> Turn Display ON";
+  }
+
+  menu += WEB_ACTION3;
+  
   String html = "<!DOCTYPE HTML>";
   html += "<html><head><title>Marquee Scroller</title><link rel='icon' href='data:;base64,='>";
+  html += "<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />";
   html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
   html += "<link rel='stylesheet' href='https://www.w3schools.com/w3css/4/w3.css'>";
   html += "<link rel='stylesheet' href='https://www.w3schools.com/lib/w3-theme-blue-grey.css'>";
   html += "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>";
   html += "</head><body>";
-  html += "<nav class='w3-sidebar w3-bar-block w3-card' style='margin-top:88px' id='mySidebar'>";
+  server.sendContent(html);
+  html = "<nav class='w3-sidebar w3-bar-block w3-card' style='margin-top:88px' id='mySidebar'>";
   html += "<div class='w3-container w3-theme-d2'>";
   html += "<span onclick='closeSidebar()' class='w3-button w3-display-topright w3-large'><i class='fa fa-times'></i></span>";
   html += "<div class='w3-left'><img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'></div>";
   html += "<div class='w3-padding'>Menu</div></div>";
-  html += menu;
-  html += "</nav>";
+  server.sendContent(html);
+  server.sendContent(menu);
+  html = "</nav>";
   html += "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fa fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
   html += "<script>";
   html += "function openSidebar(){document.getElementById('mySidebar').style.display='block'}function closeSidebar(){document.getElementById('mySidebar').style.display='none'}closeSidebar();";
   html += "</script>";
   html += "<br><div class='w3-container w3-large' style='margin-top:88px'>";
-  return html;
+  server.sendContent(html);
 }
 
-String getFooter() {
+void sendFooter() {
   int8_t rssi = getWifiQuality();
   Serial.print("Signal Strength (RSSI): ");
   Serial.print(rssi);
@@ -702,7 +934,7 @@ String getFooter() {
   html += String(rssi) + "%";
   html += "</footer>";
   html += "</body></html>";
-  return html;
+  server.sendContent(html);
 }
 
 void displayWeatherData() {
@@ -714,7 +946,7 @@ void displayWeatherData() {
   server.sendHeader("Expires", "-1");
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html", "");
-  server.sendContent(String(getHeader()));
+  sendHeader();
   
   String temperature = weatherClient.getTemp(0);
 
@@ -802,7 +1034,7 @@ void displayWeatherData() {
     html = "";
   }
   
-  server.sendContent(String(getFooter()));
+  sendFooter();
   server.sendContent("");
   server.client().stop();
   digitalWrite(externalLight, HIGH);
@@ -962,6 +1194,7 @@ String writeCityIds() {
     f.println("newsApiKey=" + NEWS_API_KEY);
     f.println("isAdvice=" + String(ADVICE_ENABLED));
     f.println("is24hour=" + String(IS_24HOUR));
+    f.println("wideclockformat=" + Wide_Clock_Style);
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
     f.println("minutesBetweenScrolling=" + String(minutesBetweenScrolling));
@@ -975,6 +1208,10 @@ String writeCityIds() {
     f.println("www_password=" + String(www_password));
     f.println("IS_BASIC_AUTH=" + String(IS_BASIC_AUTH));
     f.println("BitcoinCurrencyCode=" + BitcoinCurrencyCode);
+    f.println("SHOW_CITY=" + String(SHOW_CITY));
+    f.println("SHOW_CONDITION=" + String(SHOW_CONDITION));
+    f.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
+    f.println("SHOW_WIND=" + String(SHOW_WIND));
   }
   f.close();
   readCityIds();
@@ -1021,12 +1258,20 @@ void readCityIds() {
       IS_24HOUR = line.substring(line.lastIndexOf("is24hour=") + 9).toInt();
       Serial.println("IS_24HOUR=" + String(IS_24HOUR));
     }
+    if (line.indexOf("wideclockformat=") >= 0) {
+      Wide_Clock_Style = line.substring(line.lastIndexOf("wideclockformat=") + 16);
+      Wide_Clock_Style.trim();
+      Serial.println("Wide_Clock_Style=" + Wide_Clock_Style);
+    }
     if (line.indexOf("isMetric=") >= 0) {
       IS_METRIC = line.substring(line.lastIndexOf("isMetric=") + 9).toInt();
       Serial.println("IS_METRIC=" + String(IS_METRIC));
     }
     if (line.indexOf("refreshRate=") >= 0) {
       minutesBetweenDataRefresh = line.substring(line.lastIndexOf("refreshRate=") + 12).toInt();
+      if (minutesBetweenDataRefresh == 0) {
+        minutesBetweenDataRefresh = 15; // can't be zero
+      }
       Serial.println("minutesBetweenDataRefresh=" + String(minutesBetweenDataRefresh));
     }
     if (line.indexOf("minutesBetweenScrolling=") >= 0) {
@@ -1106,6 +1351,22 @@ void readCityIds() {
       BitcoinCurrencyCode.trim();
       Serial.println("BitcoinCurrencyCode=" + BitcoinCurrencyCode);
     }
+    if (line.indexOf("SHOW_CITY=") >= 0) {
+      SHOW_CITY = line.substring(line.lastIndexOf("SHOW_CITY=") + 10).toInt();
+      Serial.println("SHOW_CITY=" + String(SHOW_CITY));
+    }
+    if (line.indexOf("SHOW_CONDITION=") >= 0) {
+      SHOW_CONDITION = line.substring(line.lastIndexOf("SHOW_CONDITION=") + 15).toInt();
+      Serial.println("SHOW_CONDITION=" + String(SHOW_CONDITION));
+    }
+    if (line.indexOf("SHOW_HUMIDITY=") >= 0) {
+      SHOW_HUMIDITY = line.substring(line.lastIndexOf("SHOW_HUMIDITY=") + 14).toInt();
+      Serial.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
+    }
+    if (line.indexOf("SHOW_WIND=") >= 0) {
+      SHOW_WIND = line.substring(line.lastIndexOf("SHOW_WIND=") + 10).toInt();
+      Serial.println("SHOW_WIND=" + String(SHOW_WIND));
+    }
   }
   fr.close();
   matrix.setIntensity(displayIntensity);
@@ -1183,3 +1444,4 @@ String decodeHtmlString(String msg) {
   decodedMsg.trim();
   return decodedMsg;
 }
+

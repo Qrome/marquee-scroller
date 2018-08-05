@@ -45,6 +45,7 @@ SOFTWARE.
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Max72xxPanel.h>
+#include <pgmspace.h>
 #include "OpenWeatherMapClient.h"
 #include "GeoNamesClient.h"
 #include "TimeClient.h" // Using updated lib by Qrome
@@ -84,7 +85,7 @@ boolean ADVICE_ENABLED = false;
 // DIN -> D7 (MOSI)
 const int pinCS = D6; // Attach CS to this pin, DIN to MOSI and CLK to SCK (cf http://arduino.cc/en/Reference/SPI )
 int displayIntensity = 1;  //(This can be set from 1 - 15)
-const int numberOfHorizontalDisplays = 4; // default 4 for standard 4 x 1 display
+const int numberOfHorizontalDisplays = 4; // default 4 for standard 4 x 1 display Max size of 16
 const int numberOfVerticalDisplays = 1; // default 1 for a single row height
 
 String timeDisplayTurnsOn = "06:30";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
