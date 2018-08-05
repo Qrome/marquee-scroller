@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "2.2"
+#define VERSION "2.3"
 
 #define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
@@ -325,7 +325,7 @@ void loop() {
       description.toUpperCase();
       String msg;
       msg += " ";
-
+      
       if (SHOW_CITY) {
         msg += weatherClient.getCity(0) + "    ";
       }
