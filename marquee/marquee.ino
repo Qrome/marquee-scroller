@@ -260,7 +260,6 @@ void setup() {
     ArduinoOTA.begin();
   }
   
-  
   if (WEBSERVER_ENABLED) {
     server.on("/", displayWeatherData);
     server.on("/pull", handlePull);
@@ -849,6 +848,7 @@ void getWeatherData() //client function to send/receive GET request data.
     timeOffsetFetched = true;
     geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
     UtcOffset = geoNames.getTimeOffset();
+    timeClient.setUtcOffset(UtcOffset);
   }
 
   if (displayOn) {
