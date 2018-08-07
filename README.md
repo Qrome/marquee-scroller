@@ -41,7 +41,9 @@ SOFTWARE.
 
 ## Required Parts:
 * Wemos D1 Mini: https://amzn.to/2qLyKJd
-* Dot Matrix Module: https://amzn.to/2HtnQlD
+* Dot Matrix Module: https://amzn.to/2HtnQlD  
+
+Note: Using the links provided here help to support these types of projects. Thank you for the support.  
 
 ## Wiring for the Wemos D1 Mini to the Dot Matrix Display
 CLK -> D5 (SCK)  
