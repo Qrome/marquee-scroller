@@ -311,6 +311,11 @@ void loop() {
       geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
       UtcOffset = geoNames.getTimeOffset();
     }
+
+    if (weatherClient.getError() != "") {
+        scrollMessage(weatherClient.getError());
+        return;
+    }
     
     if (displayOn) {
       matrix.shutdown(false);
@@ -810,9 +815,7 @@ void getWeatherData() //client function to send/receive GET request data.
     centerPrint(".");
     weatherClient.updateWeather();
     if (weatherClient.getError() != "") {
-      do {
         scrollMessage(weatherClient.getError());
-      } while (true);
     }
   }
 

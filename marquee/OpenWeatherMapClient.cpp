@@ -39,7 +39,8 @@ void OpenWeatherMapClient::updateWeather() {
 
   Serial.println("Getting Weather Data");
   Serial.println(apiGetData);
-  result = "";
+  weathers[0].cached = false;
+  weathers[0].error = "";
   if (weatherClient.connect(servername, 80)) {  //starts client connection, checks for connection
     weatherClient.println(apiGetData);
     weatherClient.println("Host: " + String(servername));
@@ -50,6 +51,7 @@ void OpenWeatherMapClient::updateWeather() {
   else {
     Serial.println("connection for weather data failed"); //error message if no client connect
     Serial.println();
+    weathers[0].error = "Connection for weather data failed";
     return;
   }
 
@@ -64,6 +66,7 @@ void OpenWeatherMapClient::updateWeather() {
   if (strcmp(status, "HTTP/1.1 200 OK") != 0) {
     Serial.print(F("Unexpected response: "));
     Serial.println(status);
+    weathers[0].error = "Weather Data Error: " + String(status);
     return;
   }
 
@@ -77,8 +80,6 @@ void OpenWeatherMapClient::updateWeather() {
   const size_t bufferSize = 710;
   DynamicJsonBuffer jsonBuffer(bufferSize);
 
-  weathers[0].cached = false;
-  weathers[0].error = "";
   // Parse JSON object
   JsonObject& root = jsonBuffer.parseObject(weatherClient);
   if (!root.success()) {
@@ -153,10 +154,6 @@ void OpenWeatherMapClient::setMetric(boolean isMetric) {
   } else {
     units = "imperial";
   }
-}
-
-String OpenWeatherMapClient::getWeatherResults() {
-  return result;
 }
 
 String OpenWeatherMapClient::getLat(int index) {
