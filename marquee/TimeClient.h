@@ -39,7 +39,7 @@ class TimeClient {
     float myUtcOffset = 0;
     long localEpoc = 0;
     long localMillisAtUpdate;
-    const char* ntpServerName = "www.google.com";
+    const char* ntpServerName = "time.google.com";
     const int httpPort = 80;    
     byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
 
