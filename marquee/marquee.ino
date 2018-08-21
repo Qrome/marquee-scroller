@@ -97,7 +97,7 @@ BitcoinApiClient bitcoinClient;
 ESP8266WebServer server(WEBSERVER_PORT);
                       
 String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
-                      "<label>OpenWeahterMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
+                      "<label>OpenWeatherMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
                       "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
@@ -988,7 +988,7 @@ void displayWeatherData() {
   Serial.println(time);
 
   if (weatherClient.getCity(0) == "") {
-    html += "<p>Please <a href='/configure'>Configure Weahter</a> API</p>";
+    html += "<p>Please <a href='/configure'>Configure Weather</a> API</p>";
     if (weatherClient.getError() != "") {
       html += "<p>Weather Error: <strong>" + weatherClient.getError() + "</strong></p>";
     }
