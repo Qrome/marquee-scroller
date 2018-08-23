@@ -33,7 +33,6 @@ private:
   String units = "";
   
   const char* servername = "api.openweathermap.org";  // remote server we will connect to
-  String result;
 
   typedef struct {
     String lat;
@@ -62,8 +61,6 @@ public:
   void updateWeatherApiKey(String ApiKey);
   void updateCityIdList(int CityIDs[], int cityCount);
   void setMetric(boolean isMetric);
-
-  String getWeatherResults();
 
   String getLat(int index);
   String getLon(int index);

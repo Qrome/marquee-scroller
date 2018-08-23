@@ -24,15 +24,19 @@ SOFTWARE.
 #include "GeoNamesClient.h"
 
 GeoNamesClient::GeoNamesClient(String UserName, String lat, String lon) {
+  updateClient(UserName, lat, lon);
+}
+
+void GeoNamesClient::updateClient(String UserName, String lat, String lon) {
   myLat = lat;
   myLon = lon;
   myUserName = UserName;
 }
 
 float GeoNamesClient::getTimeOffset() {
+  datetime = "";
   WiFiClient client;
   String apiGetData = "GET /timezoneJSON?lat=" + myLat + "&lng=" + myLon + "&username=" + myUserName + " HTTP/1.1";
-
   Serial.println("Getting TimeZone Data for " + myLat + "," + myLon);
   Serial.println(apiGetData);
   String result = "";
@@ -76,22 +80,117 @@ float GeoNamesClient::getTimeOffset() {
   JsonObject& root = json_buf.parseObject(jsonArray);
   String offset = (const char*)root["dstOffset"];
   // Sample time: "2018-03-19 21:22"
-  String timeDate = (const char*)root["time"];
-  hours = timeDate.substring(11, 13).toInt();
-  minutes = timeDate.substring(14, 16).toInt();
+  datetime = (const char*)root["time"];
   Serial.println("rawOffset for " + String((const char*)root["timezoneId"]) + " is: " + offset);
-  Serial.println("Geo Time: " + String(hours) + ":" + String(minutes));
+  Serial.println("Geo Date & Time: " + getMonthName() + " " + getDay(false) + ", " + getHours() + ":" + getMinutes());
   Serial.println();
   return offset.toFloat();
 }
 
-int GeoNamesClient::getHours() {
-  return hours;
+String GeoNamesClient::getHours() {
+  String rtnValue = "";
+  if (datetime.length() >= 13) {
+    rtnValue = datetime.substring(11, 13);
+  }
+  return rtnValue;
 }
 
-int GeoNamesClient::getMinutes() {
-  return minutes;
+String GeoNamesClient::getMinutes() {
+  String rtnValue = "";
+  if (datetime.length() >= 16) {
+    rtnValue = datetime.substring(14, 16);
+  }
+  return rtnValue;
 }
+
+String GeoNamesClient::getYear() {
+  String rtnValue = "";
+  if (datetime.length() > 4) {
+    rtnValue = datetime.substring(0, 4);
+  }
+  return rtnValue;
+}
+
+String GeoNamesClient::getMonth00() {
+  String rtnValue = "";
+  if (datetime.length() > 7) {
+    rtnValue = datetime.substring(5, 7);
+  }
+  return rtnValue;
+}
+
+String GeoNamesClient::getMonth(boolean zeroPad) {
+  String rtnValue = getMonth00();
+  if (zeroPad) {
+    return rtnValue;
+  }
+  int month = rtnValue.toInt();
+  return String(month);
+}
+
+String GeoNamesClient::getMonthName() {
+  String rtnValue = "";
+  int month = getMonth00().toInt();
+  switch (month) {
+    case 1:
+      rtnValue = "Jan";
+      break;
+    case 2:
+      rtnValue = "Feb";
+      break;
+    case 3:
+      rtnValue = "Mar";
+      break;
+    case 4:
+      rtnValue = "Apr";
+      break;
+    case 5:
+      rtnValue = "May";
+      break;
+    case 6:
+      rtnValue = "June";
+      break;
+    case 7:
+      rtnValue = "July";
+      break;
+    case 8:
+      rtnValue = "Aug";
+      break;
+    case 9:
+      rtnValue = "Sep";
+      break;
+    case 10:
+      rtnValue = "Oct";
+      break;
+    case 11:
+      rtnValue = "Nov";
+      break;
+    case 12:
+      rtnValue = "Dec";
+      break;
+    default:
+      rtnValue = "";
+  }
+  return rtnValue;
+}
+
+String GeoNamesClient::getDay(boolean zeroPad) {
+  String rtnValue = getDay00();
+  if (zeroPad) {
+    return rtnValue;
+  }
+  int day = rtnValue.toInt();
+  return String(day);
+}
+
+String GeoNamesClient::getDay00() {
+  String rtnValue = "";
+  if (datetime.length() > 10) {
+    rtnValue = datetime.substring(8, 10);
+  }
+  return rtnValue;
+}
+
 
 
 

@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "2.2"
+#define VERSION "2.3"
 
 #define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
@@ -68,6 +68,9 @@ long displayOffEpoch = 0;
 boolean displayOn = true;
 boolean timeOffsetFetched = false;
 
+// GeoNames
+GeoNamesClient geoNames(GEONAMES_USER, "", "");
+
 // News Client
 NewsApiClient newsClient(NEWS_API_KEY, NEWS_SOURCE);
 int newsIndex = 0;
@@ -78,6 +81,7 @@ AdviceSlipClient adviceClient;
 // Weather Client
 OpenWeatherMapClient weatherClient(APIKEY, CityIDs, 1, IS_METRIC);
 // (some) Default Weather Settings
+boolean SHOW_DATE = false;
 boolean SHOW_CITY = true;
 boolean SHOW_CONDITION = true;
 boolean SHOW_HUMIDITY = true;
@@ -93,11 +97,12 @@ BitcoinApiClient bitcoinClient;
 ESP8266WebServer server(WEBSERVER_PORT);
                       
 String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
-                      "<label>OpenWeahterMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
+                      "<label>OpenWeatherMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
                       "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
                       "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
+                      "<p><input name='showdate' class='w3-check w3-margin-top' type='checkbox' %DATE_CHECKED%> Display Date</p>"
                       "<p><input name='showcity' class='w3-check w3-margin-top' type='checkbox' %CITY_CHECKED%> Display City Name</p>"
                       "<p><input name='showcondition' class='w3-check w3-margin-top' type='checkbox' %CONDITION_CHECKED%> Display Weather Condition</p>"
                       "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
@@ -113,10 +118,10 @@ String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
                       "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
 
-String CHANGE_FORM3 = "<hr><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes"
-                      "<label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'>"
-                      "<label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'>"
-                      "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
+String CHANGE_FORM3 = "<hr><p><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes</p>"
+                      "<p><label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'></p>"
+                      "<p><label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'></p>"
+                      "<p><button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></p></form>"
                       "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
 String NEWS_OPTIONS = "<option>bbc-news</option>"
@@ -255,7 +260,6 @@ void setup() {
     ArduinoOTA.begin();
   }
   
-  
   if (WEBSERVER_ENABLED) {
     server.on("/", displayWeatherData);
     server.on("/pull", handlePull);
@@ -301,6 +305,18 @@ void loop() {
 
   if (lastMinute != timeClient.getMinutes()) {
     lastMinute = timeClient.getMinutes();
+
+    if (timeClient.getHours() == "00" && timeClient.getMinutes() == "00" && timeClient.getSeconds() == "00") {
+      // Exactly Midnight -- fetch a new geoNames for updating the Date and time offset
+      geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
+      UtcOffset = geoNames.getTimeOffset();
+    }
+
+    if (weatherClient.getError() != "") {
+        scrollMessage(weatherClient.getError());
+        return;
+    }
+    
     if (displayOn) {
       matrix.shutdown(false);
     }
@@ -326,6 +342,9 @@ void loop() {
       String msg;
       msg += " ";
 
+      if (SHOW_DATE) {
+        msg += geoNames.getMonthName() + " " + geoNames.getDay(false) + "    ";
+      }    
       if (SHOW_CITY) {
         msg += weatherClient.getCity(0) + "    ";
       }
@@ -470,6 +489,7 @@ void handleLocations() {
   CityIDs[0] = server.arg("city1").toInt();
   ADVICE_ENABLED = server.hasArg("displayadvice");
   IS_24HOUR = server.hasArg("is24hour");
+  SHOW_DATE = server.hasArg("showdate");
   SHOW_CITY = server.hasArg("showcity");
   SHOW_CONDITION = server.hasArg("showcondition");
   SHOW_HUMIDITY = server.hasArg("showhumidity");
@@ -694,6 +714,11 @@ void handleConfigure() {
   }
   form.replace("%CITYNAME1%", cityName);
   form.replace("%CITY1%", String(CityIDs[0]));
+  String isDateChecked = "";
+  if (SHOW_DATE) {
+    isDateChecked = "checked='checked'";
+  }
+  form.replace("%DATE_CHECKED%", isDateChecked);
   String isCityChecked = "";
   if (SHOW_CITY) {
     isCityChecked = "checked='checked'";
@@ -790,9 +815,7 @@ void getWeatherData() //client function to send/receive GET request data.
     centerPrint(".");
     weatherClient.updateWeather();
     if (weatherClient.getError() != "") {
-      do {
         scrollMessage(weatherClient.getError());
-      } while (true);
     }
   }
 
@@ -826,8 +849,9 @@ void getWeatherData() //client function to send/receive GET request data.
     // we need to get offsets
     centerPrint("....");
     timeOffsetFetched = true;
-    GeoNamesClient geoNames(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
+    geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
     UtcOffset = geoNames.getTimeOffset();
+    timeClient.setUtcOffset(UtcOffset);
   }
 
   if (displayOn) {
@@ -955,7 +979,7 @@ void displayWeatherData() {
   }
 
   timeClient.setUtcOffset(getTimeOffset());
-  String time = timeClient.getAmPmFormattedTime();
+  String time = geoNames.getMonthName() + " " + geoNames.getDay(false) + ", " + timeClient.getAmPmFormattedTime();
   
   Serial.println(weatherClient.getCity(0));
   Serial.println(weatherClient.getCondition(0));
@@ -964,7 +988,7 @@ void displayWeatherData() {
   Serial.println(time);
 
   if (weatherClient.getCity(0) == "") {
-    html += "<p>Please <a href='/configure'>Configure Weahter</a> API</p>";
+    html += "<p>Please <a href='/configure'>Configure Weather</a> API</p>";
     if (weatherClient.getError() != "") {
       html += "<p>Weather Error: <strong>" + weatherClient.getError() + "</strong></p>";
     }
@@ -1013,7 +1037,7 @@ void displayWeatherData() {
   if (NEWS_ENABLED) {
     html = "<div class='w3-cell-row' style='width:100%'><h2>News (" + NEWS_SOURCE + ")</h2></div>";
     if (newsClient.getTitle(0) == "") {
-      html += "<p>Please <a href='/configure'>Configure News</a> API</p>";
+      html += "<p>Please <a href='/configurenews'>Configure News</a> API</p>";
       server.sendContent(html);
       html = "";
     } else {
@@ -1047,7 +1071,7 @@ float getTimeOffset() {
   // we need to get offsets
   timeOffsetFetched = true;
 
-  GeoNamesClient geoNames(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
+  geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
   UtcOffset = geoNames.getTimeOffset();
 
   return UtcOffset;
@@ -1212,6 +1236,7 @@ String writeCityIds() {
     f.println("SHOW_CONDITION=" + String(SHOW_CONDITION));
     f.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
     f.println("SHOW_WIND=" + String(SHOW_WIND));
+    f.println("SHOW_DATE=" + String(SHOW_DATE));
   }
   f.close();
   readCityIds();
@@ -1366,6 +1391,10 @@ void readCityIds() {
     if (line.indexOf("SHOW_WIND=") >= 0) {
       SHOW_WIND = line.substring(line.lastIndexOf("SHOW_WIND=") + 10).toInt();
       Serial.println("SHOW_WIND=" + String(SHOW_WIND));
+    }
+    if (line.indexOf("SHOW_DATE=") >= 0) {
+      SHOW_DATE = line.substring(line.lastIndexOf("SHOW_DATE=") + 10).toInt();
+      Serial.println("SHOW_DATE=" + String(SHOW_DATE));
     }
   }
   fr.close();

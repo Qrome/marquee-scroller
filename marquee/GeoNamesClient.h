@@ -34,13 +34,21 @@ private:
 
   int hours = 0;
   int minutes = 0;
+  String datetime = "";
   
   const char* servername = "api.geonames.org";  // remote server we will connect to
 
 public:
   GeoNamesClient(String UserName, String lat, String lon);
+  void updateClient(String UserName, String lat, String lon);
   float getTimeOffset();
-  int getHours();
-  int getMinutes();
+  String getHours();
+  String getMinutes();
+  String getYear();
+  String getMonth00();
+  String getMonth(boolean zeroPad);
+  String getMonthName();
+  String getDay00();
+  String getDay(boolean zeroPad);
 };
 
