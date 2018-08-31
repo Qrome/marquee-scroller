@@ -173,11 +173,15 @@ String NewsApiClient::cleanText(String text) {
   text.replace("È", "E");
   text.replace("Ë", "E");
   text.replace("Ô", "O");
-  text.replace("Ö", "O");
+  text.replace("Ö", "Oe");
+  text.replace("ö", "oe");
   text.replace("œ", "oe");
   text.replace("Œ", "OE");
   text.replace("Ù", "U");
   text.replace("Û", "U");
-  text.replace("Ü", "U");
+  text.replace("Ü", "Ue");
+  text.replace("ü", "ue");
+  text.replace("Ä", "Ae");
+  text.replace("ä", "ae");
   return text;
 }
