@@ -81,7 +81,7 @@ float GeoNamesClient::getTimeOffset() {
   JsonObject& root = json_buf.parseObject(jsonArray);
   String offset = (const char*)root["dstOffset"];
   if (!isDst) {
-    offset = (const char*)root["rawOffset"];
+    offset = (const char*)root["gmtOffset"];
   }
   // Sample time: "2018-03-19 21:22"
   datetime = (const char*)root["time"];
