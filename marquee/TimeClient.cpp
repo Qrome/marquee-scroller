@@ -150,3 +150,5 @@ long TimeClient::getCurrentEpoch() {
 long TimeClient::getCurrentEpochWithUtcOffset() {
   return round(getCurrentEpoch() + 3600 * myUtcOffset + 86400L) % 86400L;
 }
+
+

@@ -31,6 +31,7 @@ private:
   String myLat = "";
   String myLon = "";
   String myUserName = "";
+  boolean isDst = true; // Daylight Savings Time
 
   int hours = 0;
   int minutes = 0;
@@ -39,8 +40,8 @@ private:
   const char* servername = "api.geonames.org";  // remote server we will connect to
 
 public:
-  GeoNamesClient(String UserName, String lat, String lon);
-  void updateClient(String UserName, String lat, String lon);
+  GeoNamesClient(String UserName, String lat, String lon, boolean useDst);
+  void updateClient(String UserName, String lat, String lon, boolean useDst);
   float getTimeOffset();
   String getHours();
   String getMinutes();

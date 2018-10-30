@@ -57,6 +57,5 @@ class TimeClient {
     String getAmPmFormattedTime();
     long getCurrentEpoch();
     long getCurrentEpochWithUtcOffset();
-
 };
 

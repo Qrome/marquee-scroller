@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "Settings.h"
 
-#define VERSION "2.3"
+#define VERSION "2.4"
 
 #define HOSTNAME "CLOCK-" 
 #define CONFIG "/conf.txt"
@@ -69,7 +69,7 @@ boolean displayOn = true;
 boolean timeOffsetFetched = false;
 
 // GeoNames
-GeoNamesClient geoNames(GEONAMES_USER, "", "");
+GeoNamesClient geoNames(GEONAMES_USER, "", "", IS_DST);
 
 // News Client
 NewsApiClient newsClient(NEWS_API_KEY, NEWS_SOURCE);
@@ -107,7 +107,8 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='showcondition' class='w3-check w3-margin-top' type='checkbox' %CONDITION_CHECKED%> Display Weather Condition</p>"
                       "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
-                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
+                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
+                      "<p><input name='isDST' class='w3-check w3-margin-top' type='checkbox' %IS_DST_CHECKED%> Use DST (Daylight Savings Time)</p>";
                             
 String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
@@ -308,7 +309,7 @@ void loop() {
 
     if (timeClient.getHours() == "00" && timeClient.getMinutes() == "00" && timeClient.getSeconds() == "00") {
       // Exactly Midnight -- fetch a new geoNames for updating the Date and time offset
-      geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
+      geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
       UtcOffset = geoNames.getTimeOffset();
     }
 
@@ -343,6 +344,7 @@ void loop() {
       msg += " ";
 
       if (SHOW_DATE) {
+        msg += weatherClient.getWeekDay(0, UtcOffset) + ", ";
         msg += geoNames.getMonthName() + " " + geoNames.getDay(false) + "    ";
       }    
       if (SHOW_CITY) {
@@ -489,6 +491,7 @@ void handleLocations() {
   CityIDs[0] = server.arg("city1").toInt();
   ADVICE_ENABLED = server.hasArg("displayadvice");
   IS_24HOUR = server.hasArg("is24hour");
+  IS_DST = server.hasArg("isDST");
   SHOW_DATE = server.hasArg("showdate");
   SHOW_CITY = server.hasArg("showcity");
   SHOW_CONDITION = server.hasArg("showcondition");
@@ -744,6 +747,11 @@ void handleConfigure() {
     is24hourChecked = "checked='checked'";
   }
   form.replace("%IS_24HOUR_CHECKED%", is24hourChecked);
+  String isDstChecked = "";
+  if (IS_DST) {
+    isDstChecked = "checked='checked'";
+  }
+  form.replace("%IS_DST_CHECKED%", isDstChecked);
   String checked = "";
   if (IS_METRIC) {
     checked = "checked='checked'";
@@ -849,7 +857,7 @@ void getWeatherData() //client function to send/receive GET request data.
     // we need to get offsets
     centerPrint("....");
     timeOffsetFetched = true;
-    geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
+    geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
     UtcOffset = geoNames.getTimeOffset();
     timeClient.setUtcOffset(UtcOffset);
   }
@@ -979,7 +987,7 @@ void displayWeatherData() {
   }
 
   timeClient.setUtcOffset(getTimeOffset());
-  String time = geoNames.getMonthName() + " " + geoNames.getDay(false) + ", " + timeClient.getAmPmFormattedTime();
+  String time = weatherClient.getWeekDay(0, UtcOffset) + ", " + geoNames.getMonthName() + " " + geoNames.getDay(false) + ", " + timeClient.getAmPmFormattedTime();
   
   Serial.println(weatherClient.getCity(0));
   Serial.println(weatherClient.getCondition(0));
@@ -1071,7 +1079,7 @@ float getTimeOffset() {
   // we need to get offsets
   timeOffsetFetched = true;
 
-  geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0));
+  geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
   UtcOffset = geoNames.getTimeOffset();
 
   return UtcOffset;
@@ -1218,6 +1226,7 @@ String writeCityIds() {
     f.println("newsApiKey=" + NEWS_API_KEY);
     f.println("isAdvice=" + String(ADVICE_ENABLED));
     f.println("is24hour=" + String(IS_24HOUR));
+    f.println("isDST=" + String(IS_DST));
     f.println("wideclockformat=" + Wide_Clock_Style);
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
@@ -1282,6 +1291,10 @@ void readCityIds() {
     if (line.indexOf("is24hour=") >= 0) {
       IS_24HOUR = line.substring(line.lastIndexOf("is24hour=") + 9).toInt();
       Serial.println("IS_24HOUR=" + String(IS_24HOUR));
+    }
+    if (line.indexOf("isDST=") >= 0) {
+      IS_DST = line.substring(line.lastIndexOf("isDST=") + 6).toInt();
+      Serial.println("IS_DST=" + String(IS_DST));
     }
     if (line.indexOf("wideclockformat=") >= 0) {
       Wide_Clock_Style = line.substring(line.lastIndexOf("wideclockformat=") + 16);

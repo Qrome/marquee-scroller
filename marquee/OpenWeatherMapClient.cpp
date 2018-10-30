@@ -228,6 +228,41 @@ String OpenWeatherMapClient::getError() {
   return weathers[0].error;
 }
 
+String OpenWeatherMapClient::getWeekDay(int index, float offset) {
+  String rtnValue = "";
+  long epoc = weathers[index].dt.toInt();
+  long day = 0;
+  if (epoc != 0) { 
+    day = (((epoc + (3600 * (int)offset)) / 86400) + 4) % 7;
+    switch (day) {
+      case 0:
+        rtnValue = "Sunday";
+        break;
+      case 1:
+        rtnValue = "Monday";
+        break;
+      case 2:
+        rtnValue = "Tuesday";
+        break;
+      case 3:
+        rtnValue = "Wednesday";
+        break;
+      case 4:
+        rtnValue = "Thursday";
+        break;
+      case 5:
+        rtnValue = "Friday";
+        break;
+      case 6:
+        rtnValue = "Saturday";
+        break;
+      default:
+        break;
+    }
+  }
+  return rtnValue;
+}
+
 String OpenWeatherMapClient::getWeatherIcon(int index)
 {
   int id = getWeatherId(index).toInt();

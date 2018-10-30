@@ -23,14 +23,15 @@ SOFTWARE.
 
 #include "GeoNamesClient.h"
 
-GeoNamesClient::GeoNamesClient(String UserName, String lat, String lon) {
-  updateClient(UserName, lat, lon);
+GeoNamesClient::GeoNamesClient(String UserName, String lat, String lon, boolean useDst) {
+  updateClient(UserName, lat, lon, useDst);
 }
 
-void GeoNamesClient::updateClient(String UserName, String lat, String lon) {
+void GeoNamesClient::updateClient(String UserName, String lat, String lon, boolean useDst) {
   myLat = lat;
   myLon = lon;
   myUserName = UserName;
+  isDst = useDst;
 }
 
 float GeoNamesClient::getTimeOffset() {
@@ -79,6 +80,9 @@ float GeoNamesClient::getTimeOffset() {
   DynamicJsonBuffer json_buf;
   JsonObject& root = json_buf.parseObject(jsonArray);
   String offset = (const char*)root["dstOffset"];
+  if (!isDst) {
+    offset = (const char*)root["gmtOffset"];
+  }
   // Sample time: "2018-03-19 21:22"
   datetime = (const char*)root["time"];
   Serial.println("rawOffset for " + String((const char*)root["timezoneId"]) + " is: " + offset);

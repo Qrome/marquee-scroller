@@ -81,5 +81,6 @@ public:
   String getMyCityIDs();
   String getWeatherIcon(int index);
   String getError();
+  String getWeekDay(int index, float offset);
 };
 
