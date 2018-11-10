@@ -279,7 +279,7 @@ void setup() {
     server.on("/configureoctoprint", handleOctoprintConfigure);
     server.on("/display", handleDisplay);
     server.onNotFound(redirectHome);
-    serverUpdater.setup(&server);
+    serverUpdater.setup(&server, "/update", www_username, www_password);
     // Start the server
     server.begin();
     Serial.println("Server started");
@@ -914,6 +914,7 @@ void sendHeader() {
 
   String WEB_ACTION3 = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
                        "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
+                       "<a class='w3-bar-item w3-button' href='/update'><i class='fa fa-wrench'></i> Firmware Update</a>"
                        "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
 
   String menu = WEB_ACTIONS1;
