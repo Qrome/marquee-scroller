@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.4"
+#define VERSION "2.5"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -1488,4 +1488,3 @@ String decodeHtmlString(String msg) {
   decodedMsg.trim();
   return decodedMsg;
 }
-
