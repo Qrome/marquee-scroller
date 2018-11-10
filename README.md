@@ -38,6 +38,7 @@ SOFTWARE.
 * Configurable number of LED panels
 * Options of different types of Clock Displays (display seconds or temperature) -- only on 8 or more display panels
 * Video: https://youtu.be/DsThufRpoiQ
+* Build Video by Chris Riley: https://youtu.be/KqBiqJT9_lE
 
 ## Required Parts:
 * Wemos D1 Mini: https://amzn.to/2qLyKJd
