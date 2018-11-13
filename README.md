@@ -33,6 +33,7 @@ SOFTWARE.
 * Option to display Bitcoin current value
 * Basic Authorization around Configuration web interface
 * Support for OTA (loading firmware over WiFi)
+* Update firmware through web interface
 * Configurable scroll speed
 * Configurable scrolling frequency
 * Configurable number of LED panels
