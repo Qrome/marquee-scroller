@@ -1,35 +1,35 @@
 /** The MIT License (MIT)
 
-Copyright (c) 2018 David Payne
+  Copyright (c) 2018 David Payne
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 */
 
- /**********************************************
- * Edit Settings.h for personalization
- ***********************************************/
+/**********************************************
+  Edit Settings.h for personalization
+***********************************************/
 
 #include "Settings.h"
 
-#define VERSION "2.4"
+#define VERSION "2.5"
 
-#define HOSTNAME "CLOCK-" 
+#define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
 #define BUZZER_PIN  D2
 
@@ -39,10 +39,10 @@ SOFTWARE.
 #define SECS_PER_DAY  (SECS_PER_HOUR * 24L)
 
 /* Useful Macros for getting elapsed time */
-#define numberOfSeconds(_time_) (_time_ % SECS_PER_MIN)  
-#define numberOfMinutes(_time_) ((_time_ / SECS_PER_MIN) % SECS_PER_MIN) 
+#define numberOfSeconds(_time_) (_time_ % SECS_PER_MIN)
+#define numberOfMinutes(_time_) ((_time_ / SECS_PER_MIN) % SECS_PER_MIN)
 #define numberOfHours(_time_) (( _time_% SECS_PER_DAY) / SECS_PER_HOUR)
-#define elapsedDays(_time_) ( _time_ / SECS_PER_DAY)  
+#define elapsedDays(_time_) ( _time_ / SECS_PER_DAY)
 
 //declairing prototypes
 void configModeCallback (WiFiManager *myWiFiManager);
@@ -58,7 +58,7 @@ Max72xxPanel matrix = Max72xxPanel(pinCS, numberOfHorizontalDisplays, numberOfVe
 String Wide_Clock_Style = "1";  //1="hh:mm Temp", 2="hh:mm:ss", 3="hh:mm"
 float UtcOffset;  //time zone offsets that correspond with the CityID above (offset from GMT)
 
-// Time 
+// Time
 TimeClient timeClient(UtcOffset);
 String lastMinute = "xx";
 int displayRefreshCount = 1;
@@ -95,7 +95,8 @@ int printerCount = 0;
 BitcoinApiClient bitcoinClient;
 
 ESP8266WebServer server(WEBSERVER_PORT);
-                      
+ESP8266HTTPUpdateServer serverUpdater;
+
 String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
                       "<label>OpenWeatherMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
@@ -109,7 +110,7 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
                       "<p><input name='isDST' class='w3-check w3-margin-top' type='checkbox' %IS_DST_CHECKED%> Use DST (Daylight Savings Time)</p>";
-                            
+
 String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
@@ -145,7 +146,7 @@ String NEWS_OPTIONS = "<option>bbc-news</option>"
                       "<option>time</option>"
                       "<option>usa-today</option>"
                       "<option>wired</option>";
-                            
+
 String CURRENCY_OPTIONS = "<option value='NONE'>NONE</option>"
                           "<option value='USD'>United States Dollar</option>"
                           "<option value='AUD'>Australian Dollar</option>"
@@ -168,7 +169,7 @@ void setup() {
   SPIFFS.begin();
   //SPIFFS.remove(CONFIG);
   delay(10);
-  
+
   // Initialize digital pin for LED
   pinMode(externalLight, OUTPUT);
 
@@ -183,7 +184,7 @@ void setup() {
 
   int maxPos = numberOfHorizontalDisplays * numberOfVerticalDisplays;
   for (int i = 0; i < maxPos; i++) {
-    matrix.setRotation(i,3);
+    matrix.setRotation(i, 3);
     matrix.setPosition(i, maxPos - i - 1, 0);
   }
 
@@ -192,13 +193,13 @@ void setup() {
   centerPrint("hello");
 
   tone(BUZZER_PIN, 415, 500);
-  delay(500*1.3);
+  delay(500 * 1.3);
   tone(BUZZER_PIN, 466, 500);
-  delay(500*1.3);
+  delay(500 * 1.3);
   tone(BUZZER_PIN, 370, 1000);
-  delay(1000*1.3);
+  delay(1000 * 1.3);
   noTone(BUZZER_PIN);
-  
+
   for (int inx = 0; inx <= 15; inx++) {
     matrix.setIntensity(inx);
     delay(100);
@@ -214,14 +215,14 @@ void setup() {
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wifiManager;
-  
+
   // Uncomment for testing wifi manager
   //wifiManager.resetSettings();
   wifiManager.setAPCallback(configModeCallback);
-  
+
   //Custom Station (client) Static IP Configuration - Set custom IP for your Network (IP, Gateway, Subnet mask)
   //wifiManager.setSTAStaticIPConfig(IPAddress(192,168,0,99), IPAddress(192,168,0,1), IPAddress(255,255,255,0));
- 
+
   String hostname(HOSTNAME);
   hostname += String(ESP.getChipId(), HEX);
   if (!wifiManager.autoConnect((const char *)hostname.c_str())) {// new addition
@@ -260,7 +261,7 @@ void setup() {
     }
     ArduinoOTA.begin();
   }
-  
+
   if (WEBSERVER_ENABLED) {
     server.on("/", displayWeatherData);
     server.on("/pull", handlePull);
@@ -278,6 +279,7 @@ void setup() {
     server.on("/configureoctoprint", handleOctoprintConfigure);
     server.on("/display", handleDisplay);
     server.onNotFound(redirectHome);
+    serverUpdater.setup(&server, "/update", www_username, www_password);
     // Start the server
     server.begin();
     Serial.println("Server started");
@@ -289,7 +291,7 @@ void setup() {
     Serial.println("Web Interface is Disabled");
     scrollMessage("Web Interface is Disabled");
   }
-   
+
   flashLED(1, 500);
 }
 
@@ -298,7 +300,7 @@ void setup() {
 //************************************************************
 void loop() {
   //Get some Weather Data to serve
-  if((getMinutesFromLastRefresh() >= minutesBetweenDataRefresh) || lastEpoch == 0) {
+  if ((getMinutesFromLastRefresh() >= minutesBetweenDataRefresh) || lastEpoch == 0) {
     getWeatherData();
   }
 
@@ -314,10 +316,10 @@ void loop() {
     }
 
     if (weatherClient.getError() != "") {
-        scrollMessage(weatherClient.getError());
-        return;
+      scrollMessage(weatherClient.getError());
+      return;
     }
-    
+
     if (displayOn) {
       matrix.shutdown(false);
     }
@@ -346,7 +348,7 @@ void loop() {
       if (SHOW_DATE) {
         msg += weatherClient.getWeekDay(0, UtcOffset) + ", ";
         msg += geoNames.getMonthName() + " " + geoNames.getDay(false) + "    ";
-      }    
+      }
       if (SHOW_CITY) {
         msg += weatherClient.getCity(0) + "    ";
       }
@@ -360,7 +362,7 @@ void loop() {
       if (SHOW_WIND) {
         msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
       }
-      
+
       msg += marqueeMessage + " ";
 
       if (NEWS_ENABLED) {
@@ -380,7 +382,7 @@ void loop() {
       if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
         msg += "    Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
       }
-    
+
       scrollMessage(msg);
     }
   }
@@ -408,7 +410,7 @@ void loop() {
     }
   }
   centerPrint(hourMinutes);
-  
+
   if (WEBSERVER_ENABLED) {
     server.handleClient();
   }
@@ -420,7 +422,7 @@ void loop() {
 boolean athentication() {
   if (IS_BASIC_AUTH) {
     return server.authenticate(www_username, www_password);
-  } 
+  }
   return true; // Authentication not required
 }
 
@@ -496,7 +498,7 @@ void handleLocations() {
   SHOW_CITY = server.hasArg("showcity");
   SHOW_CONDITION = server.hasArg("showcondition");
   SHOW_HUMIDITY = server.hasArg("showhumidity");
-  SHOW_WIND = server.hasArg("showwind");  
+  SHOW_WIND = server.hasArg("showwind");
   IS_METRIC = server.hasArg("metric");
   marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
   timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
@@ -554,11 +556,11 @@ void handleBitcoinConfigure() {
   server.send(200, "text/html", "");
 
   sendHeader();
-                   
+
   String BITCOIN_FORM = "<form class='w3-container' action='/savebitcoin' method='get'><h2>Bitcoin Configuration:</h2>"
-                      "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>"
-                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
-  
+                        "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>"
+                        "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+
   String form = BITCOIN_FORM;
   String bitcoinOptions = CURRENCY_OPTIONS;
   bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
@@ -579,8 +581,8 @@ void handleWideClockConfigure() {
   digitalWrite(externalLight, LOW);
 
   String WIDECLOCK_FORM = "<form class='w3-container' action='/savewideclock' method='get'><h2>Wide Clock Configuration:</h2>"
-                      "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>"
-                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+                          "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>"
+                          "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
 
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
@@ -589,13 +591,13 @@ void handleWideClockConfigure() {
   server.send(200, "text/html", "");
 
   sendHeader();
-  
+
   if (numberOfHorizontalDisplays >= 8) {
     // Wide display options
     String form = WIDECLOCK_FORM;
     String clockOptions = "<option value='1'>HH:MM Temperature</option><option value='2'>HH:MM:SS</option><option value='3'>HH:MM</option>";
     clockOptions.replace(Wide_Clock_Style + "'", Wide_Clock_Style + "' selected");
-    form.replace("%WIDECLOCKOPTIONS%", clockOptions); 
+    form.replace("%WIDECLOCKOPTIONS%", clockOptions);
     server.sendContent(form);
   }
 
@@ -613,13 +615,13 @@ void handleNewsConfigure() {
   digitalWrite(externalLight, LOW);
 
   String NEWS_FORM1 =   "<form class='w3-container' action='/savenews' method='get'><h2>News Configuration:</h2>"
-                      "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
-                      "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
-                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
-                      "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>";
+                        "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
+                        "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
+                        "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
+                        "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>";
 
   String NEWS_FORM2 =   "</select></p>"
-                      "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+                        "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
 
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
@@ -641,7 +643,7 @@ void handleNewsConfigure() {
   newsOptions.replace(">" + NEWS_SOURCE + "<", " selected>" + NEWS_SOURCE + "<");
   server.sendContent(newsOptions);
   server.sendContent(NEWS_FORM2);
-  
+
   sendFooter();
 
   server.sendContent("");
@@ -656,14 +658,14 @@ void handleOctoprintConfigure() {
   digitalWrite(externalLight, LOW);
 
   String OCTO_FORM =    "<form class='w3-container' action='/saveoctoprint' method='get'><h2>OctoPrint Configuration:</h2>"
-                      "<p><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status</p>"
-                      "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
-                      "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
-                      "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
-                      "<label>OctoPrint User (only needed if you have haproxy or basic auth turned on)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoUser' value='%OCTOUSER%' maxlength='30'>"
-                      "<label>OctoPrint Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='octoPass' value='%OCTOPASS%'>"
-                      "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
-                      "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";      
+                        "<p><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status</p>"
+                        "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
+                        "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
+                        "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                        "<label>OctoPrint User (only needed if you have haproxy or basic auth turned on)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoUser' value='%OCTOUSER%' maxlength='30'>"
+                        "<label>OctoPrint Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='octoPass' value='%OCTOPASS%'>"
+                        "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
+                        "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
@@ -672,7 +674,7 @@ void handleOctoprintConfigure() {
   server.send(200, "text/html", "");
 
   sendHeader();
-  
+
   String form = OCTO_FORM;
   String isOctoPrintDisplayedChecked = "";
   if (OCTOPRINT_ENABLED) {
@@ -685,7 +687,7 @@ void handleOctoprintConfigure() {
   form.replace("%OCTOUSER%", OctoAuthUser);
   form.replace("%OCTOPASS%", OctoAuthPass);
   server.sendContent(form);
-  
+
   sendFooter();
 
   server.sendContent("");
@@ -758,7 +760,7 @@ void handleConfigure() {
   }
   form.replace("%CHECKED%", checked);
   server.sendContent(form);
-  
+
   form = CHANGE_FORM2;
   String isAdviceDisplayedChecked = "";
   if (ADVICE_ENABLED) {
@@ -778,7 +780,7 @@ void handleConfigure() {
   options.replace(">" + minutes + "<", " selected>" + minutes + "<");
   form.replace("%OPTIONS%", options);
   form.replace("%REFRESH_DISPLAY%", String(minutesBetweenScrolling));
-  
+
   server.sendContent(form); //Send another chunk of the form
 
   form = CHANGE_FORM3;
@@ -823,7 +825,7 @@ void getWeatherData() //client function to send/receive GET request data.
     centerPrint(".");
     weatherClient.updateWeather();
     if (weatherClient.getError() != "") {
-        scrollMessage(weatherClient.getError());
+      scrollMessage(weatherClient.getError());
     }
   }
 
@@ -865,7 +867,7 @@ void getWeatherData() //client function to send/receive GET request data.
   if (displayOn) {
     bitcoinClient.updateBitcoinData(BitcoinCurrencyCode);  // does nothing if BitCoinCurrencyCode is "NONE" or empty
   }
-  
+
   matrix.fillScreen(LOW); // show black
   Serial.println("Version: " + String(VERSION));
   Serial.println();
@@ -885,7 +887,7 @@ void displayMessage(String message) {
   sendFooter();
   server.sendContent("");
   server.client().stop();
-  
+
   digitalWrite(externalLight, HIGH);
 }
 
@@ -902,18 +904,19 @@ void redirectHome() {
 
 void sendHeader() {
   String WEB_ACTIONS1 = "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
-                      "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
-                      "<a class='w3-bar-item w3-button' href='/configurenews'><i class='fa fa-newspaper-o'></i> News</a>"
-                      "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fa fa-cube'></i> OctoPrint</a>";
+                        "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
+                        "<a class='w3-bar-item w3-button' href='/configurenews'><i class='fa fa-newspaper-o'></i> News</a>"
+                        "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fa fa-cube'></i> OctoPrint</a>";
 
   String WEB_ACTIONS2 = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fa fa-usd'></i> Bitcoin</a>"
-                      "<a class='w3-bar-item w3-button' href='/pull'><i class='fa fa-cloud-download'></i> Refresh Data</a>"
-                      "<a class='w3-bar-item w3-button' href='/display'>";
-                      
+                        "<a class='w3-bar-item w3-button' href='/pull'><i class='fa fa-cloud-download'></i> Refresh Data</a>"
+                        "<a class='w3-bar-item w3-button' href='/display'>";
+
   String WEB_ACTION3 = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
-                      "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
-                      "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
-  
+                       "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
+                       "<a class='w3-bar-item w3-button' href='/update'><i class='fa fa-wrench'></i> Firmware Update</a>"
+                       "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
+
   String menu = WEB_ACTIONS1;
   if (numberOfHorizontalDisplays >= 8) {
     menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='fa fa-clock-o'></i> Wide Clock</a>";
@@ -926,7 +929,7 @@ void sendHeader() {
   }
 
   menu += WEB_ACTION3;
-  
+
   String html = "<!DOCTYPE HTML>";
   html += "<html><head><title>Marquee Scroller</title><link rel='icon' href='data:;base64,='>";
   html += "<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />";
@@ -979,7 +982,7 @@ void displayWeatherData() {
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html", "");
   sendHeader();
-  
+
   String temperature = weatherClient.getTemp(0);
 
   if ((temperature.indexOf(".") != -1) && (temperature.length() >= (temperature.indexOf(".") + 2))) {
@@ -988,7 +991,7 @@ void displayWeatherData() {
 
   timeClient.setUtcOffset(getTimeOffset());
   String time = weatherClient.getWeekDay(0, UtcOffset) + ", " + geoNames.getMonthName() + " " + geoNames.getDay(false) + ", " + timeClient.getAmPmFormattedTime();
-  
+
   Serial.println(weatherClient.getCity(0));
   Serial.println(weatherClient.getCondition(0));
   Serial.println(weatherClient.getDescription(0));
@@ -1065,7 +1068,7 @@ void displayWeatherData() {
     server.sendContent(html);
     html = "";
   }
-  
+
   sendFooter();
   server.sendContent("");
   server.client().stop();
@@ -1087,7 +1090,7 @@ float getTimeOffset() {
 
 void configModeCallback (WiFiManager *myWiFiManager) {
   Serial.println("Entered config mode");
-  Serial.println(WiFi.softAPIP());  
+  Serial.println(WiFi.softAPIP());
   Serial.println("Wifi Manager");
   Serial.println("Please connect to AP");
   Serial.println(myWiFiManager->getConfigPortalSSID());
@@ -1098,12 +1101,12 @@ void configModeCallback (WiFiManager *myWiFiManager) {
 
 void flashLED(int number, int delayTime) {
   for (int inx = 0; inx < number; inx++) {
-      tone(BUZZER_PIN, 440, delayTime);
-      delay(delayTime);
-      digitalWrite(externalLight, LOW);
-      delay(delayTime);
-      digitalWrite(externalLight, HIGH);
-      delay(delayTime);
+    tone(BUZZER_PIN, 440, delayTime);
+    delay(delayTime);
+    digitalWrite(externalLight, LOW);
+    delay(delayTime);
+    digitalWrite(externalLight, HIGH);
+    delay(delayTime);
   }
   noTone(BUZZER_PIN);
 }
@@ -1127,12 +1130,12 @@ String getSpeedSymbol() {
 // converts the dBm to a range between 0 and 100%
 int8_t getWifiQuality() {
   int32_t dbm = WiFi.RSSI();
-  if(dbm <= -100) {
-      return 0;
-  } else if(dbm >= -50) {
-      return 100;
+  if (dbm <= -100) {
+    return 0;
+  } else if (dbm >= -50) {
+    return 100;
   } else {
-      return 2 * (dbm + 100);
+    return 2 * (dbm + 100);
   }
 }
 
@@ -1144,17 +1147,17 @@ String getTimeTillUpdate() {
   int hours = numberOfHours(timeToUpdate);
   int minutes = numberOfMinutes(timeToUpdate);
   int seconds = numberOfSeconds(timeToUpdate);
-  
+
   rtnValue += String(hours) + ":";
   if (minutes < 10) {
     rtnValue += "0";
   }
   rtnValue += String(minutes) + ":";
-  if (seconds <10) {
+  if (seconds < 10) {
     rtnValue += "0";
   }
   rtnValue += String(seconds);
-  
+
   return rtnValue;
 }
 
@@ -1192,7 +1195,7 @@ void checkDisplay() {
     return; // nothing to do
   }
   timeClient.setUtcOffset(getTimeOffset());
-  String currentTime = timeClient.getHours() + ":" + timeClient.getMinutes(); 
+  String currentTime = timeClient.getHours() + ":" + timeClient.getMinutes();
 
   if (currentTime == timeDisplayTurnsOn && !displayOn) {
     Serial.println("Time to turn display on: " + currentTime);
@@ -1263,7 +1266,7 @@ void readCityIds() {
   }
   File fr = SPIFFS.open(CONFIG, "r");
   String line;
-  while(fr.available()) {
+  while (fr.available()) {
     line = fr.readStringUntil('\n');
     if (line.indexOf("APIKEY=") >= 0) {
       APIKEY = line.substring(line.lastIndexOf("APIKEY=") + 7);
@@ -1428,14 +1431,14 @@ void scrollMessage(String msg) {
     if (ENABLE_OTA) {
       ArduinoOTA.handle();
     }
-    if (refresh==1) i=0;
-    refresh=0;
+    if (refresh == 1) i = 0;
+    refresh = 0;
     matrix.fillScreen(LOW);
 
     int letter = i / width;
     int x = (matrix.width() - 1) - i % width;
     int y = (matrix.height() - 8) / 2; // center the text vertically
- 
+
     while ( x + width - spacer >= 0 && letter >= 0 ) {
       if ( letter < msg.length() ) {
         matrix.drawChar(x, y, msg[letter], HIGH, LOW, 1);
@@ -1448,7 +1451,7 @@ void scrollMessage(String msg) {
     matrix.write(); // Send bitmap to display
     delay(displayScrollSpeed);
   }
-  matrix.setCursor(0,0);
+  matrix.setCursor(0, 0);
 }
 
 void centerPrint(String msg) {
@@ -1461,29 +1464,28 @@ void centerPrint(String msg) {
 String decodeHtmlString(String msg) {
   String decodedMsg = msg;
   // Restore special characters that are misformed to %char by the client browser
-  decodedMsg.replace("+", " ");      
-  decodedMsg.replace("%21", "!");  
-  decodedMsg.replace("%22", "");  
+  decodedMsg.replace("+", " ");
+  decodedMsg.replace("%21", "!");
+  decodedMsg.replace("%22", "");
   decodedMsg.replace("%23", "#");
   decodedMsg.replace("%24", "$");
-  decodedMsg.replace("%25", "%");  
+  decodedMsg.replace("%25", "%");
   decodedMsg.replace("%26", "&");
-  decodedMsg.replace("%27", "'");  
+  decodedMsg.replace("%27", "'");
   decodedMsg.replace("%28", "(");
   decodedMsg.replace("%29", ")");
   decodedMsg.replace("%2A", "*");
-  decodedMsg.replace("%2B", "+");  
-  decodedMsg.replace("%2C", ",");  
-  decodedMsg.replace("%2F", "/");   
-  decodedMsg.replace("%3A", ":");    
-  decodedMsg.replace("%3B", ";");  
-  decodedMsg.replace("%3C", "<");  
-  decodedMsg.replace("%3D", "=");  
+  decodedMsg.replace("%2B", "+");
+  decodedMsg.replace("%2C", ",");
+  decodedMsg.replace("%2F", "/");
+  decodedMsg.replace("%3A", ":");
+  decodedMsg.replace("%3B", ";");
+  decodedMsg.replace("%3C", "<");
+  decodedMsg.replace("%3D", "=");
   decodedMsg.replace("%3E", ">");
-  decodedMsg.replace("%3F", "?");  
+  decodedMsg.replace("%3F", "?");
   decodedMsg.replace("%40", "@");
   decodedMsg.toUpperCase();
   decodedMsg.trim();
   return decodedMsg;
 }
-
