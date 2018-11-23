@@ -400,7 +400,7 @@ void loop() {
       currentTime += timeSpacer + currentTemp + getTempSymbol();
     }
     if (Wide_Clock_Style == "2") {
-      currentTime += ":" + timeClient.getSeconds();
+      currentTime += secondsIndicator(false) + timeClient.getSeconds();
       matrix.fillScreen(LOW); // show black
     }
     if (Wide_Clock_Style == "3") {
@@ -842,9 +842,10 @@ void getWeatherData() //client function to send/receive GET request data.
     if (firstEpoch != 0) {
       centerPrint(hourMinutes(true));
     } else {
-      centerPrint(":-)");
+      centerPrint("...");
     }
-    matrix.drawPixel(0,0,HIGH);
+    matrix.drawPixel(0, 7, HIGH);
+    matrix.drawPixel(0, 6, HIGH);
     matrix.write();
     
     weatherClient.updateWeather();
@@ -856,7 +857,8 @@ void getWeatherData() //client function to send/receive GET request data.
   Serial.println("Updating Time...");
   //Update the Time
   //centerPrint("..");
-  matrix.drawPixel(1,1,HIGH);
+  matrix.drawPixel(0, 5, HIGH);
+  matrix.drawPixel(0, 4, HIGH);
   Serial.println("matrix Width:" + matrix.width());
   matrix.write();
   timeClient.updateTime();
@@ -872,7 +874,8 @@ void getWeatherData() //client function to send/receive GET request data.
 
   if (NEWS_ENABLED && displayOn) {
     //centerPrint("...");
-    matrix.drawPixel(0,1,HIGH);
+    matrix.drawPixel(0, 3, HIGH);
+    matrix.drawPixel(0, 2, HIGH);;
     matrix.write();
     Serial.println("Getting News Data for " + NEWS_SOURCE);
     newsClient.updateNews();
@@ -880,7 +883,8 @@ void getWeatherData() //client function to send/receive GET request data.
 
   if (ADVICE_ENABLED && displayOn) {
     //centerPrint("...");
-    matrix.drawPixel(0,1,HIGH);
+    matrix.drawPixel(0, 3, HIGH);
+    matrix.drawPixel(0, 2, HIGH);
     matrix.write();
     Serial.println("Getting some Advice");
     adviceClient.updateAdvice();
@@ -889,7 +893,8 @@ void getWeatherData() //client function to send/receive GET request data.
   if (!timeOffsetFetched) {
     // we need to get offsets
     //centerPrint("....");
-    matrix.drawPixel(1,0,HIGH);
+    matrix.drawPixel(0, 1, HIGH);
+    matrix.drawPixel(0, 0, HIGH);
     matrix.write();
     timeOffsetFetched = true;
     geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
