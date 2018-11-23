@@ -387,10 +387,8 @@ void loop() {
     }
   }
 
-  String hourMinutes = timeClient.getAmPmHours() + ":" + timeClient.getMinutes();
-  if (IS_24HOUR) {
-    hourMinutes = timeClient.getHours() + ":" + timeClient.getMinutes();
-  }
+  String currentTime = hourMinutes(false);
+  
   if (numberOfHorizontalDisplays >= 8) {
     if (Wide_Clock_Style == "1") {
       // On Wide Display -- show the current temperature as well
@@ -399,23 +397,41 @@ void loop() {
       if (currentTemp.length() >= 3) {
         timeSpacer = " ";
       }
-      hourMinutes += timeSpacer + currentTemp + getTempSymbol();
+      currentTime += timeSpacer + currentTemp + getTempSymbol();
     }
     if (Wide_Clock_Style == "2") {
-      hourMinutes += ":" + timeClient.getSeconds();
+      currentTime += ":" + timeClient.getSeconds();
       matrix.fillScreen(LOW); // show black
     }
     if (Wide_Clock_Style == "3") {
       // No change this is normal clock display
     }
   }
-  centerPrint(hourMinutes);
+  matrix.fillScreen(LOW);
+  centerPrint(currentTime);
 
   if (WEBSERVER_ENABLED) {
     server.handleClient();
   }
   if (ENABLE_OTA) {
     ArduinoOTA.handle();
+  }
+}
+
+String hourMinutes (bool isRefresh) {
+    
+    if (IS_24HOUR) {
+      return timeClient.getHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
+    } else {
+      return timeClient.getAmPmHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
+    }
+}
+
+String secondsIndicator(bool isRefresh) {
+  if ((timeClient.getSeconds().toInt() % 2) == 0 || isRefresh == true) {
+    return ":";
+  } else {
+    return " ";
   }
 }
 
@@ -822,7 +838,15 @@ void getWeatherData() //client function to send/receive GET request data.
 
   if (displayOn) {
     // only pull the weather data if display is on
-    centerPrint(".");
+    // centerPrint(".");
+    if (firstEpoch != 0) {
+      centerPrint(hourMinutes(true));
+    } else {
+      centerPrint(":-)");
+    }
+    matrix.drawPixel(0,0,HIGH);
+    matrix.write();
+    
     weatherClient.updateWeather();
     if (weatherClient.getError() != "") {
       scrollMessage(weatherClient.getError());
@@ -831,7 +855,10 @@ void getWeatherData() //client function to send/receive GET request data.
 
   Serial.println("Updating Time...");
   //Update the Time
-  centerPrint("..");
+  //centerPrint("..");
+  matrix.drawPixel(1,1,HIGH);
+  Serial.println("matrix Width:" + matrix.width());
+  matrix.write();
   timeClient.updateTime();
   lastEpoch = timeClient.getCurrentEpoch();
   if (firstEpoch == 0) {
@@ -844,20 +871,26 @@ void getWeatherData() //client function to send/receive GET request data.
   }
 
   if (NEWS_ENABLED && displayOn) {
-    centerPrint("...");
+    //centerPrint("...");
+    matrix.drawPixel(0,1,HIGH);
+    matrix.write();
     Serial.println("Getting News Data for " + NEWS_SOURCE);
     newsClient.updateNews();
   }
 
   if (ADVICE_ENABLED && displayOn) {
-    centerPrint("...");
+    //centerPrint("...");
+    matrix.drawPixel(0,1,HIGH);
+    matrix.write();
     Serial.println("Getting some Advice");
     adviceClient.updateAdvice();
   }
 
   if (!timeOffsetFetched) {
     // we need to get offsets
-    centerPrint("....");
+    //centerPrint("....");
+    matrix.drawPixel(1,0,HIGH);
+    matrix.write();
     timeOffsetFetched = true;
     geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
     UtcOffset = geoNames.getTimeOffset();
@@ -868,7 +901,7 @@ void getWeatherData() //client function to send/receive GET request data.
     bitcoinClient.updateBitcoinData(BitcoinCurrencyCode);  // does nothing if BitCoinCurrencyCode is "NONE" or empty
   }
 
-  matrix.fillScreen(LOW); // show black
+  //matrix.fillScreen(LOW); // show black
   Serial.println("Version: " + String(VERSION));
   Serial.println();
   digitalWrite(externalLight, HIGH);
