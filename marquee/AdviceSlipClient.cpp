@@ -23,89 +23,82 @@ SOFTWARE.
 
 #include "AdviceSlipClient.h"
 
-#define arr_len( x )  ( sizeof( x ) / sizeof( *x ) )
-
 AdviceSlipClient::AdviceSlipClient() {
 
 }
 
 void AdviceSlipClient::updateAdvice() {
-  JsonStreamingParser parser;
-  parser.setListener(this);
-  WiFiClient adviceClient;
-
-  String apiGetData = "GET /advice HTTP/1.1";
+  HTTPClient http;
+  
+  String apiGetData = "http://api.adviceslip.com/advice";
 
   Serial.println("Getting Advice Data");
   Serial.println(apiGetData);
+  int beginCode = http.begin(apiGetData, "*");
+  Serial.println("httpBeginCode: " + String(beginCode));
+  http.addHeader("Accept", "application/json");
+  int httpCode = http.GET();
 
-  if (adviceClient.connect(servername, 80)) {  //starts client connection, checks for connection
-    adviceClient.println(apiGetData);
-    adviceClient.println("Host: " + String(servername));
-    adviceClient.println("User-Agent: ArduinoWiFi/1.1");
-    adviceClient.println("Connection: close");
-    adviceClient.println();
-  } 
-  else {
-    Serial.println("connection for advice data failed: " + String(servername)); //error message if no client connect
+  String result = "";
+
+  if (httpCode > 0) {  // checks for connection
+    Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+    if(httpCode == HTTP_CODE_OK) {
+      // get length of document (is -1 when Server sends no Content-Length header)
+      int len = http.getSize();
+      // create buffer for read
+      char buff[128] = { 0 };
+      // get tcp stream
+      WiFiClient * stream = http.getStreamPtr();
+      // read all data from server
+      Serial.println("Start reading...");
+      while(http.connected() && (len > 0 || len == -1)) {
+        // get available data size
+        size_t size = stream->available();
+        if(size) {
+          // read up to 128 byte
+          int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+          for(int i=0;i<c;i++) {
+            result += buff[i];
+          }
+            
+          if(len > 0)
+            len -= c;
+          }
+        delay(1);
+      }
+    }
+    http.end();
+  } else {
+    Serial.println("connection for Advice data failed: " + String(apiGetData) + " Code: " + httpCode); //error message if no client connect
     Serial.println();
     return;
   }
-  
-  while(adviceClient.connected() && !adviceClient.available()) delay(1); //waits for data
- 
-  Serial.println("Waiting for data");
+  //Clean dirty results
+  result.remove(0, result.indexOf("{"));
+  result.remove(result.lastIndexOf("}") + 1);
+  Serial.println("Results:");
+  Serial.println(result);
+  Serial.println("End");
 
-  int size = 0;
-  char c;
-  boolean isBody = false;
-  while (adviceClient.connected() || adviceClient.available()) { //connected or data available
-    c = adviceClient.read(); //gets byte from ethernet buffer
-    if (c == '{' || c == '[') {
-      isBody = true;
-    }
-    if (isBody) {
-      parser.parse(c);
-    }
+  char jsonArray [result.length()+1];
+  result.toCharArray(jsonArray,sizeof(jsonArray));
+  DynamicJsonBuffer json_buf;
+  JsonObject& root = json_buf.parseObject(jsonArray);
+
+  if (!root.success()) {
+    Serial.println(F("Advice Data Parsing failed!"));
+    return;
   }
-  adviceClient.stop(); //stop client
+
+  advice.adVice = (const char*)root["slip"]["advice"];
+  advice.adVice = cleanText(String(advice.adVice));
+  Serial.println("Advice: " + advice.adVice);
+  Serial.println();
 }
 
 String AdviceSlipClient::getAdvice() {
   return advice.adVice;
-}
-
-void AdviceSlipClient::whitespace(char c) {
-
-}
-
-void AdviceSlipClient::startDocument() {
-  
-}
-
-void AdviceSlipClient::key(String key) {
-  currentKey = key;
-}
-
-void AdviceSlipClient::value(String value) {
-  if (currentKey == "advice") {
-    advice.adVice = cleanText(value);
-  }
-  Serial.println(currentKey + "=" + value);
-}
-
-void AdviceSlipClient::endArray() {
-}
-
-void AdviceSlipClient::endObject() {
-}
-void AdviceSlipClient::startArray() {
-}
-
-void AdviceSlipClient::startObject() {
-}
-
-void AdviceSlipClient::endDocument() {
 }
 
 String AdviceSlipClient::cleanText(String text) {

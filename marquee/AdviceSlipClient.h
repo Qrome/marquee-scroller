@@ -23,10 +23,10 @@ SOFTWARE.
 
 #pragma once
 #include <ESP8266WiFi.h>
-#include <JsonListener.h>
-#include <JsonStreamingParser.h>
+#include <ESP8266HTTPClient.h>
+#include <ArduinoJson.h>
 
-class AdviceSlipClient: public JsonListener {
+class AdviceSlipClient {
 
   private:
     
@@ -37,24 +37,12 @@ class AdviceSlipClient: public JsonListener {
     } advicefeed;
 
     advicefeed advice;
-    
-    const char* servername = "api.adviceslip.com";  // remote server we will connect to
-  
+
+    String cleanText(String text);
+      
   public:
     AdviceSlipClient();
     void updateAdvice();
     
     String getAdvice();
-    String cleanText(String text);
-    
-    virtual void whitespace(char c);
-    virtual void startDocument();
-    virtual void key(String key);
-    virtual void value(String value);
-    virtual void endArray();
-    virtual void endObject();
-    virtual void endDocument();
-    virtual void startArray();
-    virtual void startObject();
-
 };

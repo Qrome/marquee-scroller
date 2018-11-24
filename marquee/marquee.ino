@@ -112,11 +112,12 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='isDST' class='w3-check w3-margin-top' type='checkbox' %IS_DST_CHECKED%> Use DST (Daylight Savings Time)</p>";
 
 String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice</p>"
+                      "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
                       "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
-                      "<p>Select Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='1' max='15' value='%INTENSITYOPTIONS%'></p>"
-                      "<p>Select Display Scroll Speed <select class='w3-option w3-padding' name='scrollspeed'>%SCROLLOPTIONS%</select></p>"
+                      "<p>Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='1' max='15' value='%INTENSITYOPTIONS%'></p>"
+                      "<p>Display Scroll Speed <select class='w3-option w3-padding' name='scrollspeed'>%SCROLLOPTIONS%</select></p>"
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
                       "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
 
@@ -178,7 +179,7 @@ void setup() {
 
   readCityIds();
 
-  Serial.println("Number os LED Displays: " + String(numberOfHorizontalDisplays));
+  Serial.println("Number of LED Displays: " + String(numberOfHorizontalDisplays));
   // initialize dispaly
   matrix.setIntensity(0); // Use a value between 0 and 15 for brightness
 
@@ -418,21 +419,20 @@ void loop() {
   }
 }
 
-String hourMinutes (bool isRefresh) {
-    
-    if (IS_24HOUR) {
-      return timeClient.getHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
-    } else {
-      return timeClient.getAmPmHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
-    }
+String hourMinutes(boolean isRefresh) {
+  if (IS_24HOUR) {
+    return timeClient.getHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
+  } else {
+    return timeClient.getAmPmHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
+  }
 }
 
-String secondsIndicator(bool isRefresh) {
-  if ((timeClient.getSeconds().toInt() % 2) == 0 || isRefresh == true) {
-    return ":";
-  } else {
-    return " ";
+String secondsIndicator(boolean isRefresh) {
+  String rtnValue = ":";
+  if (isRefresh == false && (flashOnSeconds && (timeClient.getSeconds().toInt() % 2) == 0)) {
+    rtnValue = " ";
   }
+  return rtnValue;
 }
 
 boolean athentication() {
@@ -508,6 +508,7 @@ void handleLocations() {
   APIKEY = server.arg("openWeatherMapApiKey");
   CityIDs[0] = server.arg("city1").toInt();
   ADVICE_ENABLED = server.hasArg("displayadvice");
+  flashOnSeconds = server.hasArg("flashseconds");
   IS_24HOUR = server.hasArg("is24hour");
   IS_DST = server.hasArg("isDST");
   SHOW_DATE = server.hasArg("showdate");
@@ -783,6 +784,11 @@ void handleConfigure() {
     isAdviceDisplayedChecked = "checked='checked'";
   }
   form.replace("%ADVICECHECKED%", isAdviceDisplayedChecked);
+  String isFlashSecondsChecked = "";
+  if (flashOnSeconds) {
+    isFlashSecondsChecked = "checked='checked'";
+  }
+  form.replace("%FLASHSECONDS%", isFlashSecondsChecked);
   form.replace("%MSG%", marqueeMessage);
   form.replace("%STARTTIME%", timeDisplayTurnsOn);
   form.replace("%ENDTIME%", timeDisplayTurnsOff);
@@ -1266,6 +1272,7 @@ String writeCityIds() {
     f.println("isNews=" + String(NEWS_ENABLED));
     f.println("newsApiKey=" + NEWS_API_KEY);
     f.println("isAdvice=" + String(ADVICE_ENABLED));
+    f.println("isFlash=" + String(flashOnSeconds));
     f.println("is24hour=" + String(IS_24HOUR));
     f.println("isDST=" + String(IS_DST));
     f.println("wideclockformat=" + Wide_Clock_Style);
@@ -1328,6 +1335,14 @@ void readCityIds() {
       NEWS_API_KEY = line.substring(line.lastIndexOf("newsApiKey=") + 11);
       NEWS_API_KEY.trim();
       Serial.println("NEWS_API_KEY: " + NEWS_API_KEY);
+    }
+    if (line.indexOf("isAdvice=") >= 0) {
+      ADVICE_ENABLED = line.substring(line.lastIndexOf("isAdvice=") + 9).toInt();
+      Serial.println("ADVICE_ENABLED=" + String(ADVICE_ENABLED));
+    }
+    if (line.indexOf("isFlash=") >= 0) {
+      flashOnSeconds = line.substring(line.lastIndexOf("isFlash=") + 8).toInt();
+      Serial.println("flashOnSeconds=" + String(flashOnSeconds));
     }
     if (line.indexOf("is24hour=") >= 0) {
       IS_24HOUR = line.substring(line.lastIndexOf("is24hour=") + 9).toInt();

@@ -49,7 +49,7 @@ void BitcoinApiClient::updateBitcoinData(String currencyCode) {
   if (httpCode > 0) {  // checks for connection
     Serial.printf("[HTTP] GET... code: %d\n", httpCode);
     if(httpCode == HTTP_CODE_OK) {
-      // get lenght of document (is -1 when Server sends no Content-Length header)
+      // get length of document (is -1 when Server sends no Content-Length header)
       int len = http.getSize();
       // create buffer for read
       char buff[128] = { 0 };
@@ -75,7 +75,7 @@ void BitcoinApiClient::updateBitcoinData(String currencyCode) {
     }
     http.end();
   } else {
-    Serial.println("connection for news data failed: " + String(apiGetData)); //error message if no client connect
+    Serial.println("connection for BitCoin data failed: " + String(apiGetData)); //error message if no client connect
     Serial.println();
     return;
   }
