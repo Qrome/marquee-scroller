@@ -29,7 +29,6 @@ SOFTWARE.
 * News Headlines from all the major sources
 * Configured through Web Interface
 * Display 3D print progress from your OctoPrint Server
-* Option to display random goofy advice
 * Option to display Bitcoin current value
 * Basic Authorization around Configuration web interface
 * Support for OTA (loading firmware over WiFi)
