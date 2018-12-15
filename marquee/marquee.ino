@@ -75,9 +75,6 @@ GeoNamesClient geoNames(GEONAMES_USER, "", "", IS_DST);
 NewsApiClient newsClient(NEWS_API_KEY, NEWS_SOURCE);
 int newsIndex = 0;
 
-// Advice Client
-AdviceSlipClient adviceClient;
-
 // Weather Client
 OpenWeatherMapClient weatherClient(APIKEY, CityIDs, 1, IS_METRIC);
 // (some) Default Weather Settings
@@ -111,8 +108,7 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
                       "<p><input name='isDST' class='w3-check w3-margin-top' type='checkbox' %IS_DST_CHECKED%> Use DST (Daylight Savings Time)</p>";
 
-String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice</p>"
-                      "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
+String CHANGE_FORM2 = "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
                       "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
@@ -373,9 +369,6 @@ void loop() {
           newsIndex = 0;
         }
       }
-      if (ADVICE_ENABLED) {
-        msg += "  Advice: " + adviceClient.getAdvice() + " ";
-      }
       if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
         msg += "   " + printerClient.getFileName() + " ";
         msg += "(" + printerClient.getProgressCompletion() + "%)   ";
@@ -507,7 +500,6 @@ void handleLocations() {
   }
   APIKEY = server.arg("openWeatherMapApiKey");
   CityIDs[0] = server.arg("city1").toInt();
-  ADVICE_ENABLED = server.hasArg("displayadvice");
   flashOnSeconds = server.hasArg("flashseconds");
   IS_24HOUR = server.hasArg("is24hour");
   IS_DST = server.hasArg("isDST");
@@ -779,11 +771,6 @@ void handleConfigure() {
   server.sendContent(form);
 
   form = CHANGE_FORM2;
-  String isAdviceDisplayedChecked = "";
-  if (ADVICE_ENABLED) {
-    isAdviceDisplayedChecked = "checked='checked'";
-  }
-  form.replace("%ADVICECHECKED%", isAdviceDisplayedChecked);
   String isFlashSecondsChecked = "";
   if (flashOnSeconds) {
     isFlashSecondsChecked = "checked='checked'";
@@ -885,15 +872,6 @@ void getWeatherData() //client function to send/receive GET request data.
     matrix.write();
     Serial.println("Getting News Data for " + NEWS_SOURCE);
     newsClient.updateNews();
-  }
-
-  if (ADVICE_ENABLED && displayOn) {
-    //centerPrint("...");
-    matrix.drawPixel(0, 3, HIGH);
-    matrix.drawPixel(0, 2, HIGH);
-    matrix.write();
-    Serial.println("Getting some Advice");
-    adviceClient.updateAdvice();
   }
 
   if (!timeOffsetFetched) {
@@ -1105,14 +1083,6 @@ void displayWeatherData() {
     }
   }
 
-  if (ADVICE_ENABLED) {
-    html = "<div class='w3-cell-row' style='width:100%'><h2>Advice Slip</h2></div>";
-    html += "<div class='w3-cell-row'>Current Advice: </div>";
-    html += "<div class='w3-cell-row'>" + adviceClient.getAdvice() + "</div><br>";
-    server.sendContent(html);
-    html = "";
-  }
-
   sendFooter();
   server.sendContent("");
   server.client().stop();
@@ -1271,7 +1241,6 @@ String writeCityIds() {
     f.println("scrollSpeed=" + String(displayScrollSpeed));
     f.println("isNews=" + String(NEWS_ENABLED));
     f.println("newsApiKey=" + NEWS_API_KEY);
-    f.println("isAdvice=" + String(ADVICE_ENABLED));
     f.println("isFlash=" + String(flashOnSeconds));
     f.println("is24hour=" + String(IS_24HOUR));
     f.println("isDST=" + String(IS_DST));
@@ -1335,10 +1304,6 @@ void readCityIds() {
       NEWS_API_KEY = line.substring(line.lastIndexOf("newsApiKey=") + 11);
       NEWS_API_KEY.trim();
       Serial.println("NEWS_API_KEY: " + NEWS_API_KEY);
-    }
-    if (line.indexOf("isAdvice=") >= 0) {
-      ADVICE_ENABLED = line.substring(line.lastIndexOf("isAdvice=") + 9).toInt();
-      Serial.println("ADVICE_ENABLED=" + String(ADVICE_ENABLED));
     }
     if (line.indexOf("isFlash=") >= 0) {
       flashOnSeconds = line.substring(line.lastIndexOf("isFlash=") + 8).toInt();
