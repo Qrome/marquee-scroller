@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.5"
+#define VERSION "2.6"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -75,9 +75,6 @@ GeoNamesClient geoNames(GEONAMES_USER, "", "", IS_DST);
 NewsApiClient newsClient(NEWS_API_KEY, NEWS_SOURCE);
 int newsIndex = 0;
 
-// Advice Client
-AdviceSlipClient adviceClient;
-
 // Weather Client
 OpenWeatherMapClient weatherClient(APIKEY, CityIDs, 1, IS_METRIC);
 // (some) Default Weather Settings
@@ -111,12 +108,12 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
                       "<p><input name='isDST' class='w3-check w3-margin-top' type='checkbox' %IS_DST_CHECKED%> Use DST (Daylight Savings Time)</p>";
 
-String CHANGE_FORM2 = "<p><input name='displayadvice' class='w3-check w3-margin-top' type='checkbox' %ADVICECHECKED%> Display Advice</p>"
+String CHANGE_FORM2 = "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
                       "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
-                      "<p>Select Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='1' max='15' value='%INTENSITYOPTIONS%'></p>"
-                      "<p>Select Display Scroll Speed <select class='w3-option w3-padding' name='scrollspeed'>%SCROLLOPTIONS%</select></p>"
+                      "<p>Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='1' max='15' value='%INTENSITYOPTIONS%'></p>"
+                      "<p>Display Scroll Speed <select class='w3-option w3-padding' name='scrollspeed'>%SCROLLOPTIONS%</select></p>"
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
                       "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
 
@@ -178,7 +175,7 @@ void setup() {
 
   readCityIds();
 
-  Serial.println("Number os LED Displays: " + String(numberOfHorizontalDisplays));
+  Serial.println("Number of LED Displays: " + String(numberOfHorizontalDisplays));
   // initialize dispaly
   matrix.setIntensity(0); // Use a value between 0 and 15 for brightness
 
@@ -372,9 +369,6 @@ void loop() {
           newsIndex = 0;
         }
       }
-      if (ADVICE_ENABLED) {
-        msg += "  Advice: " + adviceClient.getAdvice() + " ";
-      }
       if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
         msg += "   " + printerClient.getFileName() + " ";
         msg += "(" + printerClient.getProgressCompletion() + "%)   ";
@@ -387,10 +381,8 @@ void loop() {
     }
   }
 
-  String hourMinutes = timeClient.getAmPmHours() + ":" + timeClient.getMinutes();
-  if (IS_24HOUR) {
-    hourMinutes = timeClient.getHours() + ":" + timeClient.getMinutes();
-  }
+  String currentTime = hourMinutes(false);
+  
   if (numberOfHorizontalDisplays >= 8) {
     if (Wide_Clock_Style == "1") {
       // On Wide Display -- show the current temperature as well
@@ -399,17 +391,18 @@ void loop() {
       if (currentTemp.length() >= 3) {
         timeSpacer = " ";
       }
-      hourMinutes += timeSpacer + currentTemp + getTempSymbol();
+      currentTime += timeSpacer + currentTemp + getTempSymbol();
     }
     if (Wide_Clock_Style == "2") {
-      hourMinutes += ":" + timeClient.getSeconds();
+      currentTime += secondsIndicator(false) + timeClient.getSeconds();
       matrix.fillScreen(LOW); // show black
     }
     if (Wide_Clock_Style == "3") {
       // No change this is normal clock display
     }
   }
-  centerPrint(hourMinutes);
+  matrix.fillScreen(LOW);
+  centerPrint(currentTime);
 
   if (WEBSERVER_ENABLED) {
     server.handleClient();
@@ -417,6 +410,22 @@ void loop() {
   if (ENABLE_OTA) {
     ArduinoOTA.handle();
   }
+}
+
+String hourMinutes(boolean isRefresh) {
+  if (IS_24HOUR) {
+    return timeClient.getHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
+  } else {
+    return timeClient.getAmPmHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
+  }
+}
+
+String secondsIndicator(boolean isRefresh) {
+  String rtnValue = ":";
+  if (isRefresh == false && (flashOnSeconds && (timeClient.getSeconds().toInt() % 2) == 0)) {
+    rtnValue = " ";
+  }
+  return rtnValue;
 }
 
 boolean athentication() {
@@ -491,7 +500,7 @@ void handleLocations() {
   }
   APIKEY = server.arg("openWeatherMapApiKey");
   CityIDs[0] = server.arg("city1").toInt();
-  ADVICE_ENABLED = server.hasArg("displayadvice");
+  flashOnSeconds = server.hasArg("flashseconds");
   IS_24HOUR = server.hasArg("is24hour");
   IS_DST = server.hasArg("isDST");
   SHOW_DATE = server.hasArg("showdate");
@@ -762,11 +771,11 @@ void handleConfigure() {
   server.sendContent(form);
 
   form = CHANGE_FORM2;
-  String isAdviceDisplayedChecked = "";
-  if (ADVICE_ENABLED) {
-    isAdviceDisplayedChecked = "checked='checked'";
+  String isFlashSecondsChecked = "";
+  if (flashOnSeconds) {
+    isFlashSecondsChecked = "checked='checked'";
   }
-  form.replace("%ADVICECHECKED%", isAdviceDisplayedChecked);
+  form.replace("%FLASHSECONDS%", isFlashSecondsChecked);
   form.replace("%MSG%", marqueeMessage);
   form.replace("%STARTTIME%", timeDisplayTurnsOn);
   form.replace("%ENDTIME%", timeDisplayTurnsOff);
@@ -822,7 +831,16 @@ void getWeatherData() //client function to send/receive GET request data.
 
   if (displayOn) {
     // only pull the weather data if display is on
-    centerPrint(".");
+    // centerPrint(".");
+    if (firstEpoch != 0) {
+      centerPrint(hourMinutes(true));
+    } else {
+      centerPrint("...");
+    }
+    matrix.drawPixel(0, 7, HIGH);
+    matrix.drawPixel(0, 6, HIGH);
+    matrix.write();
+    
     weatherClient.updateWeather();
     if (weatherClient.getError() != "") {
       scrollMessage(weatherClient.getError());
@@ -831,7 +849,11 @@ void getWeatherData() //client function to send/receive GET request data.
 
   Serial.println("Updating Time...");
   //Update the Time
-  centerPrint("..");
+  //centerPrint("..");
+  matrix.drawPixel(0, 5, HIGH);
+  matrix.drawPixel(0, 4, HIGH);
+  Serial.println("matrix Width:" + matrix.width());
+  matrix.write();
   timeClient.updateTime();
   lastEpoch = timeClient.getCurrentEpoch();
   if (firstEpoch == 0) {
@@ -844,20 +866,20 @@ void getWeatherData() //client function to send/receive GET request data.
   }
 
   if (NEWS_ENABLED && displayOn) {
-    centerPrint("...");
+    //centerPrint("...");
+    matrix.drawPixel(0, 3, HIGH);
+    matrix.drawPixel(0, 2, HIGH);;
+    matrix.write();
     Serial.println("Getting News Data for " + NEWS_SOURCE);
     newsClient.updateNews();
   }
 
-  if (ADVICE_ENABLED && displayOn) {
-    centerPrint("...");
-    Serial.println("Getting some Advice");
-    adviceClient.updateAdvice();
-  }
-
   if (!timeOffsetFetched) {
     // we need to get offsets
-    centerPrint("....");
+    //centerPrint("....");
+    matrix.drawPixel(0, 1, HIGH);
+    matrix.drawPixel(0, 0, HIGH);
+    matrix.write();
     timeOffsetFetched = true;
     geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
     UtcOffset = geoNames.getTimeOffset();
@@ -868,7 +890,7 @@ void getWeatherData() //client function to send/receive GET request data.
     bitcoinClient.updateBitcoinData(BitcoinCurrencyCode);  // does nothing if BitCoinCurrencyCode is "NONE" or empty
   }
 
-  matrix.fillScreen(LOW); // show black
+  //matrix.fillScreen(LOW); // show black
   Serial.println("Version: " + String(VERSION));
   Serial.println();
   digitalWrite(externalLight, HIGH);
@@ -1061,14 +1083,6 @@ void displayWeatherData() {
     }
   }
 
-  if (ADVICE_ENABLED) {
-    html = "<div class='w3-cell-row' style='width:100%'><h2>Advice Slip</h2></div>";
-    html += "<div class='w3-cell-row'>Current Advice: </div>";
-    html += "<div class='w3-cell-row'>" + adviceClient.getAdvice() + "</div><br>";
-    server.sendContent(html);
-    html = "";
-  }
-
   sendFooter();
   server.sendContent("");
   server.client().stop();
@@ -1227,7 +1241,7 @@ String writeCityIds() {
     f.println("scrollSpeed=" + String(displayScrollSpeed));
     f.println("isNews=" + String(NEWS_ENABLED));
     f.println("newsApiKey=" + NEWS_API_KEY);
-    f.println("isAdvice=" + String(ADVICE_ENABLED));
+    f.println("isFlash=" + String(flashOnSeconds));
     f.println("is24hour=" + String(IS_24HOUR));
     f.println("isDST=" + String(IS_DST));
     f.println("wideclockformat=" + Wide_Clock_Style);
@@ -1290,6 +1304,10 @@ void readCityIds() {
       NEWS_API_KEY = line.substring(line.lastIndexOf("newsApiKey=") + 11);
       NEWS_API_KEY.trim();
       Serial.println("NEWS_API_KEY: " + NEWS_API_KEY);
+    }
+    if (line.indexOf("isFlash=") >= 0) {
+      flashOnSeconds = line.substring(line.lastIndexOf("isFlash=") + 8).toInt();
+      Serial.println("flashOnSeconds=" + String(flashOnSeconds));
     }
     if (line.indexOf("is24hour=") >= 0) {
       IS_24HOUR = line.substring(line.lastIndexOf("is24hour=") + 9).toInt();

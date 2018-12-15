@@ -52,7 +52,6 @@ SOFTWARE.
 #include "TimeClient.h" // Using updated lib by Qrome
 #include "NewsApiClient.h" 
 #include "OctoPrintClient.h"
-#include "AdviceSlipClient.h"
 #include "BitcoinApiClient.h"
 
 //******************************
@@ -74,12 +73,11 @@ char* www_password = "password";  // Password for the Web Interface
 int minutesBetweenDataRefresh = 15;  // Time in minutes between data refresh (default 15 minutes)
 int minutesBetweenScrolling = 1; // Time in minutes between scrolling data (default 1 minutes and max is 10)
 int displayScrollSpeed = 25; // In milliseconds -- Configurable by the web UI (slow = 35, normal = 25, fast = 15)
+boolean flashOnSeconds = true; // when true the : character in the time will flash on and off as a seconds indicator
 
 boolean NEWS_ENABLED = true;
 String NEWS_API_KEY = ""; // Get your News API Key from https://newsapi.org
 String NEWS_SOURCE = "reuters";  // https://newsapi.org/sources to get full list of news sources available
-
-boolean ADVICE_ENABLED = false;
 
 // Display Settings
 // CLK -> D5 (SCK)  
@@ -87,7 +85,7 @@ boolean ADVICE_ENABLED = false;
 // DIN -> D7 (MOSI)
 const int pinCS = D6; // Attach CS to this pin, DIN to MOSI and CLK to SCK (cf http://arduino.cc/en/Reference/SPI )
 int displayIntensity = 1;  //(This can be set from 1 - 15)
-const int numberOfHorizontalDisplays = 4; // default 4 for standard 4 x 1 display Max size of 16
+const int numberOfHorizontalDisplays = 8; // default 4 for standard 4 x 1 display Max size of 16
 const int numberOfVerticalDisplays = 1; // default 1 for a single row height
 
 String timeDisplayTurnsOn = "06:30";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
