@@ -38,6 +38,20 @@ private:
   String datetime = "";
   
   const char* servername = "api.geonames.org";  // remote server we will connect to
+   
+  // start Mount Mach to October
+  int startMonth = 3;
+  int endMonth = 10;
+
+  // last week momth
+  int startWeek = 5;
+  int endWeek = 5;
+
+  // set Sun
+  int startDOW = 0;
+  int endDOW = 0;
+
+
 
 public:
   GeoNamesClient(String UserName, String lat, String lon, boolean useDst);
@@ -45,11 +59,17 @@ public:
   float getTimeOffset();
   String getHours();
   String getMinutes();
-  String getYear();
+  String getYear(boolean zeroPad); //GodIvan
+  String getYear00(); //GodIvan
   String getMonth00();
   String getMonth(boolean zeroPad);
   String getMonthName();
   String getDay00();
   String getDay(boolean zeroPad);
-};
+  char NthDate(int year, char month, char DOW, char NthWeek);
+  void setDST(int smonth,int sweek,int sdow,int emonth,int eweek,int edow);
+  boolean getDST();
+  char dow(int y, char m, char d);
 
+
+};

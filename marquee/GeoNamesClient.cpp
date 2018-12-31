@@ -31,7 +31,18 @@ void GeoNamesClient::updateClient(String UserName, String lat, String lon, boole
   myLat = lat;
   myLon = lon;
   myUserName = UserName;
-  isDst = useDst;
+  //isDst = useDst;
+
+  if(useDst)
+  {
+    isDst = getDST();
+  }
+  else
+  {
+    isDst = false;
+  }
+
+  Serial.println("status isDst " + String(isDst));
 }
 
 float GeoNamesClient::getTimeOffset() {
@@ -107,12 +118,23 @@ String GeoNamesClient::getMinutes() {
   return rtnValue;
 }
 
-String GeoNamesClient::getYear() {
+//GodzIvan
+String GeoNamesClient::getYear00() {
   String rtnValue = "";
   if (datetime.length() > 4) {
     rtnValue = datetime.substring(0, 4);
   }
   return rtnValue;
+}
+
+//GodzIvan
+String GeoNamesClient::getYear(boolean zeroPad) {
+  String rtnValue = getYear00();
+  if (zeroPad) {
+    return rtnValue;
+  }
+  int year = rtnValue.toInt();
+  return String(year);
 }
 
 String GeoNamesClient::getMonth00() {
@@ -196,5 +218,131 @@ String GeoNamesClient::getDay00() {
 }
 
 
+/*--------------------------------------------------------------------------
+  FUNC: 6/11/11 - Returns day of week for any given date
+  PARAMS: year, month, date
+  RETURNS: day of week (0-6 is Sun-Sat)
+  NOTES: Sakamoto's Algorithm
+    http://en.wikipedia.org/wiki/Calculating_the_day_of_the_week#Sakamoto.27s_algorithm
+    Altered to use char when possible to save microcontroller ram
+  https://it.wikipedia.org/wiki/Ora_legale_nel_mondo
+--------------------------------------------------------------------------*/
+char GeoNamesClient::dow(int y, char m, char d)
+   {
+       static char t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+       y -= m < 3;
+       return (y + y/4 - y/100 + y/400 + t[m-1] + d) % 7;
+   }
+
+/*--------------------------------------------------------------------------
+  FUNC: 6/11/11 - Returns the date for Nth day of month. For instance,
+    it will return the numeric date for the 2nd Sunday of April
+  PARAMS: year, month, day of week, Nth occurence of that day in that month
+  RETURNS: date
+  NOTES: There is no error checking for invalid inputs.
+--------------------------------------------------------------------------*/
+char GeoNamesClient::NthDate(int y, char m, char DOW, char NthWeek)
+ {
+  char targetDate = 1;
+  char targetDay=31;
+
+  char firstDOW = dow(y,m,targetDate);
+  while (firstDOW != DOW){ 
+    firstDOW = (firstDOW+1)%7;
+    targetDate++;
+  }
+  //Adjust for weeks
+  targetDate += (NthWeek-1)*7;
+
+  switch (m)
+  {
+  default:
+    targetDay=31;
+    break;
+  case 2:
+    if ((y % 4 == 0 && y % 100 != 0) || y % 400 == 0)
+    {
+      targetDay=28;
+    }
+    else
+    {
+      targetDay=29;
+    }
+    break;
+  case 4:
+    targetDay=30;
+    break;
+  case 9:
+    targetDay=30;
+    break;
+  case 11:
+    targetDay=30;
+    break;
+  }
+  
+  if(targetDate > targetDay){targetDate=targetDate-7;}
+  
+  return targetDate;
+}
+
+boolean GeoNamesClient::getDST()
+{
+  boolean tmpDST = false;
+
+  int year;
+  int month;
+  int day;
+  
+  day   = getDay00().toInt();
+  month = getMonth00().toInt();
+  year  = getYear00().toInt();
+  
+  if ( month > startMonth && month < endMonth )
+  {
+    tmpDST = true;
+  }
+
+  if ( month == startMonth )
+  {
+    if (day >= NthDate(year,startMonth,startDOW,startWeek))
+    {
+      tmpDST = true;
+    }
+    tmpDST = false;
+  }
+  
+  if ( month == endMonth )
+  {
+    if (day >= NthDate(year,endMonth,endDOW,endWeek))
+    {
+      tmpDST = false;
+    }
+    tmpDST = true;
+  }
+
+#if 0
+ Serial.println("Year " + String(year) + " Month " + String(month) + " Day " + String(day) +  " DST " + String(tmpDST));
+ Serial.println("startMonth " + String(startMonth) + " startDOW " + String(startDOW) + " startWeek " + String(startWeek));
+ Serial.println("endMonth " + String(endMonth) + " endDOW " + String(endDOW) + " endWeek " + String(endWeek));
+#endif
+  
+  return tmpDST;
+}
+
+void GeoNamesClient::setDST(int smonth,int sweek,int sdow,int emonth,int eweek,int edow)
+{
+  startMonth = smonth;
+  endMonth = emonth;
+  startWeek = sweek;
+  endWeek = eweek;
+  startDOW = sdow;
+  endDOW = edow;
+
+#if 0
+ Serial.println("startMonth " + String(startMonth) + " startDOW " + String(startDOW) + " startWeek " + String(startWeek));
+ Serial.println("endMonth " + String(endMonth) + " endDOW " + String(endDOW) + " endWeek " + String(endWeek));
+#endif
 
 
+  
+}

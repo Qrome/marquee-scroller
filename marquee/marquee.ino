@@ -96,9 +96,9 @@ ESP8266HTTPUpdateServer serverUpdater;
 
 String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
                       "<label>OpenWeatherMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
-                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
+                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60>"
                       "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
-                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
+                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)' maxlength='8'></p>"
                       "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
                       "<p><input name='showdate' class='w3-check w3-margin-top' type='checkbox' %DATE_CHECKED%> Display Date</p>"
                       "<p><input name='showcity' class='w3-check w3-margin-top' type='checkbox' %CITY_CHECKED%> Display City Name</p>"
@@ -106,20 +106,28 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
-                      "<p><input name='isDST' class='w3-check w3-margin-top' type='checkbox' %IS_DST_CHECKED%> Use DST (Daylight Savings Time)</p>";
+                      "<hr><p><input name='isDST' class='w3-check w3-margin-top' type='checkbox' %IS_DST_CHECKED%> Use DST (Daylight Savings Time)</p>"
+                      
+                      //GodzIvan
+                      "<p>DST Start Month <input class='w3-border w3-margin-bottom' name='dstmonthstart' type='number' min='1' max='12' value='%DSTMS%' style='width: 2.5em;'>"
+                      " Week <input class='w3-border w3-margin-bottom' name='dstweekstart' type='number' min='1' max='5' value='%DSTWS%' style='width: 2.5em;'>"
+                      " DoW <input class='w3-border w3-margin-bottom' name='dstdowstart' type='number' min='0' max='6' value='%DSTDOWS%' style='width: 2.5em;'></p>"
+                      "<p>DST End Month <input class='w3-border w3-margin-bottom' name='dstmonthend' type='number' min='1' max='12' value='%DSTME%' style='width: 2.5em;'>"
+                      " Week <input class='w3-border w3-margin-bottom' name='dstweekend' type='number' min='1' max='5' value='%DSTWE%' style='width: 2.5em;'>"
+                      " DoW <input class='w3-border w3-margin-bottom' name='dstdowend' type='number' min='0' max='6' value='%DSTDOWE%' style='width: 2.5em;'></p>";
 
-String CHANGE_FORM2 = "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
+String CHANGE_FORM2 = "<hr><p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
                       "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
-                      "<p>Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='1' max='15' value='%INTENSITYOPTIONS%'></p>"
+                      "<p>Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='1' max='15' value='%INTENSITYOPTIONS%' style='width: 2.5em;'></p>"
                       "<p>Display Scroll Speed <select class='w3-option w3-padding' name='scrollspeed'>%SCROLLOPTIONS%</select></p>"
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
-                      "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
+                      "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%' style='width: 2.5em;'></p>";
 
 String CHANGE_FORM3 = "<hr><p><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes</p>"
                       "<p><label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'></p>"
-                      "<p><label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'></p>"
+                      "<p><label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'maxlength='20'></p>"
                       "<p><button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></p></form>"
                       "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
@@ -289,6 +297,8 @@ void setup() {
     scrollMessage("Web Interface is Disabled");
   }
 
+  timeOffsetFetched = false ; //resolve issues after http update - GodzIvan
+    
   flashLED(1, 500);
 }
 
@@ -308,8 +318,10 @@ void loop() {
 
     if (timeClient.getHours() == "00" && timeClient.getMinutes() == "00" && timeClient.getSeconds() == "00") {
       // Exactly Midnight -- fetch a new geoNames for updating the Date and time offset
-      geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
-      UtcOffset = geoNames.getTimeOffset();
+      //geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
+      //UtcOffset = geoNames.getTimeOffset();
+      timeOffsetFetched = false ; //GodzIvan
+      getWeatherData();
     }
 
     if (weatherClient.getError() != "") {
@@ -503,6 +515,15 @@ void handleLocations() {
   flashOnSeconds = server.hasArg("flashseconds");
   IS_24HOUR = server.hasArg("is24hour");
   IS_DST = server.hasArg("isDST");
+  
+  //GodzIvan
+  setdstsm = server.arg("dstmonthstart").toInt();
+  setdstem = server.arg("dstmonthend").toInt();
+  setdstsw = server.arg("dstweekstart").toInt();
+  setdstew = server.arg("dstweekend").toInt();
+  setdstsdow = server.arg("dstdowstart").toInt();
+  setdstwdow = server.arg("dstdowend").toInt();
+  
   SHOW_DATE = server.hasArg("showdate");
   SHOW_CITY = server.hasArg("showcity");
   SHOW_CONDITION = server.hasArg("showcondition");
@@ -768,8 +789,18 @@ void handleConfigure() {
     checked = "checked='checked'";
   }
   form.replace("%CHECKED%", checked);
+
+  //GodzIvan
+  form.replace("%DSTMS%", String(setdstsm));
+  form.replace("%DSTME%", String(setdstem));
+  form.replace("%DSTWS%", String(setdstsw));
+  form.replace("%DSTWE%", String(setdstew));
+  form.replace("%DSTDOWS%", String(setdstsdow));
+  form.replace("%DSTDOWE%", String(setdstwdow));
+
   server.sendContent(form);
 
+  
   form = CHANGE_FORM2;
   String isFlashSecondsChecked = "";
   if (flashOnSeconds) {
@@ -884,6 +915,13 @@ void getWeatherData() //client function to send/receive GET request data.
     geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
     UtcOffset = geoNames.getTimeOffset();
     timeClient.setUtcOffset(UtcOffset);
+
+    // For automatic DST - GodzIvan
+    if (IS_DST){
+    geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
+    UtcOffset = geoNames.getTimeOffset();
+    timeClient.setUtcOffset(UtcOffset);
+    }
   }
 
   if (displayOn) {
@@ -1012,8 +1050,23 @@ void displayWeatherData() {
   }
 
   timeClient.setUtcOffset(getTimeOffset());
-  String time = weatherClient.getWeekDay(0, UtcOffset) + ", " + geoNames.getMonthName() + " " + geoNames.getDay(false) + ", " + timeClient.getAmPmFormattedTime();
+  
+  String time =  weatherClient.getWeekDay(0, UtcOffset) + ", " + geoNames.getMonthName() + " " + geoNames.getDay(false) + ", ";
 
+  // GodzIvan
+  if (IS_24HOUR) {
+      time += timeClient.getFormattedTime();
+  }else{
+      time += timeClient.getAmPmFormattedTime();
+  }
+
+  if(IS_DST){
+    if (geoNames.getDST()){
+      time += ", DST";
+      }
+  }
+  
+  
   Serial.println(weatherClient.getCity(0));
   Serial.println(weatherClient.getCondition(0));
   Serial.println(weatherClient.getDescription(0));
@@ -1244,6 +1297,15 @@ String writeCityIds() {
     f.println("isFlash=" + String(flashOnSeconds));
     f.println("is24hour=" + String(IS_24HOUR));
     f.println("isDST=" + String(IS_DST));
+
+    // GodzIvan
+    f.println("DSTMS=" + String(setdstsm));
+    f.println("DSTME=" + String(setdstem));
+    f.println("DSTWS=" + String(setdstsw));
+    f.println("DSTWE=" + String(setdstew));
+    f.println("DSTDOWS=" + String(setdstsdow));
+    f.println("DSTDOWE=" + String(setdstwdow));
+    
     f.println("wideclockformat=" + Wide_Clock_Style);
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
@@ -1317,6 +1379,33 @@ void readCityIds() {
       IS_DST = line.substring(line.lastIndexOf("isDST=") + 6).toInt();
       Serial.println("IS_DST=" + String(IS_DST));
     }
+
+    // GodzIvan
+    if (line.indexOf("DSTMS=") >= 0) {
+      setdstsm = line.substring(line.lastIndexOf("DSTMS=") + 6).toInt();
+      Serial.println("DSTMS=" + String(setdstsm));
+    }
+    if (line.indexOf("DSTME=") >= 0) {
+      setdstem = line.substring(line.lastIndexOf("DSTME=") + 6).toInt();
+      Serial.println("DSTME=" + String(setdstem));
+    }
+    if (line.indexOf("DSTWS=") >= 0) {
+      setdstsw = line.substring(line.lastIndexOf("DSTWS=") + 6).toInt();
+      Serial.println("DSTWS=" + String(setdstsw));
+    }
+    if (line.indexOf("DSTWE=") >= 0) {
+      setdstew = line.substring(line.lastIndexOf("DSTWE=") + 6).toInt();
+      Serial.println("DSTWE=" + String(setdstew));
+    }
+    if (line.indexOf("DSTDOWS=") >= 0) {
+      setdstsdow = line.substring(line.lastIndexOf("DSTDOWS=") + 8).toInt();
+      Serial.println("DSTDOWS=" + String(setdstsdow));
+    }
+    if (line.indexOf("DSTDOWE=") >= 0) {
+      setdstwdow = line.substring(line.lastIndexOf("DSTDOWE=") + 8).toInt();
+      Serial.println("DSTDOWE=" + String(setdstwdow));
+    }
+    
     if (line.indexOf("wideclockformat=") >= 0) {
       Wide_Clock_Style = line.substring(line.lastIndexOf("wideclockformat=") + 16);
       Wide_Clock_Style.trim();
@@ -1438,6 +1527,10 @@ void readCityIds() {
   weatherClient.setMetric(IS_METRIC);
   weatherClient.updateCityIdList(CityIDs, 1);
   printerClient.updateOctoPrintClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
+
+  // GodzIvan
+  geoNames.setDST(setdstsm,setdstsw,setdstsdow,setdstem,setdstew,setdstwdow);
+ 
 }
 
 void scrollMessage(String msg) {
