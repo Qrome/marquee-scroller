@@ -36,7 +36,6 @@ SOFTWARE.
  ******************************************************************************/
  
 #include <ESP8266WiFi.h>
-#include <ArduinoJson.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <WiFiManager.h>
@@ -87,6 +86,13 @@ const int pinCS = D6; // Attach CS to this pin, DIN to MOSI and CLK to SCK (cf h
 int displayIntensity = 1;  //(This can be set from 1 - 15)
 const int numberOfHorizontalDisplays = 4; // default 4 for standard 4 x 1 display Max size of 16
 const int numberOfVerticalDisplays = 1; // default 1 for a single row height
+/* set ledRotation for LED Display panels (3 is default)
+0: no rotation
+1: 90 degrees clockwise
+2: 180 degrees
+3: 90 degrees counter clockwise (default)
+*/
+int ledRotation = 3;
 
 String timeDisplayTurnsOn = "06:30";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
 String timeDisplayTurnsOff = "23:00"; // 24 Hour Format HH:MM -- Leave blank for always on. Both must be set to work.

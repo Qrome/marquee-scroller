@@ -23,7 +23,7 @@ SOFTWARE.
 
 #pragma once
 #include <ESP8266WiFi.h>
-#include <ArduinoJson.h>
+#include "libs/ArduinoJson/ArduinoJson.h"
 
 class OpenWeatherMapClient {
 
@@ -83,4 +83,3 @@ public:
   String getError();
   String getWeekDay(int index, float offset);
 };
-

@@ -24,7 +24,7 @@ SOFTWARE.
 #pragma once
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <ArduinoJson.h>
+#include "libs/ArduinoJson/ArduinoJson.h"
 
 class BitcoinApiClient {
 
@@ -52,4 +52,3 @@ public:
   String getDescription();
   float getRateFloat();
 };
-

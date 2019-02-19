@@ -76,7 +76,6 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 Use the Arduino guide for details on how to installing and manage libraries https://www.arduino.cc/en/Guide/Libraries  
 **Packages** -- the following packages and libraries are used (download and install):  
 <ESP8266WiFi.h>  
-<ArduinoJson.h>  --> https://github.com/bblanchon/ArduinoJson (version 5.13.X)  
 <ESP8266WebServer.h>  
 <WiFiManager.h> --> https://github.com/tzapu/WiFiManager  
 "FS.h"  
@@ -84,6 +83,8 @@ Use the Arduino guide for details on how to installing and manage libraries http
 <Adafruit_GFX.h>  --> https://github.com/adafruit/Adafruit-GFX-Library  
 <Max72xxPanel.h> --> https://github.com/markruys/arduino-Max72xxPanel  
 <JsonStreamingParser.h> --> https://github.com/squix78/json-streaming-parser  
+
+Note ArduinoJson (version 5.13.1) is now included as a library file in version 2.7 and later.
 
 ## Initial Configuration
 Starting with version 2.0 editing the **Settings.h** file is optional.  All API Keys are now managed in the Web Interface except for the GeoNames Key. It is not required to edit the Settings.h file before loading and running the code.  

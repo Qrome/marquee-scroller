@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.6"
+#define VERSION "2.7"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -181,7 +181,7 @@ void setup() {
 
   int maxPos = numberOfHorizontalDisplays * numberOfVerticalDisplays;
   for (int i = 0; i < maxPos; i++) {
-    matrix.setRotation(i, 3);
+    matrix.setRotation(i, ledRotation);
     matrix.setPosition(i, maxPos - i - 1, 0);
   }
 
