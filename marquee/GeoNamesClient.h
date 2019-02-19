@@ -23,7 +23,7 @@ SOFTWARE.
 
 #pragma once
 #include <ESP8266WiFi.h>
-#include <ArduinoJson.h>
+#include "libs/ArduinoJson/ArduinoJson.h"
 
 class GeoNamesClient {
 
@@ -52,4 +52,3 @@ public:
   String getDay00();
   String getDay(boolean zeroPad);
 };
-
