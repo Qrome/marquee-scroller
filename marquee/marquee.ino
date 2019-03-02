@@ -407,7 +407,7 @@ void loop() {
 
   if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
     numberOfLightPixels = round((matrix.width() - 1) * printerClient.getProgressCompletion().toFloat());
-    matrix.drawFastHLine(0, numberOfLightPixels, 8, HIGH);
+    matrix.drawFastHLine(0, 7, numberOfLightPixels, HIGH);
     matrix.write();
   }
 
