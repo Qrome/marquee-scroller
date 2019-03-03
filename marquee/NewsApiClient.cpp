@@ -96,6 +96,10 @@ String NewsApiClient::getUrl(int index) {
   return news[index].url;
 }
 
+String NewsApiClient::getUrlToImage(int index) {
+  return news[index].urlToImage;
+}
+
 void NewsApiClient::updateNewsSource(String source) {
   mySource = source;
 }
@@ -125,8 +129,12 @@ void NewsApiClient::value(String value) {
   }
   if (currentKey == "url") {
     news[counterTitle].url = value;
+  }
+  if (currentKey == "urlToImage") {
+    news[counterTitle].urlToImage = value;
     counterTitle++;
   }
+
   Serial.println(currentKey + "=" + value);
 }
 

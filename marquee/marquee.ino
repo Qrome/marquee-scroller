@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.7"
+#define VERSION "2.8"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -404,6 +404,12 @@ void loop() {
   matrix.fillScreen(LOW);
   centerPrint(currentTime);
 
+  if (OCTOPRINT_ENABLED && OCTOPRINT_PROGRESS && printerClient.isPrinting()) {
+    int numberOfLightPixels = (printerClient.getProgressCompletion().toFloat() / float(100)) * (matrix.width() - 1);
+    matrix.drawFastHLine(0, 7, numberOfLightPixels, HIGH);
+    matrix.write();
+  }
+
   if (WEBSERVER_ENABLED) {
     server.handleClient();
   }
@@ -481,6 +487,7 @@ void handleSaveOctoprint() {
     return server.requestAuthentication();
   }
   OCTOPRINT_ENABLED = server.hasArg("displayoctoprint");
+  OCTOPRINT_PROGRESS = server.hasArg("octoprintprogress");
   OctoPrintApiKey = server.arg("octoPrintApiKey");
   OctoPrintServer = server.arg("octoPrintAddress");
   OctoPrintPort = server.arg("octoPrintPort").toInt();
@@ -668,6 +675,7 @@ void handleOctoprintConfigure() {
 
   String OCTO_FORM =    "<form class='w3-container' action='/saveoctoprint' method='get'><h2>OctoPrint Configuration:</h2>"
                         "<p><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status</p>"
+                        "<p><input name='octoprintprogress' class='w3-check w3-margin-top' type='checkbox' %OCTOPROGRESSCHECKED%> Show OctoPrint progress with clock</p>"
                         "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
                         "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
                         "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
@@ -690,6 +698,11 @@ void handleOctoprintConfigure() {
     isOctoPrintDisplayedChecked = "checked='checked'";
   }
   form.replace("%OCTOCHECKED%", isOctoPrintDisplayedChecked);
+  String isOctoPrintProgressChecked = "";
+  if (OCTOPRINT_PROGRESS) {
+    isOctoPrintProgressChecked = "checked='checked'";
+  }
+  form.replace("%OCTOPROGRESSCHECKED%", isOctoPrintProgressChecked);
   form.replace("%OCTOKEY%", OctoPrintApiKey);
   form.replace("%OCTOADDRESS%", OctoPrintServer);
   form.replace("%OCTOPORT%", String(OctoPrintPort));
@@ -1075,8 +1088,12 @@ void displayWeatherData() {
       html = "";
     } else {
       for (int inx = 0; inx < 10; inx++) {
-        html += "<div class='w3-cell-row'><a href='" + newsClient.getUrl(inx) + "' target='_BLANK'>" + newsClient.getTitle(inx) + "</a></div>";
-        html += "<div class='w3-cell-row'>" + newsClient.getDescription(inx) + "</div><br>";
+        html = "<div class='w3-cell-row'><a href='" + newsClient.getUrl(inx) + "' target='_BLANK'>" + newsClient.getTitle(inx) + "</a></div>";
+        html += "<div class='w3-cell-row'>";
+        if (newsClient.getUrlToImage(inx) != "") {
+          html += "<img src='" + newsClient.getUrlToImage(inx) + "' width='200' align='left' style='padding-right: 10px;'>";
+        }
+        html += newsClient.getDescription(inx) + "</div><br>";
         server.sendContent(html);
         html = "";
       }
@@ -1249,6 +1266,7 @@ String writeCityIds() {
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
     f.println("minutesBetweenScrolling=" + String(minutesBetweenScrolling));
     f.println("isOctoPrint=" + String(OCTOPRINT_ENABLED));
+    f.println("isOctoProgress=" + String(OCTOPRINT_PROGRESS));
     f.println("octoKey=" + OctoPrintApiKey);
     f.println("octoServer=" + OctoPrintServer);
     f.println("octoPort=" + String(OctoPrintPort));
@@ -1364,6 +1382,10 @@ void readCityIds() {
     if (line.indexOf("isOctoPrint=") >= 0) {
       OCTOPRINT_ENABLED = line.substring(line.lastIndexOf("isOctoPrint=") + 12).toInt();
       Serial.println("OCTOPRINT_ENABLED=" + String(OCTOPRINT_ENABLED));
+    }
+    if (line.indexOf("isOctoProgress=") >= 0) {
+      OCTOPRINT_PROGRESS = line.substring(line.lastIndexOf("isOctoProgress=") + 15).toInt();
+      Serial.println("OCTOPRINT_PROGRESS=" + String(OCTOPRINT_PROGRESS));
     }
     if (line.indexOf("octoKey=") >= 0) {
       OctoPrintApiKey = line.substring(line.lastIndexOf("octoKey=") + 8);
