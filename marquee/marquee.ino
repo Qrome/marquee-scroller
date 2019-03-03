@@ -87,6 +87,7 @@ boolean SHOW_WIND = true;
 // OctoPrint Client
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
 int printerCount = 0;
+int numberOfLightPixels = 0;
 
 // Bitcoin Client
 BitcoinApiClient bitcoinClient;
@@ -403,6 +404,12 @@ void loop() {
   }
   matrix.fillScreen(LOW);
   centerPrint(currentTime);
+
+  if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
+    numberOfLightPixels = round((matrix.width() - 1) * (printerClient.getProgressCompletion().toInt()/100));
+    matrix.drawFastHLine(0, 7, numberOfLightPixels, HIGH);
+    matrix.write();
+  }
 
   if (WEBSERVER_ENABLED) {
     server.handleClient();
