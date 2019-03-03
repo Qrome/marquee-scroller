@@ -101,6 +101,7 @@ const String GEONAMES_USER = "qrome"; // user account for  http://www.geonames.o
 
 // OctoPrint Monitoring -- Monitor your 3D printer OctoPrint Server
 boolean OCTOPRINT_ENABLED = false;
+boolean OCTOPRINT_PROGRESS = true;
 String OctoPrintApiKey = "";  // ApiKey from your User Account on OctoPrint
 String OctoPrintServer = ""; // IP or Address of your OctoPrint Server (DO NOT include http://)
 int OctoPrintPort = 80; // the port you are running your OctoPrint server on (usually 80);
