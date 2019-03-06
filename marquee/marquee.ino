@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.8"
+#define VERSION "2.9"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -1089,11 +1089,7 @@ void displayWeatherData() {
     } else {
       for (int inx = 0; inx < 10; inx++) {
         html = "<div class='w3-cell-row'><a href='" + newsClient.getUrl(inx) + "' target='_BLANK'>" + newsClient.getTitle(inx) + "</a></div>";
-        html += "<div class='w3-cell-row'>";
-        if (newsClient.getUrlToImage(inx) != "") {
-          html += "<img src='" + newsClient.getUrlToImage(inx) + "' width='200' align='left' style='padding-right: 10px;'>";
-        }
-        html += newsClient.getDescription(inx) + "</div><br>";
+        html += newsClient.getDescription(inx) + "<br/><br/>";
         server.sendContent(html);
         html = "";
       }
