@@ -40,7 +40,6 @@ class NewsApiClient: public JsonListener {
       String title;
       String description;
       String url;
-      String urlToImage;
     } newsfeed;
 
     newsfeed news[10];
@@ -56,7 +55,6 @@ class NewsApiClient: public JsonListener {
     String getTitle(int index);
     String getDescription(int index);
     String getUrl(int index);
-    String getUrlToImage(int index);
     String cleanText(String text);
     
     virtual void whitespace(char c);

@@ -113,6 +113,12 @@ void OpenWeatherMapClient::updateWeather() {
     weathers[inx].description = (const char*)root["list"][inx]["weather"][0]["description"];
     weathers[inx].icon = (const char*)root["list"][inx]["weather"][0]["icon"];
 
+    if (units == "metric") {
+      // convert to kph from m/s
+      float f = (weathers[inx].wind.toFloat() * 3.6);
+      weathers[inx].wind = String(f);
+    }
+
     Serial.println("lat: " + weathers[inx].lat);
     Serial.println("lon: " + weathers[inx].lon);
     Serial.println("dt: " + weathers[inx].dt);
