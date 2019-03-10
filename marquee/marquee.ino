@@ -58,6 +58,11 @@ Max72xxPanel matrix = Max72xxPanel(pinCS, numberOfHorizontalDisplays, numberOfVe
 String Wide_Clock_Style = "1";  //1="hh:mm Temp", 2="hh:mm:ss", 3="hh:mm"
 float UtcOffset;  //time zone offsets that correspond with the CityID above (offset from GMT)
 
+// Button Settings - Press to turn display ON
+
+int Pressed = 0;
+#define SwitchPin D1 // Putton on D1
+
 // Time
 TimeClient timeClient(UtcOffset);
 String lastMinute = "xx";
@@ -167,8 +172,9 @@ void setup() {
   //SPIFFS.remove(CONFIG);
   delay(10);
 
-  // Initialize digital pin for LED
+  // Initialize digital pin for LED & Switch
   pinMode(externalLight, OUTPUT);
+  pinMode(SwitchPin, INPUT);
 
   //New Line to clear from start garbage
   Serial.println();
@@ -1221,9 +1227,22 @@ void checkDisplay() {
   if (timeDisplayTurnsOn == "" || timeDisplayTurnsOff == "") {
     return; // nothing to do
   }
+
   timeClient.setUtcOffset(getTimeOffset());
   String currentTime = timeClient.getHours() + ":" + timeClient.getMinutes();
 
+  if (digitalRead(SwitchPin) == HIGH) {
+    Serial.println("Button Pressed to toggle display : " + currentTime);
+    flashLED(1, 500);
+
+    enableDisplay(!displayOn);
+    String state = "OFF";
+    if (displayOn) {
+      state = "ON";
+    }
+    displayMessage("Display is now " + state);
+  } 
+  
   if (currentTime == timeDisplayTurnsOn && !displayOn) {
     Serial.println("Time to turn display on: " + currentTime);
     flashLED(1, 500);

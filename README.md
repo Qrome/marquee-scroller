@@ -133,3 +133,9 @@ When considering making a code contribution, please keep in mind the following g
 
 ![Marquee Scroller](/images/5d7f02ccbf01125cabbf246f97f2ead1_preview_featured.jpg)  
 ![Marquee Parts](/images/1ffa0c835554d280258c13be5513c4fe_preview_featured.jpg)
+
+## Anthony Clarke Contribution
+
+Added Pushbutton to turn display on / off
+
+![Marquee Parts](/images/PushButton.png)
