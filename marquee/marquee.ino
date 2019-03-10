@@ -174,7 +174,7 @@ void setup() {
 
   // Initialize digital pin for LED & Switch
   pinMode(externalLight, OUTPUT);
-  pinMode(SwitchPin, INPUT);
+  pinMode(SwitchPin, INPUT);    // Initial Button for input
 
   //New Line to clear from start garbage
   Serial.println();
@@ -1231,11 +1231,10 @@ void checkDisplay() {
   timeClient.setUtcOffset(getTimeOffset());
   String currentTime = timeClient.getHours() + ":" + timeClient.getMinutes();
 
-  if (digitalRead(SwitchPin) == HIGH) {
+  if (digitalRead(SwitchPin) == HIGH) {   // Is the Button Pressed?
     Serial.println("Button Pressed to toggle display : " + currentTime);
     flashLED(1, 500);
-
-    enableDisplay(!displayOn);
+    enableDisplay(!displayOn);            // Switch from On->Off or Off->On
     String state = "OFF";
     if (displayOn) {
       state = "ON";
