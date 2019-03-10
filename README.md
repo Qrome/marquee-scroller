@@ -55,6 +55,11 @@ GND -> GND-
 
 ![Marquee Scroller Wiring](/images/marquee_scroller_pins.png)  
 
+
+Added Pushbutton to turn display on / off
+
+![Marquee Parts](/images/PushButton.png)
+
 ## 3D Printed Case by David Payne:  
 Original Single Panel version: https://www.thingiverse.com/thing:2867294  
 Double Wide LED version: https://www.thingiverse.com/thing:2989552  
@@ -134,8 +139,3 @@ When considering making a code contribution, please keep in mind the following g
 ![Marquee Scroller](/images/5d7f02ccbf01125cabbf246f97f2ead1_preview_featured.jpg)  
 ![Marquee Parts](/images/1ffa0c835554d280258c13be5513c4fe_preview_featured.jpg)
 
-## Anthony Clarke Contribution
-
-Added Pushbutton to turn display on / off
-
-![Marquee Parts](/images/PushButton.png)
