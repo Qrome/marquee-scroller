@@ -23,7 +23,7 @@ SOFTWARE.
 
 #pragma once
 #include <ESP8266WiFi.h>
-#include <TimeLib.h> //https://www.pjrc.com/teensy/td_libs_Time.html
+#include <TimeLib.h> // https://github.com/PaulStoffregen/Time 
 #include "libs/ArduinoJson/ArduinoJson.h"
 
 class TimeDB

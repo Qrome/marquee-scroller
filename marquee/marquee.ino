@@ -103,10 +103,10 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='showcondition' class='w3-check w3-margin-top' type='checkbox' %CONDITION_CHECKED%> Display Weather Condition</p>"
                       "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
-                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
-                      "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>";
+                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
 
-String CHANGE_FORM2 = "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
+String CHANGE_FORM2 = "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>"
+                      "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
                       "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
@@ -395,13 +395,11 @@ void loop() {
   matrix.fillScreen(LOW);
   centerPrint(currentTime);
   
-  if (!IS_24HOUR && isPM()) {
+  if (!IS_24HOUR && IS_PM) {
     matrix.drawChar(matrix.width() - 4, 0, '.', HIGH, LOW, 1);
     matrix.write();
   }
   
-  
-
   if (OCTOPRINT_ENABLED && OCTOPRINT_PROGRESS && printerClient.isPrinting()) {
     int numberOfLightPixels = (printerClient.getProgressCompletion().toFloat() / float(100)) * (matrix.width() - 1);
     for (int i = 0; i < numberOfLightPixels; i++) {
@@ -773,11 +771,6 @@ void handleConfigure() {
     is24hourChecked = "checked='checked'";
   }
   form.replace("%IS_24HOUR_CHECKED%", is24hourChecked);
-  String isPmChecked = "";
-  if (IS_PM) {
-    isPmChecked = "checked='checked'";
-  }
-  form.replace("%IS_PM_CHECKED%", isPmChecked);
   String checked = "";
   if (IS_METRIC) {
     checked = "checked='checked'";
@@ -786,6 +779,11 @@ void handleConfigure() {
   server.sendContent(form);
 
   form = CHANGE_FORM2;
+  String isPmChecked = "";
+  if (IS_PM) {
+    isPmChecked = "checked='checked'";
+  }
+  form.replace("%IS_PM_CHECKED%", isPmChecked);
   String isFlashSecondsChecked = "";
   if (flashOnSeconds) {
     isFlashSecondsChecked = "checked='checked'";

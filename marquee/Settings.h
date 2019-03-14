@@ -63,7 +63,7 @@ int CityIDs[] = { 5304391 }; //Only USE ONE for weather marquee
 String marqueeMessage = "";
 boolean IS_METRIC = false; // false = Imperial and true = Metric
 boolean IS_24HOUR = false; // 23:00 millitary 24 hour clock
-boolean IS_PM = true; // Does you want to know if your 12 hour clock is PM?
+boolean IS_PM = true; // Show PM indicator on Clock when in AM/PM mode
 const int WEBSERVER_PORT = 80; // The port you can access this device on over HTTP
 const boolean WEBSERVER_ENABLED = true;  // Device will provide a web interface via http://[ip]:[port]/
 boolean IS_BASIC_AUTH = false;  // Use Basic Authorization for Configuration security on Web Interface
@@ -96,8 +96,6 @@ int ledRotation = 3;
 
 String timeDisplayTurnsOn = "06:30";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
 String timeDisplayTurnsOff = "23:00"; // 24 Hour Format HH:MM -- Leave blank for always on. Both must be set to work.
-
-const String GEONAMES_USER = "qrome"; // user account for  http://www.geonames.org/ -- this service is used to lookup TimeZone Offsets
 
 // OctoPrint Monitoring -- Monitor your 3D printer OctoPrint Server
 boolean OCTOPRINT_ENABLED = false;
