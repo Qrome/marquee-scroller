@@ -1,6 +1,6 @@
-/**The MIT License (MIT)
+/** The MIT License (MIT)
 
-Copyright (c) 2015 by Daniel Eichhorn
+Copyright (c) 2019 magnum129@github
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,43 +19,28 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-See more at http://blog.squix.ch
-*/
-
-/*
-Modified by David Payne for use in the Scrolling Marquee
 */
 
 #pragma once
-
 #include <ESP8266WiFi.h>
+#include <TimeLib.h> //https://www.pjrc.com/teensy/td_libs_Time.html
+#include "libs/ArduinoJson/ArduinoJson.h"
 
-#define NTP_PACKET_SIZE 48
-
-class TimeClient {
+class TimeDB
+{
+  public:
+    TimeDB(String apiKey);
+    void updateConfig(String apiKey, String lat, String lon);
+    time_t getTime();
+    String getDayName();
+    String getMonthName();
+    String getAmPm();
+    String zeroPad(int number);
 
   private:
-    float myUtcOffset = 0;
-    long localEpoc = 0;
+    const char* servername = "api.timezonedb.com";  // remote server we will connect to
     long localMillisAtUpdate;
-    const char* ntpServerName = "time.google.com";
-    const int httpPort = 80;    
-    byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
-
-  public:
-    TimeClient(float utcOffset);
-    void updateTime();
-    
-    void setUtcOffset(float utcOffset);
-    String getHours();
-    String getAmPmHours();
-    String getAmPm();
-    String getMinutes();
-    String getSeconds();
-    String getFormattedTime();
-    String getAmPmFormattedTime();
-    long getCurrentEpoch();
-    long getCurrentEpochWithUtcOffset();
+    String myApiKey;
+    String myLat;
+    String myLon;
 };
-
