@@ -1,6 +1,6 @@
 /** The MIT License (MIT)
 
-Copyright (c) 2018 David Payne
+Copyright (c) 2019 magnum129@github
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +21,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "GeoNamesClient.h"
+#include "TimeDB.h"
 
-GeoNamesClient::GeoNamesClient(String UserName, String lat, String lon, boolean useDst) {
-  updateClient(UserName, lat, lon, useDst);
+TimeDB::TimeDB(String apiKey)
+{
+  myApiKey = apiKey;
 }
 
-void GeoNamesClient::updateClient(String UserName, String lat, String lon, boolean useDst) {
+void TimeDB::updateConfig(String apiKey, String lat, String lon)
+{
+  myApiKey = apiKey;
   myLat = lat;
   myLon = lon;
-  myUserName = UserName;
-  isDst = useDst;
 }
 
-float GeoNamesClient::getTimeOffset() {
-  datetime = "";
+time_t TimeDB::getTime()
+{
   WiFiClient client;
-  String apiGetData = "GET /timezoneJSON?lat=" + myLat + "&lng=" + myLon + "&username=" + myUserName + " HTTP/1.1";
-  Serial.println("Getting TimeZone Data for " + myLat + "," + myLon);
+  String apiGetData = "GET /v2.1/get-time-zone?key=" + myApiKey + "&format=json&by=position&lat=" + myLat + "&lng=" + myLon + " HTTP/1.1";
+  Serial.println("Getting Time Data for " + myLat + "," + myLon);
   Serial.println(apiGetData);
   String result = "";
   if (client.connect(servername, 80)) {  //starts client connection, checks for connection
@@ -47,15 +48,15 @@ float GeoNamesClient::getTimeOffset() {
     client.println("User-Agent: ArduinoWiFi/1.1");
     client.println("Connection: close");
     client.println();
-  } 
+  }
   else {
-    Serial.println("connection for timezone data failed"); //error message if no client connect
+    Serial.println("connection for time data failed"); //error message if no client connect
     Serial.println();
-    return 0;
+    return 20;
   }
 
-  while(client.connected() && !client.available()) delay(1); //waits for data
- 
+  while (client.connected() && !client.available()) delay(1); //waits for data
+
   Serial.println("Waiting for data");
 
   boolean record = false;
@@ -65,7 +66,7 @@ float GeoNamesClient::getTimeOffset() {
       record = true;
     }
     if (record) {
-      result = result+c; 
+      result = result + c;
     }
     if (String(c) == "}") {
       record = false;
@@ -74,68 +75,51 @@ float GeoNamesClient::getTimeOffset() {
   client.stop(); //stop client
   Serial.println(result);
 
-  char jsonArray [result.length()+1];
-  result.toCharArray(jsonArray,sizeof(jsonArray));
+  char jsonArray [result.length() + 1];
+  result.toCharArray(jsonArray, sizeof(jsonArray));
   jsonArray[result.length() + 1] = '\0';
   DynamicJsonBuffer json_buf;
   JsonObject& root = json_buf.parseObject(jsonArray);
-  String offset = (const char*)root["dstOffset"];
-  if (!isDst) {
-    offset = (const char*)root["gmtOffset"];
-  }
-  // Sample time: "2018-03-19 21:22"
-  datetime = (const char*)root["time"];
-  Serial.println("rawOffset for " + String((const char*)root["timezoneId"]) + " is: " + offset);
-  Serial.println("Geo Date & Time: " + getMonthName() + " " + getDay(false) + ", " + getHours() + ":" + getMinutes());
+  localMillisAtUpdate = millis();
   Serial.println();
-  return offset.toFloat();
-}
-
-String GeoNamesClient::getHours() {
-  String rtnValue = "";
-  if (datetime.length() >= 13) {
-    rtnValue = datetime.substring(11, 13);
+  if (root["timestamp"] == 0) {
+    return 20;
+  } else {
+    return (unsigned long) root["timestamp"];
   }
-  return rtnValue;
 }
 
-String GeoNamesClient::getMinutes() {
-  String rtnValue = "";
-  if (datetime.length() >= 16) {
-    rtnValue = datetime.substring(14, 16);
+String TimeDB::getDayName() {
+  switch (weekday()) {
+    case 1:
+      return "Sunday";
+      break;
+    case 2:
+      return "Monday";
+      break;
+    case 3:
+      return "Tuesday";
+      break;
+    case 4:
+      return "Wednesday";
+      break;
+    case 5:
+      return "Thursday";
+      break;
+    case 6:
+      return "Friday";
+      break;
+    case 7:
+      return "Saturday";
+      break;
+    default:
+      return "";
   }
-  return rtnValue;
 }
 
-String GeoNamesClient::getYear() {
+String TimeDB::getMonthName() {
   String rtnValue = "";
-  if (datetime.length() > 4) {
-    rtnValue = datetime.substring(0, 4);
-  }
-  return rtnValue;
-}
-
-String GeoNamesClient::getMonth00() {
-  String rtnValue = "";
-  if (datetime.length() > 7) {
-    rtnValue = datetime.substring(5, 7);
-  }
-  return rtnValue;
-}
-
-String GeoNamesClient::getMonth(boolean zeroPad) {
-  String rtnValue = getMonth00();
-  if (zeroPad) {
-    return rtnValue;
-  }
-  int month = rtnValue.toInt();
-  return String(month);
-}
-
-String GeoNamesClient::getMonthName() {
-  String rtnValue = "";
-  int month = getMonth00().toInt();
-  switch (month) {
+  switch (month()) {
     case 1:
       rtnValue = "Jan";
       break;
@@ -178,23 +162,20 @@ String GeoNamesClient::getMonthName() {
   return rtnValue;
 }
 
-String GeoNamesClient::getDay(boolean zeroPad) {
-  String rtnValue = getDay00();
-  if (zeroPad) {
-    return rtnValue;
+
+String TimeDB::getAmPm() {
+  String ampmValue = "AM";
+  if (isPM()) {
+    ampmValue = "PM";
   }
-  int day = rtnValue.toInt();
-  return String(day);
+  return ampmValue;
 }
 
-String GeoNamesClient::getDay00() {
-  String rtnValue = "";
-  if (datetime.length() > 10) {
-    rtnValue = datetime.substring(8, 10);
+String TimeDB::zeroPad(int number) {
+  if (number < 10) {
+    return "0" + String(number);
+  } else {
+    return String(number);
   }
-  return rtnValue;
 }
-
-
-
 

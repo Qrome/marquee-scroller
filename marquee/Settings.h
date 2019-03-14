@@ -47,8 +47,7 @@ SOFTWARE.
 #include <Max72xxPanel.h>
 #include <pgmspace.h>
 #include "OpenWeatherMapClient.h"
-#include "GeoNamesClient.h"
-#include "TimeClient.h" // Using updated lib by Qrome
+#include "TimeDB.h"
 #include "NewsApiClient.h" 
 #include "OctoPrintClient.h"
 #include "BitcoinApiClient.h"
@@ -57,16 +56,17 @@ SOFTWARE.
 // Start Settings
 //******************************
 
+String TIMEDBKEY = ""; // Your API Key from https://timezonedb.com/register
 String APIKEY = ""; // Your API Key from http://openweathermap.org/
 // Default City Location (use http://openweathermap.org/find to find city ID)
 int CityIDs[] = { 5304391 }; //Only USE ONE for weather marquee
 String marqueeMessage = "";
 boolean IS_METRIC = false; // false = Imperial and true = Metric
 boolean IS_24HOUR = false; // 23:00 millitary 24 hour clock
-boolean IS_DST = true; // Does your TimeZone use Daylight Savings Time (DST)?
+boolean IS_PM = true; // Does you want to know if your 12 hour clock is PM?
 const int WEBSERVER_PORT = 80; // The port you can access this device on over HTTP
 const boolean WEBSERVER_ENABLED = true;  // Device will provide a web interface via http://[ip]:[port]/
-boolean IS_BASIC_AUTH = true;  // Use Basic Authorization for Configuration security on Web Interface
+boolean IS_BASIC_AUTH = false;  // Use Basic Authorization for Configuration security on Web Interface
 char* www_username = "admin";  // User account for the Web Interface
 char* www_password = "password";  // Password for the Web Interface
 int minutesBetweenDataRefresh = 15;  // Time in minutes between data refresh (default 15 minutes)
