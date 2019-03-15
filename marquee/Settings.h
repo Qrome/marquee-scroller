@@ -38,13 +38,13 @@ SOFTWARE.
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
-#include <WiFiManager.h>
+#include <WiFiManager.h> // --> https://github.com/tzapu/WiFiManager
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
 #include "FS.h"
 #include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Max72xxPanel.h>
+#include <Adafruit_GFX.h> // --> https://github.com/adafruit/Adafruit-GFX-Library
+#include <Max72xxPanel.h> // --> https://github.com/markruys/arduino-Max72xxPanel
 #include <pgmspace.h>
 #include "OpenWeatherMapClient.h"
 #include "TimeDB.h"
