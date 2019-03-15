@@ -1465,7 +1465,7 @@ void centerPrint(String msg, boolean extraStuff) {
   // Print the static portions of the display before the main Message
   if (extraStuff) {
     if (!IS_24HOUR && IS_PM && isPM()) {
-      matrix.drawChar(matrix.width() - 4, 0, '.', HIGH, LOW, 1);
+      matrix.drawPixel(matrix.width() - 1, 7, HIGH);
     }
 
     if (OCTOPRINT_ENABLED && OCTOPRINT_PROGRESS && printerClient.isPrinting()) {
