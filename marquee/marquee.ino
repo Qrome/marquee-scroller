@@ -832,7 +832,7 @@ void getWeatherData() //client function to send/receive GET request data.
   if (displayOn) {
     // only pull the weather data if display is on
     if (firstEpoch != 0) {
-      centerPrint(hourMinutes(true));
+      centerPrint(hourMinutes(true),true);
     } else {
       centerPrint("...");
     }
@@ -1464,7 +1464,7 @@ void centerPrint(String msg, boolean extraStuff) {
   matrix.print(msg);
 
   if (extraStuff) {
-    if (!IS_24HOUR && IS_PM) {
+    if (!IS_24HOUR && IS_PM && isPM()) {
       matrix.drawChar(matrix.width() - 4, 0, '.', HIGH, LOW, 1);
     }
 
