@@ -394,7 +394,7 @@ void loop() {
   }
   matrix.fillScreen(LOW);
   centerPrint(currentTime, true);
-  
+
   if (WEBSERVER_ENABLED) {
     server.handleClient();
   }
@@ -832,7 +832,7 @@ void getWeatherData() //client function to send/receive GET request data.
   if (displayOn) {
     // only pull the weather data if display is on
     if (firstEpoch != 0) {
-      centerPrint(hourMinutes(true),true);
+      centerPrint(hourMinutes(true), true);
     } else {
       centerPrint("...");
     }
@@ -1473,7 +1473,7 @@ void centerPrint(String msg, boolean extraStuff) {
       matrix.drawFastHLine(0, 7, numberOfLightPixels, HIGH);
     }
   }
-  
+
   matrix.write();
 }
 
