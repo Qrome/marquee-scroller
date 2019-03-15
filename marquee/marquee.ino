@@ -281,7 +281,7 @@ void setup() {
     // Print the IP address
     String webAddress = "http://" + WiFi.localIP().toString() + ":" + String(WEBSERVER_PORT) + "/";
     Serial.println("Use this URL : " + webAddress);
-    scrollMessage(WiFi.localIP().toString() + "  ");
+    scrollMessage(" v" + String(VERSION) + "  IP: " + WiFi.localIP().toString() + "  ");
   } else {
     Serial.println("Web Interface is Disabled");
     scrollMessage("Web Interface is Disabled");
@@ -794,7 +794,7 @@ void handleConfigure() {
   form.replace("%ENDTIME%", timeDisplayTurnsOff);
   form.replace("%INTENSITYOPTIONS%", String(displayIntensity));
   String dSpeed = String(displayScrollSpeed);
-  String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option>";
+  String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option><option value='5'>Very Fast</option>";
   scrollOptions.replace(dSpeed + "'", dSpeed + "' selected" );
   form.replace("%SCROLLOPTIONS%", scrollOptions);
   String minutes = String(minutesBetweenDataRefresh);
@@ -1014,6 +1014,10 @@ void displayWeatherData() {
   Serial.println(weatherClient.getDescription(0));
   Serial.println(temperature);
   Serial.println(time);
+
+  if (TIMEDBKEY == "") {
+    html += "<p>Please <a href='/configure'>Configure TimeZoneDB</a> with API key.</p>";
+  }
 
   if (weatherClient.getCity(0) == "") {
     html += "<p>Please <a href='/configure'>Configure Weather</a> API</p>";
