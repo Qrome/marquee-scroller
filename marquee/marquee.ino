@@ -314,11 +314,11 @@ void loop() {
     matrix.fillScreen(LOW); // show black
     if (OCTOPRINT_ENABLED) {
       if (displayOn && ((printerClient.isOperational() || printerClient.isPrinting()) || printerCount == 0)) {
-        // This should only get called if the printer is actually running or if it has been 5 minutes
+        // This should only get called if the printer is actually running or if it has been 2 minutes since last check
         printerClient.getPrinterJobResults();
       }
       printerCount += 1;
-      if (printerCount > 5) {
+      if (printerCount > 2) {
         printerCount = 0;
       }
     }
