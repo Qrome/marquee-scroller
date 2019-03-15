@@ -38,17 +38,16 @@ SOFTWARE.
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
-#include <WiFiManager.h>
+#include <WiFiManager.h> // --> https://github.com/tzapu/WiFiManager
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
 #include "FS.h"
 #include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Max72xxPanel.h>
+#include <Adafruit_GFX.h> // --> https://github.com/adafruit/Adafruit-GFX-Library
+#include <Max72xxPanel.h> // --> https://github.com/markruys/arduino-Max72xxPanel
 #include <pgmspace.h>
 #include "OpenWeatherMapClient.h"
-#include "GeoNamesClient.h"
-#include "TimeClient.h" // Using updated lib by Qrome
+#include "TimeDB.h"
 #include "NewsApiClient.h" 
 #include "OctoPrintClient.h"
 #include "BitcoinApiClient.h"
@@ -57,21 +56,22 @@ SOFTWARE.
 // Start Settings
 //******************************
 
+String TIMEDBKEY = ""; // Your API Key from https://timezonedb.com/register
 String APIKEY = ""; // Your API Key from http://openweathermap.org/
 // Default City Location (use http://openweathermap.org/find to find city ID)
 int CityIDs[] = { 5304391 }; //Only USE ONE for weather marquee
 String marqueeMessage = "";
 boolean IS_METRIC = false; // false = Imperial and true = Metric
 boolean IS_24HOUR = false; // 23:00 millitary 24 hour clock
-boolean IS_DST = true; // Does your TimeZone use Daylight Savings Time (DST)?
+boolean IS_PM = true; // Show PM indicator on Clock when in AM/PM mode
 const int WEBSERVER_PORT = 80; // The port you can access this device on over HTTP
 const boolean WEBSERVER_ENABLED = true;  // Device will provide a web interface via http://[ip]:[port]/
-boolean IS_BASIC_AUTH = true;  // Use Basic Authorization for Configuration security on Web Interface
+boolean IS_BASIC_AUTH = false;  // Use Basic Authorization for Configuration security on Web Interface
 char* www_username = "admin";  // User account for the Web Interface
 char* www_password = "password";  // Password for the Web Interface
 int minutesBetweenDataRefresh = 15;  // Time in minutes between data refresh (default 15 minutes)
 int minutesBetweenScrolling = 1; // Time in minutes between scrolling data (default 1 minutes and max is 10)
-int displayScrollSpeed = 25; // In milliseconds -- Configurable by the web UI (slow = 35, normal = 25, fast = 15)
+int displayScrollSpeed = 25; // In milliseconds -- Configurable by the web UI (slow = 35, normal = 25, fast = 15, very fast = 5)
 boolean flashOnSeconds = true; // when true the : character in the time will flash on and off as a seconds indicator
 
 boolean NEWS_ENABLED = true;
@@ -96,8 +96,6 @@ int ledRotation = 3;
 
 String timeDisplayTurnsOn = "06:30";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
 String timeDisplayTurnsOff = "23:00"; // 24 Hour Format HH:MM -- Leave blank for always on. Both must be set to work.
-
-const String GEONAMES_USER = "qrome"; // user account for  http://www.geonames.org/ -- this service is used to lookup TimeZone Offsets
 
 // OctoPrint Monitoring -- Monitor your 3D printer OctoPrint Server
 boolean OCTOPRINT_ENABLED = false;

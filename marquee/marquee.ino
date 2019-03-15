@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.9"
+#define VERSION "2.10"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -59,17 +59,13 @@ String Wide_Clock_Style = "1";  //1="hh:mm Temp", 2="hh:mm:ss", 3="hh:mm"
 float UtcOffset;  //time zone offsets that correspond with the CityID above (offset from GMT)
 
 // Time
-TimeClient timeClient(UtcOffset);
+TimeDB TimeDB("");
 String lastMinute = "xx";
 int displayRefreshCount = 1;
 long lastEpoch = 0;
 long firstEpoch = 0;
 long displayOffEpoch = 0;
 boolean displayOn = true;
-boolean timeOffsetFetched = false;
-
-// GeoNames
-GeoNamesClient geoNames(GEONAMES_USER, "", "", IS_DST);
 
 // News Client
 NewsApiClient newsClient(NEWS_API_KEY, NEWS_SOURCE);
@@ -95,6 +91,8 @@ ESP8266WebServer server(WEBSERVER_PORT);
 ESP8266HTTPUpdateServer serverUpdater;
 
 String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
+                      "<label>TimeZone DB API Key (get from <a href='https://timezonedb.com/register' target='_BLANK'>here</a>)</label>"
+                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='TimeZoneDB' value='%TIMEDBKEY%' maxlength='60'>"
                       "<label>OpenWeatherMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
                       "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
@@ -105,10 +103,10 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='showcondition' class='w3-check w3-margin-top' type='checkbox' %CONDITION_CHECKED%> Display Weather Condition</p>"
                       "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
-                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>"
-                      "<p><input name='isDST' class='w3-check w3-margin-top' type='checkbox' %IS_DST_CHECKED%> Use DST (Daylight Savings Time)</p>";
+                      "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
 
-String CHANGE_FORM2 = "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
+String CHANGE_FORM2 = "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>"
+                      "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
                       "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
@@ -283,7 +281,7 @@ void setup() {
     // Print the IP address
     String webAddress = "http://" + WiFi.localIP().toString() + ":" + String(WEBSERVER_PORT) + "/";
     Serial.println("Use this URL : " + webAddress);
-    scrollMessage(WiFi.localIP().toString() + "  ");
+    scrollMessage(" v" + String(VERSION) + "  IP: " + WiFi.localIP().toString() + "  ");
   } else {
     Serial.println("Web Interface is Disabled");
     scrollMessage("Web Interface is Disabled");
@@ -300,17 +298,10 @@ void loop() {
   if ((getMinutesFromLastRefresh() >= minutesBetweenDataRefresh) || lastEpoch == 0) {
     getWeatherData();
   }
-
   checkDisplay(); // this will see if we need to turn it on or off for night mode.
 
-  if (lastMinute != timeClient.getMinutes()) {
-    lastMinute = timeClient.getMinutes();
-
-    if (timeClient.getHours() == "00" && timeClient.getMinutes() == "00" && timeClient.getSeconds() == "00") {
-      // Exactly Midnight -- fetch a new geoNames for updating the Date and time offset
-      geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
-      UtcOffset = geoNames.getTimeOffset();
-    }
+  if (lastMinute != TimeDB.zeroPad(minute())) {
+    lastMinute = TimeDB.zeroPad(minute());
 
     if (weatherClient.getError() != "") {
       scrollMessage(weatherClient.getError());
@@ -323,11 +314,11 @@ void loop() {
     matrix.fillScreen(LOW); // show black
     if (OCTOPRINT_ENABLED) {
       if (displayOn && ((printerClient.isOperational() || printerClient.isPrinting()) || printerCount == 0)) {
-        // This should only get called if the printer is actually running or if it has been 5 minutes
+        // This should only get called if the printer is actually running or if it has been 2 minutes since last check
         printerClient.getPrinterJobResults();
       }
       printerCount += 1;
-      if (printerCount > 5) {
+      if (printerCount > 2) {
         printerCount = 0;
       }
     }
@@ -343,8 +334,8 @@ void loop() {
       msg += " ";
 
       if (SHOW_DATE) {
-        msg += weatherClient.getWeekDay(0, UtcOffset) + ", ";
-        msg += geoNames.getMonthName() + " " + geoNames.getDay(false) + "    ";
+        msg += TimeDB.getDayName() + ", ";
+        msg += TimeDB.getMonthName() + " " + day() + "    ";
       }
       if (SHOW_CITY) {
         msg += weatherClient.getCity(0) + "    ";
@@ -382,7 +373,7 @@ void loop() {
   }
 
   String currentTime = hourMinutes(false);
-  
+
   if (numberOfHorizontalDisplays >= 8) {
     if (Wide_Clock_Style == "1") {
       // On Wide Display -- show the current temperature as well
@@ -394,7 +385,7 @@ void loop() {
       currentTime += timeSpacer + currentTemp + getTempSymbol();
     }
     if (Wide_Clock_Style == "2") {
-      currentTime += secondsIndicator(false) + timeClient.getSeconds();
+      currentTime += secondsIndicator(false) + TimeDB.zeroPad(second());
       matrix.fillScreen(LOW); // show black
     }
     if (Wide_Clock_Style == "3") {
@@ -402,13 +393,7 @@ void loop() {
     }
   }
   matrix.fillScreen(LOW);
-  centerPrint(currentTime);
-
-  if (OCTOPRINT_ENABLED && OCTOPRINT_PROGRESS && printerClient.isPrinting()) {
-    int numberOfLightPixels = (printerClient.getProgressCompletion().toFloat() / float(100)) * (matrix.width() - 1);
-    matrix.drawFastHLine(0, 7, numberOfLightPixels, HIGH);
-    matrix.write();
-  }
+  centerPrint(currentTime, true);
 
   if (WEBSERVER_ENABLED) {
     server.handleClient();
@@ -420,15 +405,15 @@ void loop() {
 
 String hourMinutes(boolean isRefresh) {
   if (IS_24HOUR) {
-    return timeClient.getHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
+    return hour() + secondsIndicator(isRefresh) + TimeDB.zeroPad(minute());
   } else {
-    return timeClient.getAmPmHours() + secondsIndicator(isRefresh) + timeClient.getMinutes();
+    return hourFormat12() + secondsIndicator(isRefresh) + TimeDB.zeroPad(minute());
   }
 }
 
 String secondsIndicator(boolean isRefresh) {
   String rtnValue = ":";
-  if (isRefresh == false && (flashOnSeconds && (timeClient.getSeconds().toInt() % 2) == 0)) {
+  if (isRefresh == false && (flashOnSeconds && (second() % 2) == 0)) {
     rtnValue = " ";
   }
   return rtnValue;
@@ -442,7 +427,6 @@ boolean athentication() {
 }
 
 void handlePull() {
-  timeOffsetFetched = false;
   getWeatherData(); // this will force a data pull for new weather
   displayWeatherData();
 }
@@ -505,11 +489,12 @@ void handleLocations() {
   if (!athentication()) {
     return server.requestAuthentication();
   }
+  TIMEDBKEY = server.arg("TimeZoneDB");
   APIKEY = server.arg("openWeatherMapApiKey");
   CityIDs[0] = server.arg("city1").toInt();
   flashOnSeconds = server.hasArg("flashseconds");
   IS_24HOUR = server.hasArg("is24hour");
-  IS_DST = server.hasArg("isDST");
+  IS_PM = server.hasArg("isPM");
   SHOW_DATE = server.hasArg("showdate");
   SHOW_CITY = server.hasArg("showcity");
   SHOW_CONDITION = server.hasArg("showcondition");
@@ -733,7 +718,9 @@ void handleConfigure() {
   sendHeader();
 
   String form = CHANGE_FORM1;
+  form.replace("%TIMEDBKEY%", TIMEDBKEY);
   form.replace("%WEATHERKEY%", APIKEY);
+
 
   String cityName = "";
   if (weatherClient.getCity(0) != "") {
@@ -771,11 +758,6 @@ void handleConfigure() {
     is24hourChecked = "checked='checked'";
   }
   form.replace("%IS_24HOUR_CHECKED%", is24hourChecked);
-  String isDstChecked = "";
-  if (IS_DST) {
-    isDstChecked = "checked='checked'";
-  }
-  form.replace("%IS_DST_CHECKED%", isDstChecked);
   String checked = "";
   if (IS_METRIC) {
     checked = "checked='checked'";
@@ -784,6 +766,11 @@ void handleConfigure() {
   server.sendContent(form);
 
   form = CHANGE_FORM2;
+  String isPmChecked = "";
+  if (IS_PM) {
+    isPmChecked = "checked='checked'";
+  }
+  form.replace("%IS_PM_CHECKED%", isPmChecked);
   String isFlashSecondsChecked = "";
   if (flashOnSeconds) {
     isFlashSecondsChecked = "checked='checked'";
@@ -794,11 +781,11 @@ void handleConfigure() {
   form.replace("%ENDTIME%", timeDisplayTurnsOff);
   form.replace("%INTENSITYOPTIONS%", String(displayIntensity));
   String dSpeed = String(displayScrollSpeed);
-  String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option>";
+  String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option><option value='5'>Very Fast</option>";
   scrollOptions.replace(dSpeed + "'", dSpeed + "' selected" );
   form.replace("%SCROLLOPTIONS%", scrollOptions);
   String minutes = String(minutesBetweenDataRefresh);
-  String options = "<option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
+  String options = "<option>5</option><option>10</option><option>15</option><option>20</option><option>30</option><option>60</option>";
   options.replace(">" + minutes + "<", " selected>" + minutes + "<");
   form.replace("%OPTIONS%", options);
   form.replace("%REFRESH_DISPLAY%", String(minutesBetweenScrolling));
@@ -844,16 +831,16 @@ void getWeatherData() //client function to send/receive GET request data.
 
   if (displayOn) {
     // only pull the weather data if display is on
-    // centerPrint(".");
     if (firstEpoch != 0) {
-      centerPrint(hourMinutes(true));
+      centerPrint(hourMinutes(true), true);
     } else {
       centerPrint("...");
     }
     matrix.drawPixel(0, 7, HIGH);
     matrix.drawPixel(0, 6, HIGH);
+    matrix.drawPixel(0, 5, HIGH);
     matrix.write();
-    
+
     weatherClient.updateWeather();
     if (weatherClient.getError() != "") {
       scrollMessage(weatherClient.getError());
@@ -862,48 +849,32 @@ void getWeatherData() //client function to send/receive GET request data.
 
   Serial.println("Updating Time...");
   //Update the Time
-  //centerPrint("..");
-  matrix.drawPixel(0, 5, HIGH);
   matrix.drawPixel(0, 4, HIGH);
+  matrix.drawPixel(0, 3, HIGH);
+  matrix.drawPixel(0, 2, HIGH);
   Serial.println("matrix Width:" + matrix.width());
   matrix.write();
-  timeClient.updateTime();
-  lastEpoch = timeClient.getCurrentEpoch();
+  TimeDB.updateConfig(TIMEDBKEY, weatherClient.getLat(0), weatherClient.getLon(0));
+  setTime(TimeDB.getTime());
+  lastEpoch = now();
   if (firstEpoch == 0) {
-    // This is the first time running record the time
-    String curDate = weatherClient.getDt(0);
-    curDate = curDate.substring(0, curDate.length() - String(lastEpoch).length());
-    curDate = curDate + String(lastEpoch);
-    firstEpoch = curDate.toInt();
+    firstEpoch = now();
     Serial.println("firstEpoch is: " + String(firstEpoch));
   }
 
   if (NEWS_ENABLED && displayOn) {
-    //centerPrint("...");
-    matrix.drawPixel(0, 3, HIGH);
-    matrix.drawPixel(0, 2, HIGH);;
-    matrix.write();
-    Serial.println("Getting News Data for " + NEWS_SOURCE);
-    newsClient.updateNews();
-  }
-
-  if (!timeOffsetFetched) {
-    // we need to get offsets
-    //centerPrint("....");
+    matrix.drawPixel(0, 2, HIGH);
     matrix.drawPixel(0, 1, HIGH);
     matrix.drawPixel(0, 0, HIGH);
     matrix.write();
-    timeOffsetFetched = true;
-    geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
-    UtcOffset = geoNames.getTimeOffset();
-    timeClient.setUtcOffset(UtcOffset);
+    Serial.println("Getting News Data for " + NEWS_SOURCE);
+    newsClient.updateNews();
   }
 
   if (displayOn) {
     bitcoinClient.updateBitcoinData(BitcoinCurrencyCode);  // does nothing if BitCoinCurrencyCode is "NONE" or empty
   }
 
-  //matrix.fillScreen(LOW); // show black
   Serial.println("Version: " + String(VERSION));
   Serial.println();
   digitalWrite(externalLight, HIGH);
@@ -1024,14 +995,17 @@ void displayWeatherData() {
     temperature.remove(temperature.indexOf(".") + 2);
   }
 
-  timeClient.setUtcOffset(getTimeOffset());
-  String time = weatherClient.getWeekDay(0, UtcOffset) + ", " + geoNames.getMonthName() + " " + geoNames.getDay(false) + ", " + timeClient.getAmPmFormattedTime();
+  String time = TimeDB.getDayName() + ", " + TimeDB.getMonthName() + " " + day() + ", " + hourFormat12() + ":" + TimeDB.zeroPad(minute()) + " " + TimeDB.getAmPm();
 
   Serial.println(weatherClient.getCity(0));
   Serial.println(weatherClient.getCondition(0));
   Serial.println(weatherClient.getDescription(0));
   Serial.println(temperature);
   Serial.println(time);
+
+  if (TIMEDBKEY == "") {
+    html += "<p>Please <a href='/configure'>Configure TimeZoneDB</a> with API key.</p>";
+  }
 
   if (weatherClient.getCity(0) == "") {
     html += "<p>Please <a href='/configure'>Configure Weather</a> API</p>";
@@ -1102,19 +1076,6 @@ void displayWeatherData() {
   digitalWrite(externalLight, HIGH);
 }
 
-float getTimeOffset() {
-  if (timeOffsetFetched) {
-    return UtcOffset;
-  }
-  // we need to get offsets
-  timeOffsetFetched = true;
-
-  geoNames.updateClient(GEONAMES_USER, weatherClient.getLat(0), weatherClient.getLon(0), IS_DST);
-  UtcOffset = geoNames.getTimeOffset();
-
-  return UtcOffset;
-}
-
 void configModeCallback (WiFiManager *myWiFiManager) {
   Serial.println("Entered config mode");
   Serial.println(WiFi.softAPIP());
@@ -1169,7 +1130,7 @@ int8_t getWifiQuality() {
 String getTimeTillUpdate() {
   String rtnValue = "";
 
-  long timeToUpdate = (((minutesBetweenDataRefresh * 60) + lastEpoch) - timeClient.getCurrentEpoch());
+  long timeToUpdate = (((minutesBetweenDataRefresh * 60) + lastEpoch) - now());
 
   int hours = numberOfHours(timeToUpdate);
   int minutes = numberOfMinutes(timeToUpdate);
@@ -1189,12 +1150,12 @@ String getTimeTillUpdate() {
 }
 
 int getMinutesFromLastRefresh() {
-  int minutes = (timeClient.getCurrentEpoch() - lastEpoch) / 60;
+  int minutes = (now() - lastEpoch) / 60;
   return minutes;
 }
 
 int getMinutesFromLastDisplay() {
-  int minutes = (timeClient.getCurrentEpoch() - displayOffEpoch) / 60;
+  int minutes = (now() - displayOffEpoch) / 60;
   return minutes;
 }
 
@@ -1208,10 +1169,10 @@ void enableDisplay(boolean enable) {
     }
     matrix.shutdown(false);
     matrix.fillScreen(LOW); // show black
-    Serial.println("Display was turned ON: " + timeClient.getFormattedTime());
+    Serial.println("Display was turned ON: " + now());
   } else {
     matrix.shutdown(true);
-    Serial.println("Display was turned OFF: " + timeClient.getFormattedTime());
+    Serial.println("Display was turned OFF: " + now());
     displayOffEpoch = lastEpoch;
   }
 }
@@ -1221,8 +1182,7 @@ void checkDisplay() {
   if (timeDisplayTurnsOn == "" || timeDisplayTurnsOff == "") {
     return; // nothing to do
   }
-  timeClient.setUtcOffset(getTimeOffset());
-  String currentTime = timeClient.getHours() + ":" + timeClient.getMinutes();
+  String currentTime = TimeDB.zeroPad(hour()) + ":" + TimeDB.zeroPad(minute());
 
   if (currentTime == timeDisplayTurnsOn && !displayOn) {
     Serial.println("Time to turn display on: " + currentTime);
@@ -1244,6 +1204,7 @@ String writeCityIds() {
     Serial.println("File open failed!");
   } else {
     Serial.println("Saving settings now...");
+    f.println("TIMEDBKEY=" + TIMEDBKEY);
     f.println("APIKEY=" + APIKEY);
     f.println("CityID=" + String(CityIDs[0]));
     f.println("marqueeMessage=" + marqueeMessage);
@@ -1256,7 +1217,7 @@ String writeCityIds() {
     f.println("newsApiKey=" + NEWS_API_KEY);
     f.println("isFlash=" + String(flashOnSeconds));
     f.println("is24hour=" + String(IS_24HOUR));
-    f.println("isDST=" + String(IS_DST));
+    f.println("isPM=" + String(IS_PM));
     f.println("wideclockformat=" + Wide_Clock_Style);
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
@@ -1280,7 +1241,6 @@ String writeCityIds() {
   }
   f.close();
   readCityIds();
-  timeOffsetFetched = false;
   weatherClient.updateCityIdList(CityIDs, 1);
   String cityIds = weatherClient.getMyCityIDs();
   return cityIds;
@@ -1296,6 +1256,11 @@ void readCityIds() {
   String line;
   while (fr.available()) {
     line = fr.readStringUntil('\n');
+    if (line.indexOf("TIMEDBKEY=") >= 0) {
+      TIMEDBKEY = line.substring(line.lastIndexOf("TIMEDBKEY=") + 10);
+      TIMEDBKEY.trim();
+      Serial.println("TIMEDBKEY: " + TIMEDBKEY);
+    }
     if (line.indexOf("APIKEY=") >= 0) {
       APIKEY = line.substring(line.lastIndexOf("APIKEY=") + 7);
       APIKEY.trim();
@@ -1327,9 +1292,9 @@ void readCityIds() {
       IS_24HOUR = line.substring(line.lastIndexOf("is24hour=") + 9).toInt();
       Serial.println("IS_24HOUR=" + String(IS_24HOUR));
     }
-    if (line.indexOf("isDST=") >= 0) {
-      IS_DST = line.substring(line.lastIndexOf("isDST=") + 6).toInt();
-      Serial.println("IS_DST=" + String(IS_DST));
+    if (line.indexOf("isPM=") >= 0) {
+      IS_PM = line.substring(line.lastIndexOf("isPM=") + 5).toInt();
+      Serial.println("IS_PM=" + String(IS_PM));
     }
     if (line.indexOf("wideclockformat=") >= 0) {
       Wide_Clock_Style = line.substring(line.lastIndexOf("wideclockformat=") + 16);
@@ -1491,9 +1456,28 @@ void scrollMessage(String msg) {
 }
 
 void centerPrint(String msg) {
+  centerPrint(msg, false);
+}
+
+void centerPrint(String msg, boolean extraStuff) {
   int x = (matrix.width() - (msg.length() * width)) / 2;
+
+  // Print the static portions of the display before the main Message
+  if (extraStuff) {
+    if (!IS_24HOUR && IS_PM && isPM()) {
+      matrix.drawChar(matrix.width() - 4, 0, '.', HIGH, LOW, 1);
+    }
+
+    if (OCTOPRINT_ENABLED && OCTOPRINT_PROGRESS && printerClient.isPrinting()) {
+      int numberOfLightPixels = (printerClient.getProgressCompletion().toFloat() / float(100)) * (matrix.width() - 1);
+      matrix.drawFastHLine(0, 7, numberOfLightPixels, HIGH);
+    }
+    
+  }
+  
   matrix.setCursor(x, 0);
   matrix.print(msg);
+
   matrix.write();
 }
 

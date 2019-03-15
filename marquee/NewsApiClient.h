@@ -25,7 +25,7 @@ SOFTWARE.
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <JsonListener.h>
-#include <JsonStreamingParser.h>
+#include <JsonStreamingParser.h> // --> https://github.com/squix78/json-streaming-parser
 
 class NewsApiClient: public JsonListener {
 

@@ -1,6 +1,6 @@
 /** The MIT License (MIT)
 
-Copyright (c) 2018 David Payne
+Copyright (c) 2019 magnum129@github
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,32 +23,24 @@ SOFTWARE.
 
 #pragma once
 #include <ESP8266WiFi.h>
+#include <TimeLib.h> // https://github.com/PaulStoffregen/Time 
 #include "libs/ArduinoJson/ArduinoJson.h"
 
-class GeoNamesClient {
+class TimeDB
+{
+  public:
+    TimeDB(String apiKey);
+    void updateConfig(String apiKey, String lat, String lon);
+    time_t getTime();
+    String getDayName();
+    String getMonthName();
+    String getAmPm();
+    String zeroPad(int number);
 
-private:
-  String myLat = "";
-  String myLon = "";
-  String myUserName = "";
-  boolean isDst = true; // Daylight Savings Time
-
-  int hours = 0;
-  int minutes = 0;
-  String datetime = "";
-  
-  const char* servername = "api.geonames.org";  // remote server we will connect to
-
-public:
-  GeoNamesClient(String UserName, String lat, String lon, boolean useDst);
-  void updateClient(String UserName, String lat, String lon, boolean useDst);
-  float getTimeOffset();
-  String getHours();
-  String getMinutes();
-  String getYear();
-  String getMonth00();
-  String getMonth(boolean zeroPad);
-  String getMonthName();
-  String getDay00();
-  String getDay(boolean zeroPad);
+  private:
+    const char* servername = "api.timezonedb.com";  // remote server we will connect to
+    long localMillisAtUpdate;
+    String myApiKey;
+    String myLat;
+    String myLon;
 };

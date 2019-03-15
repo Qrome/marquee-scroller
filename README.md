@@ -61,8 +61,8 @@ Double Wide LED version: https://www.thingiverse.com/thing:2989552
 
 ## Upgrading from version 2.5 or Higher
 Version 2.5 introduced the ability to upgrade pre-compiled firmware from a binary file.  In version 2.6 and on you should find binary files that can be uploaded to your marque scrolling clock via the web interface.  From the main menu in the web interface select "Firmware Update" and follow the prompts.
-* **marquee.ino.d1_mini_2.6.bin** - compiled for Wemos D1 Mini and standard 4x1 LED (default)
-* **marquee.ino.d1_mini_wide_2.6.bin** - compiled for Wemos D1 Mini and double wide 8x1 LED display
+* **marquee.ino.d1_mini_2.10.bin** - compiled for Wemos D1 Mini and standard 4x1 LED (default)
+* **marquee.ino.d1_mini_wide_2.10.bin** - compiled for Wemos D1 Mini and double wide 8x1 LED display
 
 ## Compiling and Loading to Wemos D1
 It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.  
@@ -70,7 +70,7 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 * Enter http://arduino.esp8266.com/stable/package_esp8266com_index.json into Additional Board Manager URLs field. You can add multiple URLs, separating them with commas.  This will add support for the Wemos D1 Mini to Arduino IDE.
 * Open Boards Manager from Tools > Board menu and install esp8266 platform (and don't forget to select your ESP8266 board from Tools > Board menu after installation).
 * Select Board:  "WeMos D1 R2 & mini" or "LOLIN(WEMOS) D1 R2 & mini"
-* Set 1M SPIFFS -- this project uses SPIFFS for saving and reading configuration settings.
+* Set 1M SPIFFS -- **this project requires SPIFFS for saving and reading configuration settings.**  
 
 ## Loading Supporting Library Files in Arduino
 Use the Arduino guide for details on how to installing and manage libraries https://www.arduino.cc/en/Guide/Libraries  
@@ -80,7 +80,8 @@ Use the Arduino guide for details on how to installing and manage libraries http
 <WiFiManager.h> --> https://github.com/tzapu/WiFiManager  
 "FS.h"  
 <SPI.h>  
-<Adafruit_GFX.h>  --> https://github.com/adafruit/Adafruit-GFX-Library  
+<TimeLib.h> --> https://github.com/PaulStoffregen/Time  
+<Adafruit_GFX.h> --> https://github.com/adafruit/Adafruit-GFX-Library  
 <Max72xxPanel.h> --> https://github.com/markruys/arduino-Max72xxPanel  
 <JsonStreamingParser.h> --> https://github.com/squix78/json-streaming-parser  
 
@@ -88,11 +89,11 @@ Note ArduinoJson (version 5.13.1) is now included as a library file in version 2
 
 ## Initial Configuration
 Starting with version 2.0 editing the **Settings.h** file is optional.  All API Keys are now managed in the Web Interface except for the GeoNames Key. It is not required to edit the Settings.h file before loading and running the code.  
-* Open Weather Map API Key: http://openweathermap.org/
-* News API Key: https://newsapi.org/
-* GeoNames Key (optional as you can use mine or create your own) http://www.geonames.org/ -- this key is only managed in the Settings.h file.
-* Your OctoPrint API Key (optional if you use the OctoPrint status)
-* Version 2.0 supports Chained 4x1 LED displayes -- configure in the Settigns.h file.  
+* Open Weather Map free API key: http://openweathermap.org/  -- this is used to get weather data and the latitude and longitude for the current time zone. Weather API key is required for correct time.
+* TimeZoneDB free registration for API key: https://timezonedb.com/register -- this is used for setting the time and getting the correct time zone as well as managing time changes due to Day Light Savings time by regions.  This key is set and managed only through the web interface and added in version 2.10 of Marquee Scroller. TimeZoneDB key is required for correct time display.
+* News API key (free): https://newsapi.org/ -- Optional if you want to get current news headlines.
+* Your OctoPrint API Key -- optional if you use the OctoPrint status.
+* Version 2.0 supports Chained 4x1 LED displays -- configure in the Settings.h file.  
 
 NOTE: The settings in the Settings.h are the default settings for the first loading. After loading you will manage changes to the settings via the Web Interface. If you want to change settings again in the settings.h, you will need to erase the file system on the Wemos or use the “Reset Settings” option in the Web Interface.  
 
