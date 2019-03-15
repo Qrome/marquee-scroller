@@ -863,8 +863,9 @@ void getWeatherData() //client function to send/receive GET request data.
   }
 
   if (NEWS_ENABLED && displayOn) {
+    matrix.drawPixel(0, 2, HIGH);
     matrix.drawPixel(0, 1, HIGH);
-    matrix.drawPixel(0, 2, HIGH);;
+    matrix.drawPixel(0, 0, HIGH);
     matrix.write();
     Serial.println("Getting News Data for " + NEWS_SOURCE);
     newsClient.updateNews();
