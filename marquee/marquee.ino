@@ -393,21 +393,8 @@ void loop() {
     }
   }
   matrix.fillScreen(LOW);
-  centerPrint(currentTime);
+  centerPrint(currentTime, true);
   
-  if (!IS_24HOUR && IS_PM) {
-    matrix.drawChar(matrix.width() - 4, 0, '.', HIGH, LOW, 1);
-    matrix.write();
-  }
-  
-  if (OCTOPRINT_ENABLED && OCTOPRINT_PROGRESS && printerClient.isPrinting()) {
-    int numberOfLightPixels = (printerClient.getProgressCompletion().toFloat() / float(100)) * (matrix.width() - 1);
-    for (int i = 0; i < numberOfLightPixels; i++) {
-      matrix.drawChar(i, 2, '.', HIGH, LOW, 1);
-    }
-    matrix.write();
-  }
-
   if (WEBSERVER_ENABLED) {
     server.handleClient();
   }
@@ -1468,9 +1455,25 @@ void scrollMessage(String msg) {
 }
 
 void centerPrint(String msg) {
+  centerPrint(msg, false);
+}
+
+void centerPrint(String msg, boolean extraStuff) {
   int x = (matrix.width() - (msg.length() * width)) / 2;
   matrix.setCursor(x, 0);
   matrix.print(msg);
+
+  if (extraStuff) {
+    if (!IS_24HOUR && IS_PM) {
+      matrix.drawChar(matrix.width() - 4, 0, '.', HIGH, LOW, 1);
+    }
+
+    if (OCTOPRINT_ENABLED && OCTOPRINT_PROGRESS && printerClient.isPrinting()) {
+      int numberOfLightPixels = (printerClient.getProgressCompletion().toFloat() / float(100)) * (matrix.width() - 1);
+      matrix.drawFastHLine(0, 7, numberOfLightPixels, HIGH);
+    }
+  }
+  
   matrix.write();
 }
 
