@@ -151,6 +151,7 @@ String NewsApiClient::cleanText(String text) {
   text.replace("”", "\"");
   text.replace("`", "'");
   text.replace("‘", "'");
+  text.replace("„", "'");
   text.replace("\\\"", "'");
   text.replace("•", "-");
   text.replace("é", "e");
@@ -184,5 +185,6 @@ String NewsApiClient::cleanText(String text) {
   text.replace("ü", "ue");
   text.replace("Ä", "Ae");
   text.replace("ä", "ae");
+  text.replace("ß", "ss");
   return text;
 }

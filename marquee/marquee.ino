@@ -1460,9 +1460,8 @@ void centerPrint(String msg) {
 
 void centerPrint(String msg, boolean extraStuff) {
   int x = (matrix.width() - (msg.length() * width)) / 2;
-  matrix.setCursor(x, 0);
-  matrix.print(msg);
 
+  // Print the static portions of the display before the main Message
   if (extraStuff) {
     if (!IS_24HOUR && IS_PM && isPM()) {
       matrix.drawChar(matrix.width() - 4, 0, '.', HIGH, LOW, 1);
@@ -1472,7 +1471,11 @@ void centerPrint(String msg, boolean extraStuff) {
       int numberOfLightPixels = (printerClient.getProgressCompletion().toFloat() / float(100)) * (matrix.width() - 1);
       matrix.drawFastHLine(0, 7, numberOfLightPixels, HIGH);
     }
+    
   }
+  
+  matrix.setCursor(x, 0);
+  matrix.print(msg);
 
   matrix.write();
 }
