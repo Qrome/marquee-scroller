@@ -494,7 +494,7 @@ void handleLocations() {
   CityIDs[0] = server.arg("city1").toInt();
   flashOnSeconds = server.hasArg("flashseconds");
   IS_24HOUR = server.hasArg("is24hour");
-  IS_PM = server.hasArg("isPM");
+  IS_PM = decodeHtmlString(server.arg("isPM"));
   SHOW_DATE = server.hasArg("showdate");
   SHOW_CITY = server.hasArg("showcity");
   SHOW_CONDITION = server.hasArg("showcondition");
@@ -766,7 +766,7 @@ void handleConfigure() {
   server.sendContent(form);
 
   form = CHANGE_FORM2;
-  String isPmOptions = "<option value='0'>None</option><option value='-1,6'>Lower Right Edge</option><option value='-2,6'>Lower Right Indented</option><option value='-1,0'>Upper Right Edge</option><option value='-2,0'>Upper Right Indented</option><option value='0,6'>Lower Left Edge</option><option value='-2,6'>Lower Left Indented</option><option value='0,0'>Upper Right Edge</option><option value='1,0'>Upper Right Indented</option>";
+  String isPmOptions = "<option value='0'>None</option><option value='-1,6'>Lower Right Edge</option><option value='-2,6'>Lower Right Indented</option><option value='-1,0'>Upper Right Edge</option><option value='-2,0'>Upper Right Indented</option><option value='0,6'>Lower Left Edge</option><option value='1,6'>Lower Left Indented</option><option value='0,0'>Upper Left Edge</option><option value='1,0'>Upper Left Indented</option>";
   isPmOptions.replace(IS_PM + "'", IS_PM + "' selected" );
   form.replace("%IS_PM_OPTIONS%", isPmOptions);
   String isFlashSecondsChecked = "";
@@ -1215,7 +1215,7 @@ String writeCityIds() {
     f.println("newsApiKey=" + NEWS_API_KEY);
     f.println("isFlash=" + String(flashOnSeconds));
     f.println("is24hour=" + String(IS_24HOUR));
-    f.println("isPM=" + String(IS_PM));
+    f.println("isPM=" + IS_PM);
     f.println("wideclockformat=" + Wide_Clock_Style);
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
@@ -1237,7 +1237,7 @@ String writeCityIds() {
     f.println("SHOW_WIND=" + String(SHOW_WIND));
     f.println("SHOW_DATE=" + String(SHOW_DATE));
   }
-  f.close();
+  f.close(); 
   readCityIds();
   weatherClient.updateCityIdList(CityIDs, 1);
   String cityIds = weatherClient.getMyCityIDs();
@@ -1293,7 +1293,7 @@ void readCityIds() {
     if (line.indexOf("isPM=") >= 0) {
       IS_PM = line.substring(line.lastIndexOf("isPM=") + 5);
       IS_PM.trim();
-      Serial.println("IS_PM=" + String(IS_PM));
+      Serial.println("IS_PM=" + IS_PM);
     }
     if (line.indexOf("wideclockformat=") >= 0) {
       Wide_Clock_Style = line.substring(line.lastIndexOf("wideclockformat=") + 16);
@@ -1463,7 +1463,7 @@ void centerPrint(String msg, boolean extraStuff) {
 
   // Print the static portions of the display before the main Message
   if (extraStuff) {
-    if (!IS_24HOUR && IS_PM.toInt() != 0 && isPM()) {
+    if (!IS_24HOUR && IS_PM != "0" && isPM()) {
       
       int fromRight = splitString(IS_PM, ',', 0).toInt();
       int fromTop = splitString(IS_PM, ',', 1).toInt();
