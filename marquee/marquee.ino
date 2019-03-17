@@ -105,7 +105,7 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
 
-String CHANGE_FORM2 = "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>"
+String CHANGE_FORM2 = "<p>Show PM indicator (only 12h format) <select class='w3-option w3-padding' name='isPM'>%IS_PM_OPTIONS%</select></p>"
                       "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
@@ -766,11 +766,9 @@ void handleConfigure() {
   server.sendContent(form);
 
   form = CHANGE_FORM2;
-  String isPmChecked = "";
-  if (IS_PM) {
-    isPmChecked = "checked='checked'";
-  }
-  form.replace("%IS_PM_CHECKED%", isPmChecked);
+  String isPmOptions = "<option value='0'>None</option><option value='-1,6'>Lower Right Edge</option><option value='-2,6'>Lower Right Indented</option><option value='-1,0'>Upper Right Edge</option><option value='-2,0'>Upper Right Indented</option><option value='0,6'>Lower Left Edge</option><option value='-2,6'>Lower Left Indented</option><option value='0,0'>Upper Right Edge</option><option value='1,0'>Upper Right Indented</option>";
+  isPmOptions.replace(IS_PM + "'", IS_PM + "' selected" );
+  form.replace("%IS_PM_OPTIONS%", isPmOptions);
   String isFlashSecondsChecked = "";
   if (flashOnSeconds) {
     isFlashSecondsChecked = "checked='checked'";
@@ -1293,7 +1291,8 @@ void readCityIds() {
       Serial.println("IS_24HOUR=" + String(IS_24HOUR));
     }
     if (line.indexOf("isPM=") >= 0) {
-      IS_PM = line.substring(line.lastIndexOf("isPM=") + 5).toInt();
+      IS_PM = line.substring(line.lastIndexOf("isPM=") + 5);
+      IS_PM.trim();
       Serial.println("IS_PM=" + String(IS_PM));
     }
     if (line.indexOf("wideclockformat=") >= 0) {
@@ -1464,8 +1463,16 @@ void centerPrint(String msg, boolean extraStuff) {
 
   // Print the static portions of the display before the main Message
   if (extraStuff) {
-    if (!IS_24HOUR && IS_PM && isPM()) {
-      matrix.drawPixel(matrix.width() - 2, 6, HIGH);
+    if (!IS_24HOUR && IS_PM.toInt() != 0 && isPM()) {
+      
+      int fromRight = splitString(IS_PM, ',', 0).toInt();
+      int fromTop = splitString(IS_PM, ',', 1).toInt();
+
+      if(fromRight < 0) {
+        matrix.drawPixel(matrix.width() + fromRight, fromTop, HIGH);
+      } else {
+        matrix.drawPixel(fromRight, fromTop, HIGH);
+      }
     }
 
     if (OCTOPRINT_ENABLED && OCTOPRINT_PROGRESS && printerClient.isPrinting()) {
@@ -1479,6 +1486,25 @@ void centerPrint(String msg, boolean extraStuff) {
   matrix.print(msg);
 
   matrix.write();
+}
+
+String splitString(String data, char separator, int index)
+{
+  int found = 0;
+  int strIndex[] = {0, -1};
+  int maxIndex = data.length() - 1;
+
+  for (int i = 0; i <= maxIndex && found <= index; i++) {
+    if (data.charAt(i) == separator || i == maxIndex) {
+      found++;
+      strIndex[0] = strIndex[1] + 1;
+      strIndex[1] = (i == maxIndex) ? i + 1 : i;
+    }
+  }
+
+  String result = found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+  result.trim();
+  return result;
 }
 
 String decodeHtmlString(String msg) {
