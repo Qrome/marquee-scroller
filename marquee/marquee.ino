@@ -766,7 +766,7 @@ void handleConfigure() {
   server.sendContent(form);
 
   form = CHANGE_FORM2;
-  String isPmOptions = "<option value='0'>None</option><option value='-1,6'>Lower Right Edge</option><option value='-2,6'>Lower Right Indented</option><option value='-1,0'>Upper Right Edge</option><option value='-2,0'>Upper Right Indented</option><option value='0,6'>Lower Left Edge</option><option value='1,6'>Lower Left Indented</option><option value='0,0'>Upper Left Edge</option><option value='1,0'>Upper Left Indented</option>";
+  String isPmOptions = "<option value='NO'>None</option><option value='-1,6'>Lower Right Edge</option><option value='-2,6'>Lower Right Indented</option><option value='-1,0'>Upper Right Edge</option><option value='-2,0'>Upper Right Indented</option><option value='0,6'>Lower Left Edge</option><option value='1,6'>Lower Left Indented</option><option value='0,0'>Upper Left Edge</option><option value='1,0'>Upper Left Indented</option>";
   isPmOptions.replace(IS_PM + "'", IS_PM + "' selected" );
   form.replace("%IS_PM_OPTIONS%", isPmOptions);
   String isFlashSecondsChecked = "";
@@ -1463,7 +1463,7 @@ void centerPrint(String msg, boolean extraStuff) {
 
   // Print the static portions of the display before the main Message
   if (extraStuff) {
-    if (!IS_24HOUR && IS_PM != "0" && isPM()) {
+    if (!IS_24HOUR && IS_PM != "NO" && isPM()) {
       
       int fromRight = splitString(IS_PM, ',', 0).toInt();
       int fromTop = splitString(IS_PM, ',', 1).toInt();
