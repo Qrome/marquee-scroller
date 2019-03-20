@@ -1,24 +1,24 @@
 /** The MIT License (MIT)
 
-  Copyright (c) 2018 David Payne
+Copyright (c) 2018 David Payne
 
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 */
 
 #include "OpenWeatherMapClient.h"
@@ -35,7 +35,7 @@ void OpenWeatherMapClient::updateWeatherApiKey(String ApiKey) {
 
 void OpenWeatherMapClient::updateWeather() {
   WiFiClient weatherClient;
-  String apiGetData = "GET /v1/devices/?apiKey=" + myApiKey + "&applicationKey=9ca57c2ff32845cab6ac3c5bddb36b3209549a4bd3e84c76a2e37687629d21cb HTTP/1.1";
+  String apiGetData = "GET /data/2.5/group?id=" + myCityIDs + "&units=" + units + "&cnt=1&APPID=" + myApiKey + " HTTP/1.1";
 
   Serial.println("Getting Weather Data");
   Serial.println(apiGetData);
@@ -47,7 +47,7 @@ void OpenWeatherMapClient::updateWeather() {
     weatherClient.println("User-Agent: ArduinoWiFi/1.1");
     weatherClient.println("Connection: close");
     weatherClient.println();
-  }
+  } 
   else {
     Serial.println("connection for weather data failed"); //error message if no client connect
     Serial.println();
@@ -55,8 +55,8 @@ void OpenWeatherMapClient::updateWeather() {
     return;
   }
 
-  while (weatherClient.connected() && !weatherClient.available()) delay(1); //waits for data
-
+  while(weatherClient.connected() && !weatherClient.available()) delay(1); //waits for data
+ 
   Serial.println("Waiting for data");
 
   // Check HTTP status
@@ -70,7 +70,7 @@ void OpenWeatherMapClient::updateWeather() {
     return;
   }
 
-  // Skip HTTP headers
+    // Skip HTTP headers
   char endOfHeaders[] = "\r\n\r\n";
   if (!weatherClient.find(endOfHeaders)) {
     Serial.println(F("Invalid response"));
@@ -80,8 +80,8 @@ void OpenWeatherMapClient::updateWeather() {
   const size_t bufferSize = 710;
   DynamicJsonBuffer jsonBuffer(bufferSize);
 
-  // Parse JSON objectarray
-  JsonArray& root = jsonBuffer.parseArray(weatherClient);
+  // Parse JSON object
+  JsonObject& root = jsonBuffer.parseObject(weatherClient);
   if (!root.success()) {
     Serial.println(F("Weather Data Parsing failed!"));
     weathers[0].error = "Weather Data Parsing failed!";
@@ -93,114 +93,52 @@ void OpenWeatherMapClient::updateWeather() {
   if (root.measureLength() <= 150) {
     Serial.println("Error Does not look like we got the data.  Size: " + String(root.measureLength()));
     weathers[0].cached = true;
-    weathers[0].error = (const char*)root[0]["message"];
+    weathers[0].error = (const char*)root["message"];
     Serial.println("Error: " + weathers[0].error);
     return;
   }
-  int inx = 0;
+  int count = root["cnt"];
 
+  for (int inx = 0; inx < count; inx++) {
+    weathers[inx].lat = (const char*)root["list"][inx]["coord"]["lat"];
+    weathers[inx].lon = (const char*)root["list"][inx]["coord"]["lon"];
+    weathers[inx].dt = (const char*)root["list"][inx]["dt"];
+    weathers[inx].city = (const char*)root["list"][inx]["name"];
+    weathers[inx].country = (const char*)root["list"][inx]["sys"]["country"];
+    weathers[inx].temp = (const char*)root["list"][inx]["main"]["temp"];
+    weathers[inx].humidity = (const char*)root["list"][inx]["main"]["humidity"];
+    weathers[inx].condition = (const char*)root["list"][inx]["weather"][0]["main"];
+    weathers[inx].wind = (const char*)root["list"][inx]["wind"]["speed"];
+    weathers[inx].weatherId = (const char*)root["list"][inx]["weather"][0]["id"];
+    weathers[inx].description = (const char*)root["list"][inx]["weather"][0]["description"];
+    weathers[inx].icon = (const char*)root["list"][inx]["weather"][0]["icon"];
 
+    if (units == "metric") {
+      // convert to kph from m/s
+      float f = (weathers[inx].wind.toFloat() * 3.6);
+      weathers[inx].wind = String(f);
+    }
 
-  const char* location = (const char*)root[0]["info"]["location"];
-  weathers[inx].lat = getValue(location, ',', 0);
-  weathers[inx].lon = getValue(location, ',', 1);
-  weathers[inx].dt = (const char*)root[0]["lastData"]["dateutc"];
-  weathers[inx].city = (const char*)root[0]["info"]["name"];
-  weathers[inx].country = "country";
-  weathers[inx].temp = (const char*)root[0]["lastData"]["tempf"];
-  weathers[inx].humidity = (const char*)root[0]["lastData"]["humidity"];
-  weathers[inx].condition = "condition";
-  weathers[inx].wind = (const char*)root[0]["lastData"]["windspeedmph"];
-  weathers[inx].weatherId = "weatherId";
-
-  String description = "";
-  if(weathers[inx].wind.toInt() > 20) {
-    description = "REALLY WINDY AND ";
-  } else if (weathers[inx].wind.toInt() <= 20 && weathers[inx].wind.toInt() > 5) {
-    description = "KINDA WINDY AND ";
-  } else {
-    description = "";
+    Serial.println("lat: " + weathers[inx].lat);
+    Serial.println("lon: " + weathers[inx].lon);
+    Serial.println("dt: " + weathers[inx].dt);
+    Serial.println("city: " + weathers[inx].city);
+    Serial.println("country: " + weathers[inx].country);
+    Serial.println("temp: " + weathers[inx].temp);
+    Serial.println("humidity: " + weathers[inx].humidity);
+    Serial.println("condition: " + weathers[inx].condition);
+    Serial.println("wind: " + weathers[inx].wind);
+    Serial.println("weatherId: " + weathers[inx].weatherId);
+    Serial.println("description: " + weathers[inx].description);
+    Serial.println("icon: " + weathers[inx].icon);
+    Serial.println();
+    
   }
-
-  
-  if(weathers[inx].temp.toInt() > 90) { // Hot
-    if(weathers[inx].humidity.toInt() > 95) { // Hot & Raining
-      description = description + "HOT AND MAYBE RAINING!";
-    } else if(weathers[inx].humidity.toInt() <= 95 && weathers[inx].humidity.toInt() > 60) { // Hot and Humid
-      description = description + "HOT AND HUMID!";
-    } else {
-      description = description + "HOT!";
-    }
-  } else if(weathers[inx].temp.toInt() <= 80 && weathers[inx].temp.toInt() > 33) { // Okay
-    if(weathers[inx].humidity.toInt() > 95) { // Raining
-      description = description + "MAYBE RAINING";
-    } else if(weathers[inx].humidity.toInt() <= 95 && weathers[inx].humidity.toInt() > 60) { // Humid
-      description = description + "HUMID";
-    } else {
-      description = description + "OKAY'ish";
-    }   
-  } else if(weathers[inx].temp.toInt() <= 32 && weathers[inx].temp.toInt() > 25) { // Cold
-    if(weathers[inx].humidity.toInt() > 80) { // Cold and Snowing
-      description = description + "SNOWING MAYBE";
-    } else if(weathers[inx].humidity.toInt() <= 80 && weathers[inx].humidity.toInt() > 50) { // Hot and Humid
-      description = description + "PROBABLY WINTER LIKE";
-    } else {
-      description = description + "PROBABLY WINTER LIKE";
-    }
-  } else { // Really Cold
-    if(weathers[inx].humidity.toInt() > 80) { // Cold and ICE
-      description = description + "ICE FALLING FROM THE SKY MAYBE";
-    } else if(weathers[inx].humidity.toInt() <= 80 && weathers[inx].humidity.toInt() > 50) { // Hot and Humid
-      description = description + "COLD!";
-    } else {
-      description = description + "COLD!";
-    }
-  }
-
-  weathers[inx].description = description;
-  weathers[inx].icon = "";
-
-  Serial.println("lat: " + weathers[inx].lat);
-  Serial.println("lon: " + weathers[inx].lon);
-  Serial.println("dt: " + weathers[inx].dt);
-  Serial.println("city: " + weathers[inx].city);
-  Serial.println("country: " + weathers[inx].country);
-  Serial.println("temp: " + weathers[inx].temp);
-  Serial.println("humidity: " + weathers[inx].humidity);
-  Serial.println("condition: " + weathers[inx].condition);
-  Serial.println("wind: " + weathers[inx].wind);
-  Serial.println("weatherId: " + weathers[inx].weatherId);
-  Serial.println("description: " + weathers[inx].description);
-  Serial.println("icon: " + weathers[inx].icon);
-  Serial.println();
-
-
 }
-
-String OpenWeatherMapClient::getValue(String data, char separator, int index)
-{
-  int found = 0;
-  int strIndex[] = {0, -1};
-  int maxIndex = data.length() - 1;
-
-  for (int i = 0; i <= maxIndex && found <= index; i++) {
-    if (data.charAt(i) == separator || i == maxIndex) {
-      found++;
-      strIndex[0] = strIndex[1] + 1;
-      strIndex[1] = (i == maxIndex) ? i + 1 : i;
-    }
-  }
-
-  String result = found > index ? data.substring(strIndex[0], strIndex[1]) : "";
-  result.trim();
-  return result;
-}
-
-
 
 String OpenWeatherMapClient::roundValue(String value) {
   float f = value.toFloat();
-  int rounded = (int)(f + 0.5f);
+  int rounded = (int)(f+0.5f);
   return String(rounded);
 }
 
@@ -211,7 +149,7 @@ void OpenWeatherMapClient::updateCityIdList(int CityIDs[], int cityCount) {
       if (myCityIDs != "") {
         myCityIDs = myCityIDs + ",";
       }
-      myCityIDs = myCityIDs + String(CityIDs[inx]);
+      myCityIDs = myCityIDs + String(CityIDs[inx]); 
     }
   }
 }
@@ -296,18 +234,53 @@ String OpenWeatherMapClient::getError() {
   return weathers[0].error;
 }
 
+String OpenWeatherMapClient::getWeekDay(int index, float offset) {
+  String rtnValue = "";
+  long epoc = weathers[index].dt.toInt();
+  long day = 0;
+  if (epoc != 0) { 
+    day = (((epoc + (3600 * (int)offset)) / 86400) + 4) % 7;
+    switch (day) {
+      case 0:
+        rtnValue = "Sunday";
+        break;
+      case 1:
+        rtnValue = "Monday";
+        break;
+      case 2:
+        rtnValue = "Tuesday";
+        break;
+      case 3:
+        rtnValue = "Wednesday";
+        break;
+      case 4:
+        rtnValue = "Thursday";
+        break;
+      case 5:
+        rtnValue = "Friday";
+        break;
+      case 6:
+        rtnValue = "Saturday";
+        break;
+      default:
+        break;
+    }
+  }
+  return rtnValue;
+}
+
 String OpenWeatherMapClient::getWeatherIcon(int index)
 {
   int id = getWeatherId(index).toInt();
   String W = ")";
-  switch (id)
+  switch(id)
   {
     case 800: W = "B"; break;
     case 801: W = "Y"; break;
     case 802: W = "H"; break;
     case 803: W = "H"; break;
     case 804: W = "Y"; break;
-
+    
     case 200: W = "0"; break;
     case 201: W = "0"; break;
     case 202: W = "0"; break;
@@ -318,7 +291,7 @@ String OpenWeatherMapClient::getWeatherIcon(int index)
     case 230: W = "0"; break;
     case 231: W = "0"; break;
     case 232: W = "0"; break;
-
+    
     case 300: W = "R"; break;
     case 301: W = "R"; break;
     case 302: W = "R"; break;
@@ -328,7 +301,7 @@ String OpenWeatherMapClient::getWeatherIcon(int index)
     case 313: W = "R"; break;
     case 314: W = "R"; break;
     case 321: W = "R"; break;
-
+    
     case 500: W = "R"; break;
     case 501: W = "R"; break;
     case 502: W = "R"; break;
@@ -339,7 +312,7 @@ String OpenWeatherMapClient::getWeatherIcon(int index)
     case 521: W = "R"; break;
     case 522: W = "R"; break;
     case 531: W = "R"; break;
-
+    
     case 600: W = "W"; break;
     case 601: W = "W"; break;
     case 602: W = "W"; break;
@@ -350,7 +323,7 @@ String OpenWeatherMapClient::getWeatherIcon(int index)
     case 620: W = "W"; break;
     case 621: W = "W"; break;
     case 622: W = "W"; break;
-
+    
     case 701: W = "M"; break;
     case 711: W = "M"; break;
     case 721: W = "M"; break;
@@ -361,8 +334,8 @@ String OpenWeatherMapClient::getWeatherIcon(int index)
     case 762: W = "M"; break;
     case 771: W = "M"; break;
     case 781: W = "M"; break;
-
-    default: break;
+    
+    default:break; 
   }
   return W;
 }

@@ -32,7 +32,7 @@ private:
   String myApiKey = "";
   String units = "";
   
-  const char* servername = "api.ambientweather.net";  // remote server we will connect to
+  const char* servername = "api.openweathermap.org";  // remote server we will connect to
 
   typedef struct {
     String lat;
@@ -81,5 +81,5 @@ public:
   String getMyCityIDs();
   String getWeatherIcon(int index);
   String getError();
-  String getValue(String data, char separator, int index);
+  String getWeekDay(int index, float offset);
 };
