@@ -38,7 +38,7 @@ void TimeDB::updateConfig(String apiKey, String lat, String lon)
 time_t TimeDB::getTime()
 {
   WiFiClient client;
-  String apiGetData = "GET /v2.1/get-time-zone?key=" + myApiKey + "&format=json&by=position&lat=" + myLat + "&lng=" + myLon + " HTTP/1.1";
+  String apiGetData = "GET /v2.1/get-time-zone?key=" + myApiKey + "&format=json&by=position&lat=" + myLat + "&lng=" + myLon + "&fields=timestamp HTTP/1.1";
   Serial.println("Getting Time Data for " + myLat + "," + myLon);
   Serial.println(apiGetData);
   String result = "";
@@ -82,11 +82,23 @@ time_t TimeDB::getTime()
   JsonObject& root = json_buf.parseObject(jsonArray);
   localMillisAtUpdate = millis();
   Serial.println();
-  if (root["timestamp"] == 0) {
-    return 20;
-  } else {
+  errorMessage = (const char*) root["message"];
+  String status = (const char*) root["status"];
+  
+  if (status == "OK") {
+    Serial.println("Weather Status: " + status);
+    Serial.println("Weather Error: " + errorMessage);
     return (unsigned long) root["timestamp"];
+  } else {
+    errorMessage = (const char*) root["message"];
+    Serial.println("Weather Status: " + status);
+    Serial.println("Weather Error: " + errorMessage);
+    return 20;
   }
+}
+
+String TimeDB::getError() {
+  return errorMessage;
 }
 
 String TimeDB::getDayName() {

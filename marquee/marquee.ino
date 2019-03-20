@@ -393,7 +393,11 @@ void loop() {
     }
   }
   matrix.fillScreen(LOW);
-  centerPrint(currentTime, true);
+  if (now() > 10000) {
+    centerPrint(currentTime, true);
+  } else {
+    scrollMessage("Error Getting Time: "+ TimeDB.getError());
+  }
 
   if (WEBSERVER_ENABLED) {
     server.handleClient();
