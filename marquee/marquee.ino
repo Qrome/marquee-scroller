@@ -396,7 +396,7 @@ void loop() {
   if (now() > 10000) {
     centerPrint(currentTime, true);
   } else {
-    scrollMessage("Error Getting Time: "+ TimeDB.getError());
+    scrollMessage("Error Getting Timestamp: "+ TimeDB.getError());
   }
 
   if (WEBSERVER_ENABLED) {
