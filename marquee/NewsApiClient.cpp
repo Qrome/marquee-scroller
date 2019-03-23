@@ -186,5 +186,7 @@ String NewsApiClient::cleanText(String text) {
   text.replace("Ä", "Ae");
   text.replace("ä", "ae");
   text.replace("ß", "ss");
+  text.replace("»", "'");
+  text.replace("«", "'");
   return text;
 }
