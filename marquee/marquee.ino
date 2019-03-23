@@ -121,7 +121,7 @@ String CHANGE_FORM3 = "<hr><p><input name='isBasicAuth' class='w3-check w3-margi
                       "<p><button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></p></form>"
                       "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
-String NEWS_OPTIONS = "<option>bbc-news</option>"
+/*String NEWS_OPTIONS = "<option>bbc-news</option>"
                       "<option>cnn</option>"
                       "<option>crypto-coins-news</option>"
                       "<option>engadget</option>"
@@ -141,7 +141,7 @@ String NEWS_OPTIONS = "<option>bbc-news</option>"
                       "<option>time</option>"
                       "<option>usa-today</option>"
                       "<option>wired</option>";
-
+*/
 String CURRENCY_OPTIONS = "<option value='NONE'>NONE</option>"
                           "<option value='USD'>United States Dollar</option>"
                           "<option value='AUD'>Australian Dollar</option>"
@@ -619,10 +619,11 @@ void handleNewsConfigure() {
                         "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
                         "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
                         "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
-                        "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>";
-
-  String NEWS_FORM2 =   "</select></p>"
+                        "<p>Select News Source <select class='w3-option w3-padding' name='newssource' id='newssource'></select></p>"
+                        "<script>var s='%NEWSSOURCE%';var tt;var xmlhttp=new XMLHttpRequest();xmlhttp.open('GET','https://newsapi.org/v2/sources?apiKey=%NEWSKEY%',!0);xmlhttp.onreadystatechange=function(){if(xmlhttp.readyState==4){if(xmlhttp.status==200){var obj=JSON.parse(xmlhttp.responseText);obj.sources.forEach(t)}}};xmlhttp.send();function t(it){if(it!=null){if(s==it.id){se=' selected'}else{se=''}tt+='<option'+se+'>'+it.id+'</option>';document.getElementById('newssource').innerHTML=tt}}</script>"
                         "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+
+  
 
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
@@ -639,11 +640,8 @@ void handleNewsConfigure() {
   }
   form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
   form.replace("%NEWSKEY%", NEWS_API_KEY);
-  server.sendContent(form); //Send first Chunk of form
-  String newsOptions = NEWS_OPTIONS;
-  newsOptions.replace(">" + NEWS_SOURCE + "<", " selected>" + NEWS_SOURCE + "<");
-  server.sendContent(newsOptions);
-  server.sendContent(NEWS_FORM2);
+  form.replace("%NEWSSOURCE%", NEWS_SOURCE);
+  server.sendContent(form); //Send news form
 
   sendFooter();
 
