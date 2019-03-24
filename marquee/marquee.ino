@@ -121,27 +121,6 @@ String CHANGE_FORM3 = "<hr><p><input name='isBasicAuth' class='w3-check w3-margi
                       "<p><button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></p></form>"
                       "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
-/*String NEWS_OPTIONS = "<option>bbc-news</option>"
-                      "<option>cnn</option>"
-                      "<option>crypto-coins-news</option>"
-                      "<option>engadget</option>"
-                      "<option>espn</option>"
-                      "<option>fox-news</option>"
-                      "<option>fox-sports</option>"
-                      "<option>google-news</option>"
-                      "<option>hacker-news</option>"
-                      "<option>mtv-news</option>"
-                      "<option>national-geographic</option>"
-                      "<option>newsweek</option>"
-                      "<option>nfl-news</option>"
-                      "<option>recode</option>"
-                      "<option>reddit-r-all</option>"
-                      "<option>reuters</option>"
-                      "<option>the-new-york-times</option>"
-                      "<option>time</option>"
-                      "<option>usa-today</option>"
-                      "<option>wired</option>";
-*/
 String CURRENCY_OPTIONS = "<option value='NONE'>NONE</option>"
                           "<option value='USD'>United States Dollar</option>"
                           "<option value='AUD'>Australian Dollar</option>"
@@ -853,7 +832,12 @@ void getWeatherData() //client function to send/receive GET request data.
   Serial.println("matrix Width:" + matrix.width());
   matrix.write();
   TimeDB.updateConfig(TIMEDBKEY, weatherClient.getLat(0), weatherClient.getLon(0));
-  setTime(TimeDB.getTime());
+  time_t currentTime = TimeDB.getTime();
+  if(currentTime > 5000 || firstEpoch == 0) {
+    setTime(currentTime);
+  } else {
+    Serial.println("Time update unsuccessful!");
+  }
   lastEpoch = now();
   if (firstEpoch == 0) {
     firstEpoch = now();
