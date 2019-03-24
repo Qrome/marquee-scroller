@@ -123,7 +123,7 @@ Please do not feel obligated, but donations and tips are warmly welcomed.  I hav
 ## Contributors
 David Payne  
 Nathan Glaus  
-Daniel Eichhorn -- Author of the TimeClient class  
+Daniel Eichhorn -- Author of the TimeClient class (in older versions)  
 yanvigdev  
 nashiko-s  
 magnum129  
