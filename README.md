@@ -123,9 +123,10 @@ Please do not feel obligated, but donations and tips are warmly welcomed.  I hav
 ## Contributors
 David Payne  
 Nathan Glaus  
-Daniel Eichhorn -- Author of the TimeClient class  
+Daniel Eichhorn -- Author of the TimeClient class (in older versions)  
 yanvigdev  
 nashiko-s  
+magnum129  
 
 Contributing to this software is warmly welcomed. You can do this basically by forking from master, committing modifications and then making a pulling requests against the latest DEV branch to be reviewed (follow the links above for operating guide). Detailed comments are encouraged. Adding change log and your contact into file header is encouraged. Thanks for your contribution.
 
