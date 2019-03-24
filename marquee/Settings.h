@@ -52,6 +52,7 @@ SOFTWARE.
 #include "NewsApiClient.h" 
 #include "OctoPrintClient.h"
 #include "BitcoinApiClient.h"
+#include "DHT.h"
 
 //******************************
 // Start Settings
@@ -59,9 +60,9 @@ SOFTWARE.
 
 String APIKEY = ""; // Your API Key from http://openweathermap.org/
 // Default City Location (use http://openweathermap.org/find to find city ID)
-int CityIDs[] = { 5304391 }; //Only USE ONE for weather marquee
+int CityIDs[] = { 2150767 }; //Only USE ONE for weather marquee
 String marqueeMessage = "";
-boolean IS_METRIC = false; // false = Imperial and true = Metric
+boolean IS_METRIC = true; // false = Imperial and true = Metric
 boolean IS_24HOUR = false; // 23:00 millitary 24 hour clock
 boolean IS_DST = true; // Does your TimeZone use Daylight Savings Time (DST)?
 const int WEBSERVER_PORT = 80; // The port you can access this device on over HTTP
@@ -74,7 +75,7 @@ int minutesBetweenScrolling = 1; // Time in minutes between scrolling data (defa
 int displayScrollSpeed = 25; // In milliseconds -- Configurable by the web UI (slow = 35, normal = 25, fast = 15)
 boolean flashOnSeconds = true; // when true the : character in the time will flash on and off as a seconds indicator
 
-boolean NEWS_ENABLED = true;
+boolean NEWS_ENABLED = false;
 String NEWS_API_KEY = ""; // Get your News API Key from https://newsapi.org
 String NEWS_SOURCE = "reuters";  // https://newsapi.org/sources to get full list of news sources available
 
@@ -113,6 +114,12 @@ String BitcoinCurrencyCode = "NONE";  // Change to USD, GBD, EUR, or NONE -- thi
 
 boolean ENABLE_OTA = true;  // this will allow you to load firmware to the device over WiFi (see OTA for ESP8266)
 String OTA_Password = "";      // Set an OTA password here -- leave blank if you don't want to be prompted for password
+
+//
+// Uncomment the type of sensor in use:
+//#define DHTTYPE           DHT11     // DHT 11 
+#define DHTTYPE           DHT22     // DHT 22 (AM2302)
+//#define DHTTYPE           DHT21     // DHT 21 (AM2301)
 
 //******************************
 // End Settings

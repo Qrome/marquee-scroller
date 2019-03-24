@@ -21,17 +21,27 @@
   SOFTWARE.
 */
 
+// 21st March 2019
+// Added Pushbutton to D1 to allow turning on / off of the display
+// Using GitHub Desktop to Manage to GitHub
+//
+// 24th March 2019
+// Add DHT22 Sensor to D3
+// Embed code to display Local Temp
+
 /**********************************************
   Edit Settings.h for personalization
 ***********************************************/
 
 #include "Settings.h"
 
-#define VERSION "2.9"
+#define VERSION "2.9a"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
 #define BUZZER_PIN  D2
+#define TEMP_PIN  D3
+#define SwitchPin D1  // Putton on D1
 
 /* Useful Constants */
 #define SECS_PER_MIN  (60UL)
@@ -62,6 +72,10 @@ float UtcOffset;  //time zone offsets that correspond with the CityID above (off
 
 int Pressed = 0;
 #define SwitchPin D1 // Putton on D1
+
+// Temp 
+
+DHT dht(TEMP_PIN, DHTTYPE);
 
 // Time
 TimeClient timeClient(UtcOffset);
@@ -172,6 +186,8 @@ void setup() {
   //SPIFFS.remove(CONFIG);
   delay(10);
 
+  dht.begin();  // Initialise Sensor
+  
   // Initialize digital pin for LED & Switch
   pinMode(externalLight, OUTPUT);
   pinMode(SwitchPin, INPUT);    // Initial Button for input
@@ -339,7 +355,7 @@ void loop() {
     }
 
     displayRefreshCount --;
-    // Check to see if we need to Scroll some Data
+    // Check to see if we need to Scroll some Data & will use this as the trigger to get the local temperature
     if (displayRefreshCount <= 0) {
       displayRefreshCount = minutesBetweenScrolling;
       String temperature = weatherClient.getTempRounded(0);
@@ -347,6 +363,16 @@ void loop() {
       description.toUpperCase();
       String msg;
       msg += " ";
+
+    // Test the sensor
+      
+      Serial.println("Getting Temperature.....");
+      float t = dht.readTemperature();
+      Serial.print(F("%  Temperature: "));
+      Serial.print(t);
+      Serial.print(F("°C "));
+
+      msg += "Temp = " + String(t) + "oC - ";
 
       if (SHOW_DATE) {
         msg += weatherClient.getWeekDay(0, UtcOffset) + ", ";
