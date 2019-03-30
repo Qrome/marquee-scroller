@@ -29,6 +29,11 @@
 // Add DHT22 Sensor to D3
 // Embed code to display Local Temp
 
+// To do
+// Force the display of forecast
+// Alternate the display to do time / local temp
+// Work out how to pull and merge from latest master updates from Qrome
+
 /**********************************************
   Edit Settings.h for personalization
 ***********************************************/
@@ -40,7 +45,7 @@
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
 #define BUZZER_PIN  D2
-#define TEMP_PIN  D3
+#define TEMP_PIN  D3  // DHT sensor Pin
 #define SwitchPin D1  // Putton on D1
 
 /* Useful Constants */
@@ -71,7 +76,6 @@ float UtcOffset;  //time zone offsets that correspond with the CityID above (off
 // Button Settings - Press to turn display ON
 
 int Pressed = 0;
-#define SwitchPin D1 // Putton on D1
 
 // Temp 
 
@@ -366,7 +370,7 @@ void loop() {
 
     // Test the sensor
       
-      Serial.println("Getting Temperature.....");
+      Serial.println(F("\nGetting Temperature....."));
       float t = dht.readTemperature();
       Serial.print(F("%  Temperature: "));
       Serial.print(t);

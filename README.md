@@ -56,9 +56,9 @@ GND -> GND-
 ![Marquee Scroller Wiring](/images/marquee_scroller_pins.png)  
 
 
-Added Pushbutton to turn display on / off
+Added Pushbutton to turn display on / off and a Locally attached DHT 11/22 Temp sensor
 
-![Marquee Parts](/images/PushButton.png)
+![Marquee Parts](/images/PushButton-Temp.png)
 
 ## 3D Printed Case by David Payne:  
 Original Single Panel version: https://www.thingiverse.com/thing:2867294  
