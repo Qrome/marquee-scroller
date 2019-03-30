@@ -83,7 +83,7 @@ String NEWS_SOURCE = "reuters";  // https://newsapi.org/sources to get full list
 // CS  -> D6 
 // DIN -> D7 (MOSI)
 const int pinCS = D6; // Attach CS to this pin, DIN to MOSI and CLK to SCK (cf http://arduino.cc/en/Reference/SPI )
-int displayIntensity = 1;  //(This can be set from 1 - 15)
+int displayIntensity = 1;  //(This can be set from 0 - 15)
 const int numberOfHorizontalDisplays = 4; // default 4 for standard 4 x 1 display Max size of 16
 const int numberOfVerticalDisplays = 1; // default 1 for a single row height
 /* set ledRotation for LED Display panels (3 is default)

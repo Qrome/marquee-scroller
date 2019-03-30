@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.10"
+#define VERSION "2.11"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -94,7 +94,7 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<label>TimeZone DB API Key (get from <a href='https://timezonedb.com/register' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='TimeZoneDB' value='%TIMEDBKEY%' maxlength='60'>"
                       "<label>OpenWeatherMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
-                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='60'>"
+                      "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='70'>"
                       "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
                       "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
@@ -110,7 +110,7 @@ String CHANGE_FORM2 = "<p><input name='isPM' class='w3-check w3-margin-top' type
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
                       "<p><label>End Time </label><input name='endTime' type='time' value='%ENDTIME%'></p>"
-                      "<p>Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='1' max='15' value='%INTENSITYOPTIONS%'></p>"
+                      "<p>Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='0' max='15' value='%INTENSITYOPTIONS%'></p>"
                       "<p>Display Scroll Speed <select class='w3-option w3-padding' name='scrollspeed'>%SCROLLOPTIONS%</select></p>"
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
                       "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
@@ -120,27 +120,6 @@ String CHANGE_FORM3 = "<hr><p><input name='isBasicAuth' class='w3-check w3-margi
                       "<p><label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'></p>"
                       "<p><button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></p></form>"
                       "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
-
-String NEWS_OPTIONS = "<option>bbc-news</option>"
-                      "<option>cnn</option>"
-                      "<option>crypto-coins-news</option>"
-                      "<option>engadget</option>"
-                      "<option>espn</option>"
-                      "<option>fox-news</option>"
-                      "<option>fox-sports</option>"
-                      "<option>google-news</option>"
-                      "<option>hacker-news</option>"
-                      "<option>mtv-news</option>"
-                      "<option>national-geographic</option>"
-                      "<option>newsweek</option>"
-                      "<option>nfl-news</option>"
-                      "<option>recode</option>"
-                      "<option>reddit-r-all</option>"
-                      "<option>reuters</option>"
-                      "<option>the-new-york-times</option>"
-                      "<option>time</option>"
-                      "<option>usa-today</option>"
-                      "<option>wired</option>";
 
 String CURRENCY_OPTIONS = "<option value='NONE'>NONE</option>"
                           "<option value='USD'>United States Dollar</option>"
@@ -199,7 +178,7 @@ void setup() {
     matrix.setIntensity(inx);
     delay(100);
   }
-  for (int inx = 15; inx > 0; inx--) {
+  for (int inx = 15; inx >= 0; inx--) {
     matrix.setIntensity(inx);
     delay(60);
   }
@@ -619,10 +598,13 @@ void handleNewsConfigure() {
                         "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
                         "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
                         "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
-                        "<p>Select News Source <select class='w3-option w3-padding' name='newssource'>";
-
-  String NEWS_FORM2 =   "</select></p>"
+                        "<p>Select News Source <select class='w3-option w3-padding' name='newssource' id='newssource'></select></p>"
+                        "<script>var s='%NEWSSOURCE%';var tt;var xmlhttp=new XMLHttpRequest();xmlhttp.open('GET','https://newsapi.org/v2/sources?apiKey=%NEWSKEY%',!0);"
+                        "xmlhttp.onreadystatechange=function(){if(xmlhttp.readyState==4){if(xmlhttp.status==200){var obj=JSON.parse(xmlhttp.responseText);"
+                        "obj.sources.forEach(t)}}};xmlhttp.send();function t(it){if(it!=null){if(s==it.id){se=' selected'}else{se=''}tt+='<option'+se+'>'+it.id+'</option>';"
+                        "document.getElementById('newssource').innerHTML=tt}}</script>"
                         "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+  
 
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
@@ -639,11 +621,8 @@ void handleNewsConfigure() {
   }
   form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
   form.replace("%NEWSKEY%", NEWS_API_KEY);
-  server.sendContent(form); //Send first Chunk of form
-  String newsOptions = NEWS_OPTIONS;
-  newsOptions.replace(">" + NEWS_SOURCE + "<", " selected>" + NEWS_SOURCE + "<");
-  server.sendContent(newsOptions);
-  server.sendContent(NEWS_FORM2);
+  form.replace("%NEWSSOURCE%", NEWS_SOURCE);
+  server.sendContent(form); //Send news form
 
   sendFooter();
 
@@ -855,7 +834,12 @@ void getWeatherData() //client function to send/receive GET request data.
   Serial.println("matrix Width:" + matrix.width());
   matrix.write();
   TimeDB.updateConfig(TIMEDBKEY, weatherClient.getLat(0), weatherClient.getLon(0));
-  setTime(TimeDB.getTime());
+  time_t currentTime = TimeDB.getTime();
+  if(currentTime > 5000 || firstEpoch == 0) {
+    setTime(currentTime);
+  } else {
+    Serial.println("Time update unsuccessful!");
+  }
   lastEpoch = now();
   if (firstEpoch == 0) {
     firstEpoch = now();
@@ -1465,7 +1449,7 @@ void centerPrint(String msg, boolean extraStuff) {
   // Print the static portions of the display before the main Message
   if (extraStuff) {
     if (!IS_24HOUR && IS_PM && isPM()) {
-      matrix.drawChar(matrix.width() - 4, 0, '.', HIGH, LOW, 1);
+      matrix.drawPixel(matrix.width() - 1, 6, HIGH);
     }
 
     if (OCTOPRINT_ENABLED && OCTOPRINT_PROGRESS && printerClient.isPrinting()) {
