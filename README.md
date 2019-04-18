@@ -120,6 +120,8 @@ Please do not feel obligated, but donations and tips are warmly welcomed.  I hav
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A82AT6FLN2MPY)
 
+Or -- you can buy me something from my Amazon Wishlist: https://www.amazon.com/hz/wishlist/ls/GINC2PHRNEY3  
+
 ## Contributors
 David Payne  
 Nathan Glaus  
