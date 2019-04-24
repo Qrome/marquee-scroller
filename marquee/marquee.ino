@@ -95,7 +95,7 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='TimeZoneDB' value='%TIMEDBKEY%' maxlength='60'>"
                       "<label>OpenWeatherMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='70'>"
-                      "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
+                      "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fas fa-search'></i> Search for City ID</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
                       "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
                       "<p><input name='showdate' class='w3-check w3-margin-top' type='checkbox' %DATE_CHECKED%> Display Date</p>"
@@ -893,29 +893,30 @@ void redirectHome() {
 }
 
 void sendHeader() {
-  String WEB_ACTIONS1 = "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
-                        "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
-                        "<a class='w3-bar-item w3-button' href='/configurenews'><i class='fa fa-newspaper-o'></i> News</a>"
-                        "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fa fa-cube'></i> OctoPrint</a>";
+  String WEB_ACTIONS1 = "<a class='w3-bar-item w3-button' href='/'><i class='fas fa-home'></i> Home</a>"
+                        "<a class='w3-bar-item w3-button' href='/configure'><i class='fas fa-cog'></i> Configure</a>"
+                        "<a class='w3-bar-item w3-button' href='/configurenews'><i class='far fa-newspaper'></i> News</a>"
+                        "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fas fa-cube'></i> OctoPrint</a>";
 
-  String WEB_ACTIONS2 = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fa fa-usd'></i> Bitcoin</a>"
-                        "<a class='w3-bar-item w3-button' href='/pull'><i class='fa fa-cloud-download'></i> Refresh Data</a>"
+  String WEB_ACTIONS2 = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fab fa-bitcoin'></i> Bitcoin</a>"
+                        "<a class='w3-bar-item w3-button' href='/configurepihole'><i class='fas fa-network-wired'></i> Pi-hole</a>"
+                        "<a class='w3-bar-item w3-button' href='/pull'><i class='fas fa-cloud-download-alt'></i> Refresh Data</a>"
                         "<a class='w3-bar-item w3-button' href='/display'>";
 
-  String WEB_ACTION3 = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
-                       "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
-                       "<a class='w3-bar-item w3-button' href='/update'><i class='fa fa-wrench'></i> Firmware Update</a>"
-                       "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
+  String WEB_ACTION3 = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fas fa-undo'></i> Reset Settings</a>"
+                       "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fas fa-wifi'></i> Forget WiFi</a>"
+                       "<a class='w3-bar-item w3-button' href='/update'><i class='fas fa-wrench'></i> Firmware Update</a>"
+                       "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fas fa-question-circle'></i> About</a>";
 
   String menu = WEB_ACTIONS1;
   if (numberOfHorizontalDisplays >= 8) {
-    menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='fa fa-clock-o'></i> Wide Clock</a>";
+    menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='far fa-clock'></i> Wide Clock</a>";
   }
   menu += WEB_ACTIONS2;
   if (displayOn) {
-    menu += "<i class='fa fa-eye-slash'></i> Turn Display OFF";
+    menu += "<i class='fas fa-eye-slash'></i> Turn Display OFF";
   } else {
-    menu += "<i class='fa fa-eye'></i> Turn Display ON";
+    menu += "<i class='fas fa-eye'></i> Turn Display ON";
   }
 
   menu += WEB_ACTION3;
@@ -926,18 +927,18 @@ void sendHeader() {
   html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
   html += "<link rel='stylesheet' href='https://www.w3schools.com/w3css/4/w3.css'>";
   html += "<link rel='stylesheet' href='https://www.w3schools.com/lib/w3-theme-blue-grey.css'>";
-  html += "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>";
+  html += "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.1/css/all.min.css'>";
   html += "</head><body>";
   server.sendContent(html);
   html = "<nav class='w3-sidebar w3-bar-block w3-card' style='margin-top:88px' id='mySidebar'>";
   html += "<div class='w3-container w3-theme-d2'>";
-  html += "<span onclick='closeSidebar()' class='w3-button w3-display-topright w3-large'><i class='fa fa-times'></i></span>";
+  html += "<span onclick='closeSidebar()' class='w3-button w3-display-topright w3-large'><i class='fas fa-times'></i></span>";
   html += "<div class='w3-left'><img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'></div>";
   html += "<div class='w3-padding'>Menu</div></div>";
   server.sendContent(html);
   server.sendContent(menu);
   html = "</nav>";
-  html += "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fa fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
+  html += "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fas fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
   html += "<script>";
   html += "function openSidebar(){document.getElementById('mySidebar').style.display='block'}function closeSidebar(){document.getElementById('mySidebar').style.display='none'}closeSidebar();";
   html += "</script>";
@@ -953,9 +954,9 @@ void sendFooter() {
   String html = "<br><br><br>";
   html += "</div>";
   html += "<footer class='w3-container w3-bottom w3-theme w3-margin-top'>";
-  html += "<i class='fa fa-paper-plane-o'></i> Version: " + String(VERSION) + "<br>";
-  html += "<i class='fa fa-clock-o'></i> Next Update: " + getTimeTillUpdate() + "<br>";
-  html += "<i class='fa fa-rss'></i> Signal Strength: ";
+  html += "<i class='far fa-paper-plane'></i> Version: " + String(VERSION) + "<br>";
+  html += "<i class='far fa-clock'></i> Next Update: " + getTimeTillUpdate() + "<br>";
+  html += "<i class='fas fa-rss'></i> Signal Strength: ";
   html += String(rssi) + "%";
   html += "</footer>";
   html += "</body></html>";
@@ -1007,7 +1008,7 @@ void displayWeatherData() {
     html += weatherClient.getCondition(0) + " (" + weatherClient.getDescription(0) + ")<br>";
     html += temperature + " " + getTempSymbol() + "<br>";
     html += time + "<br>";
-    html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(0) + "," + weatherClient.getLon(0) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fa fa-map-marker' style='color:red'></i> Map It!</a><br>";
+    html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(0) + "," + weatherClient.getLon(0) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fas fa-map-marker' style='color:red'></i> Map It!</a><br>";
     html += "</p></div></div><hr>";
   }
 

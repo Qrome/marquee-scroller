@@ -51,6 +51,7 @@ SOFTWARE.
 #include "NewsApiClient.h" 
 #include "OctoPrintClient.h"
 #include "BitcoinApiClient.h"
+#include "PiHoleClient.h"
 
 //******************************
 // Start Settings
@@ -101,16 +102,20 @@ String timeDisplayTurnsOff = "23:00"; // 24 Hour Format HH:MM -- Leave blank for
 boolean OCTOPRINT_ENABLED = false;
 boolean OCTOPRINT_PROGRESS = true;
 String OctoPrintApiKey = "";  // ApiKey from your User Account on OctoPrint
-String OctoPrintServer = ""; // IP or Address of your OctoPrint Server (DO NOT include http://)
-int OctoPrintPort = 80; // the port you are running your OctoPrint server on (usually 80);
-String OctoAuthUser = "";      // only used if you have haproxy or basic athentintication turned on (not default)
-String OctoAuthPass = "";      // only used with haproxy or basic auth (only needed if you must authenticate)
+String OctoPrintServer = "";  // IP or Address of your OctoPrint Server (DO NOT include http://)
+int OctoPrintPort = 80;       // the port you are running your OctoPrint server on (usually 80);
+String OctoAuthUser = "";     // only used if you have haproxy or basic athentintication turned on (not default)
+String OctoAuthPass = "";     // only used with haproxy or basic auth (only needed if you must authenticate)
 
 // Bitcoin Client - NONE or empty is off
 String BitcoinCurrencyCode = "NONE";  // Change to USD, GBD, EUR, or NONE -- this can be managed in the Web Interface
 
-boolean ENABLE_OTA = true;  // this will allow you to load firmware to the device over WiFi (see OTA for ESP8266)
-String OTA_Password = "";      // Set an OTA password here -- leave blank if you don't want to be prompted for password
+// Pi-hole Client -- monitor basic stats from your Pi-hole server (see http://pi-hole.net)
+String PiHoleServer = "";     // IP or Address only (DO NOT include http://)
+int PiHolePort = 80;          // Port of your Pi-hole address (default 80)
+
+boolean ENABLE_OTA = true;    // this will allow you to load firmware to the device over WiFi (see OTA for ESP8266)
+String OTA_Password = "";     // Set an OTA password here -- leave blank if you don't want to be prompted for password
 
 //******************************
 // End Settings
