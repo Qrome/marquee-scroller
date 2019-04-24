@@ -84,6 +84,9 @@ boolean SHOW_WIND = true;
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
 int printerCount = 0;
 
+// Pi-hole Client
+PiHoleClient piholeClient;
+
 // Bitcoin Client
 BitcoinApiClient bitcoinClient;
 
@@ -244,6 +247,7 @@ void setup() {
     server.on("/savewideclock", handleSaveWideClock);
     server.on("/savenews", handleSaveNews);
     server.on("/saveoctoprint", handleSaveOctoprint);
+    server.on("/savepihole", handleSavePihole);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
     server.on("/configure", handleConfigure);
@@ -251,6 +255,7 @@ void setup() {
     server.on("/configurewideclock", handleWideClockConfigure);
     server.on("/configurenews", handleNewsConfigure);
     server.on("/configureoctoprint", handleOctoprintConfigure);
+    server.on("/configurepihole", handlePiholeConfigure);
     server.on("/display", handleDisplay);
     server.onNotFound(redirectHome);
     serverUpdater.setup(&server, "/update", www_username, www_password);
@@ -346,8 +351,14 @@ void loop() {
       if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
         msg += "    Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
       }
+      if (USE_PIHOLE) {
+        piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
+        piholeClient.getGraphData(PiHoleServer, PiHolePort);
+        msg += "    Pi-hole " + piholeClient.getPiHoleStatus() + ": " + piholeClient.getAdsPercentageToday() + "% "; 
+      }
 
       scrollMessage(msg);
+      drawPiholeGraph();
     }
   }
 
@@ -460,6 +471,21 @@ void handleSaveOctoprint() {
   writeCityIds();
   if (OCTOPRINT_ENABLED) {
     printerClient.getPrinterJobResults();
+  }
+  redirectHome();
+}
+
+void handleSavePihole() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  USE_PIHOLE = server.hasArg("displaypihole");
+  PiHoleServer = server.arg("piholeserver");
+  PiHolePort = server.arg("piholeport").toInt();
+  writeCityIds();
+  if (USE_PIHOLE) {
+    piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
+    piholeClient.getGraphData(PiHoleServer, PiHolePort);
   }
   redirectHome();
 }
@@ -672,6 +698,52 @@ void handleOctoprintConfigure() {
   form.replace("%OCTOPORT%", String(OctoPrintPort));
   form.replace("%OCTOUSER%", OctoAuthUser);
   form.replace("%OCTOPASS%", OctoAuthPass);
+  server.sendContent(form);
+
+  sendFooter();
+
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
+void handlePiholeConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+
+  String PIHOLE_FORM =    "<form class='w3-container' action='/savepihole' method='get'><h2>Pi-hole Configuration:</h2>"
+                        "<p><input name='displaypihole' class='w3-check w3-margin-top' type='checkbox' %PIHOLECHECKED%> Show Pi-hole Statistics</p>"
+                        "<label>Pi-hole Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholeAddress' id='piholeAddress' value='%PIHOLEADDRESS%' maxlength='60'>"
+                        "<label>Pi-hole Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholePort' id= 'piholePort' value='%PIHOLEPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                        "<input type='button' value='Test Connection and JSON Response' onclick='testPiHole()'><p id='PiHoleTest'></p>"
+                        "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
+                        "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+
+  String html = "<script>function testPiHole(){var e=document.getElementById(\"PiHoleTest\"),t=document.getElementById(\"piholeAddress\").value,"
+         "n=document.getElementById(\"piholePort\").value;"
+         "if(e.innerHTML=\"\",\"\"==t||\"\"==n)return e.innerHTML=\"* Address and Port are required\","
+         "void(e.style.background=\"\");var r=\"http://\"+t+\":\"+n;r+=\"/admin/api.php?summary\",window.open(r,\"_blank\").focus()}</script>";
+  server.sendContent(html);
+
+  String form = PIHOLE_FORM;
+  String isPiholeDisplayedChecked = "";
+  if (USE_PIHOLE) {
+    isPiholeDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%PIHOLECHECKED%", isPiholeDisplayedChecked);
+  form.replace("%PIHOLEADDRESS%", PiHoleServer);
+  form.replace("%PIHOLEPORT%", String(PiHolePort));
+
   server.sendContent(form);
 
   sendFooter();
@@ -1223,6 +1295,9 @@ String writeCityIds() {
     f.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
     f.println("SHOW_WIND=" + String(SHOW_WIND));
     f.println("SHOW_DATE=" + String(SHOW_DATE));
+    f.println("USE_PIHOLE=" + String(USE_PIHOLE));
+    f.println("PiHoleServer=" + PiHoleServer);
+    f.println("PiHolePort=" + String(PiHolePort));
   }
   f.close();
   readCityIds();
@@ -1398,6 +1473,19 @@ void readCityIds() {
       SHOW_DATE = line.substring(line.lastIndexOf("SHOW_DATE=") + 10).toInt();
       Serial.println("SHOW_DATE=" + String(SHOW_DATE));
     }
+    if (line.indexOf("USE_PIHOLE=") >= 0) {
+      USE_PIHOLE = line.substring(line.lastIndexOf("USE_PIHOLE=") + 11).toInt();
+      Serial.println("USE_PIHOLE=" + String(USE_PIHOLE));
+    }
+    if (line.indexOf("PiHoleServer=") >= 0) {
+      PiHoleServer = line.substring(line.lastIndexOf("PiHoleServer=") + 13);
+      PiHoleServer.trim();
+      Serial.println("PiHoleServer=" + PiHoleServer);
+    }
+    if (line.indexOf("PiHolePort=") >= 0) {
+      PiHolePort = line.substring(line.lastIndexOf("PiHolePort=") + 11).toInt();
+      Serial.println("PiHolePort=" + String(PiHolePort));
+    }
   }
   fr.close();
   matrix.setIntensity(displayIntensity);
@@ -1438,6 +1526,44 @@ void scrollMessage(String msg) {
     delay(displayScrollSpeed);
   }
   matrix.setCursor(0, 0);
+}
+
+void drawPiholeGraph() {
+  if (!USE_PIHOLE) {
+    return;
+  }
+  int count = piholeClient.getBlockedCount();
+  int high = 0;
+  int row = matrix.width() - 1;
+  int yval = 0;
+
+  // get the high value for the sample that will be on the screen
+  for (int inx = count; inx >= (count - matrix.width()); inx--) {
+    if (piholeClient.getBlockedAds()[inx] > high) {
+      high = piholeClient.getBlockedAds()[inx];
+    }
+  }
+  
+  for (int inx = (count-1); inx >= (count - matrix.width()); inx--) {
+    yval = map(piholeClient.getBlockedAds()[inx], high, 0, 0, 7);
+    //Serial.println("Value: " + String(piholeClient.getBlockedAds()[inx]));
+    //Serial.println("x: " + String(row) + " y:" + String(yval) + " h:" + String(8-yval));
+    matrix.drawFastVLine(row, yval, 8-yval, HIGH);
+    if (row == 0) {
+      break;
+    }
+    row--;
+  }
+  matrix.write();
+  for (int wait = 0; wait < 1000; wait++) {
+    if (WEBSERVER_ENABLED) {
+      server.handleClient();
+    }
+    if (ENABLE_OTA) {
+      ArduinoOTA.handle();
+    }
+    delay(displayScrollSpeed);
+  }
 }
 
 void centerPrint(String msg) {

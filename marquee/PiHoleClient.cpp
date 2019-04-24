@@ -54,7 +54,7 @@ void PiHoleClient::getPiHoleData(String server, int port) {
     Serial.println(errorMessage);
     return;
   }
-
+  
   const size_t bufferSize = 2*JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(17) + 470;
   DynamicJsonBuffer jsonBuffer(bufferSize);
 
@@ -152,6 +152,7 @@ void PiHoleClient::getGraphData(String server, int port) {
   errorMessage = "";
   String response = "";
   Serial.println("Sending: " + apiGetData);
+
   HTTPClient http;  //Object of class HTTPClient
   http.begin(apiGetData);// get the result
   int httpCode = http.GET();
@@ -176,6 +177,8 @@ void PiHoleClient::getGraphData(String server, int port) {
   // Remove half of the stuff -- it is too large to parse
   response = response.substring(response.indexOf("\"ads_over_time"));
   response = "{" + response;
+
+
   Serial.println("Modified Response: " + response);
 
   char jsonArray [response.length()+1];

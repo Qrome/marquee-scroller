@@ -111,6 +111,7 @@ String OctoAuthPass = "";     // only used with haproxy or basic auth (only need
 String BitcoinCurrencyCode = "NONE";  // Change to USD, GBD, EUR, or NONE -- this can be managed in the Web Interface
 
 // Pi-hole Client -- monitor basic stats from your Pi-hole server (see http://pi-hole.net)
+boolean USE_PIHOLE = true;   // Set true to display your Pi-hole details
 String PiHoleServer = "";     // IP or Address only (DO NOT include http://)
 int PiHolePort = 80;          // Port of your Pi-hole address (default 80)
 
