@@ -354,7 +354,9 @@ void loop() {
       if (USE_PIHOLE) {
         piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
         piholeClient.getGraphData(PiHoleServer, PiHolePort);
-        msg += "    Pi-hole " + piholeClient.getPiHoleStatus() + ": " + piholeClient.getAdsPercentageToday() + "% "; 
+        if (piholeClient.getPiHoleStatus() != "") {
+          msg += "    Pi-hole " + piholeClient.getPiHoleStatus() + ": " + piholeClient.getAdsPercentageToday() + "% "; 
+        }
       }
 
       scrollMessage(msg);
@@ -1529,7 +1531,7 @@ void scrollMessage(String msg) {
 }
 
 void drawPiholeGraph() {
-  if (!USE_PIHOLE) {
+  if (!USE_PIHOLE || piholeClient.getBlockedCount() == 0) {
     return;
   }
   int count = piholeClient.getBlockedCount();
