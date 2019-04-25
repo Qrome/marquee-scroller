@@ -355,7 +355,7 @@ void loop() {
         piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
         piholeClient.getGraphData(PiHoleServer, PiHolePort);
         if (piholeClient.getPiHoleStatus() != "") {
-          msg += "    Pi-hole " + piholeClient.getPiHoleStatus() + ": " + piholeClient.getAdsPercentageToday() + "% "; 
+          msg += "    Pi-hole (" + piholeClient.getPiHoleStatus() + "): " + piholeClient.getAdsPercentageToday() + "% "; 
         }
       }
 
@@ -482,8 +482,8 @@ void handleSavePihole() {
     return server.requestAuthentication();
   }
   USE_PIHOLE = server.hasArg("displaypihole");
-  PiHoleServer = server.arg("piholeserver");
-  PiHolePort = server.arg("piholeport").toInt();
+  PiHoleServer = server.arg("piholeAddress");
+  PiHolePort = server.arg("piholePort").toInt();
   writeCityIds();
   if (USE_PIHOLE) {
     piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
@@ -1113,6 +1113,25 @@ void displayWeatherData() {
     html = "";
   }
 
+  if (USE_PIHOLE) {
+    if (piholeClient.getError() == "") {
+      html = "<div class='w3-cell-row'><b>Pi-hole</b>"
+             "Total Queries (" + piholeClient.getUniqueClients() + " clients): <b>" + piholeClient.getDnsQueriesToday() + "</b><br>"
+             "Queries Blocked: <b>" + piholeClient.getAdsBlockedToday() + "</b><br>"
+             "Percent Blocked: <b>" + piholeClient.getAdsPercentageToday() + "%</b><br>"
+             "Domains on Blocklist: <b>" + piholeClient.getDomainsBeingBlocked() + "</b><br>"
+             "Status: <b>" + piholeClient.getPiHoleStatus() + "</b><br>"
+             "</div><br><hr>";
+    } else {
+      html = "<div class='w3-cell-row'>Pi-hole Error";
+      html += "Please <a href='/configurepihole' title='Configure'>Configure</a> for Pi-hole <a href='/configurepihole' title='Configure'><i class='fas fa-cog'></i></a><br>";
+      html += "Status: Error Getting Data<br>";
+      html += "Reason: " + piholeClient.getError() + "<br></div><br><hr>";
+    }
+    server.sendContent(html);
+    html = "";
+  }
+
   if (NEWS_ENABLED) {
     html = "<div class='w3-cell-row' style='width:100%'><h2>News (" + NEWS_SOURCE + ")</h2></div>";
     if (newsClient.getTitle(0) == "") {
@@ -1557,14 +1576,14 @@ void drawPiholeGraph() {
     row--;
   }
   matrix.write();
-  for (int wait = 0; wait < 1000; wait++) {
+  for (int wait = 0; wait < 500; wait++) {
     if (WEBSERVER_ENABLED) {
       server.handleClient();
     }
     if (ENABLE_OTA) {
       ArduinoOTA.handle();
     }
-    delay(displayScrollSpeed);
+    delay(20);
   }
 }
 

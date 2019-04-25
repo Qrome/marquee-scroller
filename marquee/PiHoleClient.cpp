@@ -48,7 +48,7 @@ void PiHoleClient::getPiHoleData(String server, int port) {
       return;  
     }
     Serial.println("Response Code: " + String(httpCode));
-    Serial.println("Response: " + response);
+    //Serial.println("Response: " + response);
   } else {
     errorMessage = "Failed to connect and get data: " + apiGetData;
     Serial.println(errorMessage);
@@ -115,7 +115,7 @@ void PiHoleClient::getTopClientsBlocked(String server, int port, String apiKey) 
       return;  
     }
     Serial.println("Response Code: " + String(httpCode));
-    Serial.println("Response: " + response);
+    //Serial.println("Response: " + response);
   } else {
     errorMessage = "Failed to get data: " + apiGetData;
     Serial.println(errorMessage);
@@ -145,50 +145,72 @@ void PiHoleClient::getTopClientsBlocked(String server, int port, String apiKey) 
 }
 
 void PiHoleClient::getGraphData(String server, int port) {
-    
+  
+  HTTPClient http;
+  
   String apiGetData = "http://" + server + ":" + String(port) + "/admin/api.php?overTimeData10mins";
 
-  resetBlockedGraphData();
-  errorMessage = "";
-  String response = "";
-  Serial.println("Sending: " + apiGetData);
-
-  HTTPClient http;  //Object of class HTTPClient
-  http.begin(apiGetData);// get the result
+  Serial.println("Getting Pi-Hole Graph Data");
+  Serial.println(apiGetData);
+  http.begin(apiGetData);
   int httpCode = http.GET();
-  //Check the returning code
-  if (httpCode > 0) {
-    response = http.getString();
-    http.end();   //Close connection
-    if (httpCode != 200) {
-      // Bad Response Code
-      errorMessage = "Error response (" + String(httpCode) + "): " + response;
-      Serial.println(errorMessage);
-      return;  
+
+  String result = "";
+  errorMessage = "";
+  boolean track = false;
+
+  if (httpCode > 0) {  // checks for connection
+    Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+    if(httpCode == HTTP_CODE_OK) {
+      // get length of document (is -1 when Server sends no Content-Length header)
+      int len = http.getSize();
+      // create buffer for read
+      char buff[128] = { 0 };
+      // get tcp stream
+      WiFiClient * stream = http.getStreamPtr();
+      // read all data from server
+      Serial.println("Start reading...");
+      while(http.connected() && (len > 0 || len == -1)) {
+        // get available data size
+        size_t size = stream->available();
+        if(size) {
+          // read up to 128 byte
+          int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+          for(int i=0;i<c;i++) {
+            if (track) {
+              result += buff[i];
+            } else if (buff[i] == '}') {
+              track = true; // start tracking the data we want
+            }
+          }
+            
+          if(len > 0)
+            len -= c;
+          }
+        delay(1);
+      }
     }
-    Serial.println("Response Code: " + String(httpCode));
-    //Serial.println("Response: " + response);
+    http.end();
   } else {
-    errorMessage = "Failed to get data: " + apiGetData;
-    Serial.println(errorMessage);
+    errorMessage = "Connection for Pi-Hole data failed: " + String(apiGetData);
+    Serial.println(errorMessage); //error message if no client connect
+    Serial.println();
     return;
   }
 
   // Remove half of the stuff -- it is too large to parse
-  response = response.substring(response.indexOf("\"ads_over_time"));
-  response = "{" + response;
+  result = result.substring(result.indexOf("\"ads_over_time"));
+  result = "{" + result;
 
+  //Serial.println("Modified: " + result);
 
-  Serial.println("Modified Response: " + response);
-
-  char jsonArray [response.length()+1];
-  response.toCharArray(jsonArray, sizeof(jsonArray));
-  //jsonArray[result.length() + 1] = '\0';
+  char jsonArray [result.length()+1];
+  result.toCharArray(jsonArray,sizeof(jsonArray));
   DynamicJsonBuffer json_buf;
   JsonObject& root = json_buf.parseObject(jsonArray);
 
   if (!root.success()) {
-    errorMessage = "Data Parsing failed: " + apiGetData;
+    errorMessage = "Data Parsing failed: http://" + String(server) + ":" + String(port) + "/admin/api.php?overTimeData10mins";
     Serial.println(errorMessage);
     return;
   }
