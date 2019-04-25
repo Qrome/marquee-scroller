@@ -710,18 +710,12 @@ void handleOctoprintConfigure() {
 }
 
 void handlePiholeConfigure() {
-  if (!athentication()) {
-    return server.requestAuthentication();
-  }
   digitalWrite(externalLight, LOW);
 
   String PIHOLE_FORM =    "<form class='w3-container' action='/savepihole' method='get'><h2>Pi-hole Configuration:</h2>"
                         "<p><input name='displaypihole' class='w3-check w3-margin-top' type='checkbox' %PIHOLECHECKED%> Show Pi-hole Statistics</p>"
                         "<label>Pi-hole Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholeAddress' id='piholeAddress' value='%PIHOLEADDRESS%' maxlength='60'>"
-                        "<label>Pi-hole Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholePort' id= 'piholePort' value='%PIHOLEPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
-                        "<input type='button' value='Test Connection and JSON Response' onclick='testPiHole()'><p id='PiHoleTest'></p>"
-                        "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
-                        "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
+                        "<label>Pi-hole Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholePort' id= 'piholePort' value='%PIHOLEPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>";
 
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
@@ -731,13 +725,13 @@ void handlePiholeConfigure() {
 
   sendHeader();
 
-  String html = "<script>function testPiHole(){var e=document.getElementById(\"PiHoleTest\"),t=document.getElementById(\"piholeAddress\").value,"
+  String form = "<script>function testPiHole(){var e=document.getElementById(\"PiHoleTest\"),t=document.getElementById(\"piholeAddress\").value,"
          "n=document.getElementById(\"piholePort\").value;"
          "if(e.innerHTML=\"\",\"\"==t||\"\"==n)return e.innerHTML=\"* Address and Port are required\","
          "void(e.style.background=\"\");var r=\"http://\"+t+\":\"+n;r+=\"/admin/api.php?summary\",window.open(r,\"_blank\").focus()}</script>";
-  server.sendContent(html);
+  server.sendContent(form);
 
-  String form = PIHOLE_FORM;
+  form = PIHOLE_FORM;
   String isPiholeDisplayedChecked = "";
   if (USE_PIHOLE) {
     isPiholeDisplayedChecked = "checked='checked'";
@@ -747,7 +741,12 @@ void handlePiholeConfigure() {
   form.replace("%PIHOLEPORT%", String(PiHolePort));
 
   server.sendContent(form);
-
+  form =  "<input type='button' value='Test Connection and JSON Response' onclick='testPiHole()'><p id='PiHoleTest'></p>"
+          "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
+          "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
+  server.sendContent(form);
+  form = "";
+          
   sendFooter();
 
   server.sendContent("");
@@ -834,7 +833,7 @@ void handleConfigure() {
   form.replace("%ENDTIME%", timeDisplayTurnsOff);
   form.replace("%INTENSITYOPTIONS%", String(displayIntensity));
   String dSpeed = String(displayScrollSpeed);
-  String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option><option value='5'>Very Fast</option>";
+  String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option><option value='10'>Very Fast</option>";
   scrollOptions.replace(dSpeed + "'", dSpeed + "' selected" );
   form.replace("%SCROLLOPTIONS%", scrollOptions);
   String minutes = String(minutesBetweenDataRefresh);
@@ -1115,7 +1114,7 @@ void displayWeatherData() {
 
   if (USE_PIHOLE) {
     if (piholeClient.getError() == "") {
-      html = "<div class='w3-cell-row'><b>Pi-hole</b>"
+      html = "<div class='w3-cell-row'><b>Pi-hole</b><br>"
              "Total Queries (" + piholeClient.getUniqueClients() + " clients): <b>" + piholeClient.getDnsQueriesToday() + "</b><br>"
              "Queries Blocked: <b>" + piholeClient.getAdsBlockedToday() + "</b><br>"
              "Percent Blocked: <b>" + piholeClient.getAdsPercentageToday() + "%</b><br>"
