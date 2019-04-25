@@ -149,7 +149,7 @@ void PiHoleClient::getGraphData(String server, int port) {
   HTTPClient http;
   
   String apiGetData = "http://" + server + ":" + String(port) + "/admin/api.php?overTimeData10mins";
-
+  resetBlockedGraphData();
   Serial.println("Getting Pi-Hole Graph Data");
   Serial.println(apiGetData);
   http.begin(apiGetData);
@@ -158,6 +158,8 @@ void PiHoleClient::getGraphData(String server, int port) {
   String result = "";
   errorMessage = "";
   boolean track = false;
+  int countBracket = 0;
+  blockedCount = 0;
 
   if (httpCode > 0) {  // checks for connection
     Serial.printf("[HTTP] GET... code: %d\n", httpCode);
@@ -177,10 +179,23 @@ void PiHoleClient::getGraphData(String server, int port) {
           // read up to 128 byte
           int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
           for(int i=0;i<c;i++) {
-            if (track) {
-              result += buff[i];
-            } else if (buff[i] == '}') {
-              track = true; // start tracking the data we want
+            if (track && countBracket >= 3) {
+              if (buff[i] == ',' || buff[i] == '}') {
+                blocked[blockedCount] = result.toInt();
+                if (blocked[blockedCount] > blockedHigh) {
+                  blockedHigh = blocked[blockedCount];
+                }
+                //Serial.println("Pi-hole Graph point (" + String(blockedCount+1) + "): " + String(blocked[blockedCount]));
+                blockedCount++;
+                result = "";
+                track = false;
+              } else {
+                result += buff[i];
+              }
+            } else if (buff[i] == '{') {
+              countBracket++;
+            } else if (countBracket >= 3 && buff[i] == ':') {
+              track = true; 
             }
           }
             
@@ -198,34 +213,6 @@ void PiHoleClient::getGraphData(String server, int port) {
     return;
   }
 
-  // Remove half of the stuff -- it is too large to parse
-  result = result.substring(result.indexOf("\"ads_over_time"));
-  result = "{" + result;
-
-  //Serial.println("Modified: " + result);
-
-  char jsonArray [result.length()+1];
-  result.toCharArray(jsonArray,sizeof(jsonArray));
-  DynamicJsonBuffer json_buf;
-  JsonObject& root = json_buf.parseObject(jsonArray);
-
-  if (!root.success()) {
-    errorMessage = "Data Parsing failed: http://" + String(server) + ":" + String(port) + "/admin/api.php?overTimeData10mins";
-    Serial.println(errorMessage);
-    return;
-  }
-  
-  JsonObject& ads = root["ads_over_time"];
-  int count = 0;
-  for (JsonPair p : ads) {
-    blocked[count] = p.value.as<int>();
-    if (blocked[count] > blockedHigh) {
-      blockedHigh = blocked[count];
-    }
-    //Serial.println("Pi-hole Graph point (" + String(count+1) + "): " + String(blocked[count]));
-    count++;
-  }
-  blockedCount = count;
 
   Serial.println("High Value: " + String(blockedHigh));
   Serial.println("Count: " + String(blockedCount));
