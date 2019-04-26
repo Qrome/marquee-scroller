@@ -29,8 +29,6 @@
 
 #define VERSION "2.12"
 
-#define PROGMEM   ICACHE_RODATA_ATTR
-
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
 #define BUZZER_PIN  D2
