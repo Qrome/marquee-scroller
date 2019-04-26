@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.11"
+#define VERSION "2.12"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -84,18 +84,36 @@ boolean SHOW_WIND = true;
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
 int printerCount = 0;
 
+// Pi-hole Client
+PiHoleClient piholeClient;
+
 // Bitcoin Client
 BitcoinApiClient bitcoinClient;
 
 ESP8266WebServer server(WEBSERVER_PORT);
 ESP8266HTTPUpdateServer serverUpdater;
 
-String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
+static const char WEB_ACTIONS1[] PROGMEM = "<a class='w3-bar-item w3-button' href='/'><i class='fas fa-home'></i> Home</a>"
+                        "<a class='w3-bar-item w3-button' href='/configure'><i class='fas fa-cog'></i> Configure</a>"
+                        "<a class='w3-bar-item w3-button' href='/configurenews'><i class='far fa-newspaper'></i> News</a>"
+                        "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fas fa-cube'></i> OctoPrint</a>";
+
+static const char WEB_ACTIONS2[] PROGMEM = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fab fa-bitcoin'></i> Bitcoin</a>"
+                        "<a class='w3-bar-item w3-button' href='/configurepihole'><i class='fas fa-network-wired'></i> Pi-hole</a>"
+                        "<a class='w3-bar-item w3-button' href='/pull'><i class='fas fa-cloud-download-alt'></i> Refresh Data</a>"
+                        "<a class='w3-bar-item w3-button' href='/display'>";
+
+static const char WEB_ACTION3[] PROGMEM = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fas fa-undo'></i> Reset Settings</a>"
+                       "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fas fa-wifi'></i> Forget WiFi</a>"
+                       "<a class='w3-bar-item w3-button' href='/update'><i class='fas fa-wrench'></i> Firmware Update</a>"
+                       "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fas fa-question-circle'></i> About</a>";
+
+static const char CHANGE_FORM1[] PROGMEM = "<form class='w3-container' action='/locations' method='get'><h2>Configure:</h2>"
                       "<label>TimeZone DB API Key (get from <a href='https://timezonedb.com/register' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='TimeZoneDB' value='%TIMEDBKEY%' maxlength='60'>"
                       "<label>OpenWeatherMap API Key (get from <a href='https://openweathermap.org/' target='_BLANK'>here</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='openWeatherMapApiKey' value='%WEATHERKEY%' maxlength='70'>"
-                      "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fa fa-search'></i> Search for City ID</a>)</label>"
+                      "<p><label>%CITYNAME1% (<a href='http://openweathermap.org/find' target='_BLANK'><i class='fas fa-search'></i> Search for City ID</a>)</label>"
                       "<input class='w3-input w3-border w3-margin-bottom' type='text' name='city1' value='%CITY1%' onkeypress='return isNumberKey(event)'></p>"
                       "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
                       "<p><input name='showdate' class='w3-check w3-margin-top' type='checkbox' %DATE_CHECKED%> Display Date</p>"
@@ -105,7 +123,7 @@ String CHANGE_FORM1 = "<form class='w3-container' action='/locations' method='ge
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
 
-String CHANGE_FORM2 = "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>"
+static const char CHANGE_FORM2[] PROGMEM = "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>"
                       "<p><input name='flashseconds' class='w3-check w3-margin-top' type='checkbox' %FLASHSECONDS%> Flash : in the time</p>"
                       "<p><label>Marquee Message (up to 60 chars)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='marqueeMsg' value='%MSG%' maxlength='60'></p>"
                       "<p><label>Start Time </label><input name='startTime' type='time' value='%STARTTIME%'></p>"
@@ -115,13 +133,17 @@ String CHANGE_FORM2 = "<p><input name='isPM' class='w3-check w3-margin-top' type
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
                       "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
 
-String CHANGE_FORM3 = "<hr><p><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes</p>"
+static const char CHANGE_FORM3[] PROGMEM = "<hr><p><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes</p>"
                       "<p><label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'></p>"
                       "<p><label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'></p>"
                       "<p><button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></p></form>"
                       "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
-String CURRENCY_OPTIONS = "<option value='NONE'>NONE</option>"
+static const char BITCOIN_FORM[] PROGMEM = "<form class='w3-container' action='/savebitcoin' method='get'><h2>Bitcoin Configuration:</h2>"
+                        "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>"
+                        "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+
+static const char CURRENCY_OPTIONS[] PROGMEM = "<option value='NONE'>NONE</option>"
                           "<option value='USD'>United States Dollar</option>"
                           "<option value='AUD'>Australian Dollar</option>"
                           "<option value='BRL'>Brazilian Real</option>"
@@ -131,6 +153,47 @@ String CURRENCY_OPTIONS = "<option value='NONE'>NONE</option>"
                           "<option value='EUR'>Euro</option>"
                           "<option value='GBP'>British Pound Sterling</option>"
                           "<option value='XAU'>Gold (troy ounce)</option>";
+
+static const char WIDECLOCK_FORM[] PROGMEM = "<form class='w3-container' action='/savewideclock' method='get'><h2>Wide Clock Configuration:</h2>"
+                          "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>"
+                          "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+
+static const char PIHOLE_FORM[] PROGMEM = "<form class='w3-container' action='/savepihole' method='get'><h2>Pi-hole Configuration:</h2>"
+                        "<p><input name='displaypihole' class='w3-check w3-margin-top' type='checkbox' %PIHOLECHECKED%> Show Pi-hole Statistics</p>"
+                        "<label>Pi-hole Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholeAddress' id='piholeAddress' value='%PIHOLEADDRESS%' maxlength='60'>"
+                        "<label>Pi-hole Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholePort' id= 'piholePort' value='%PIHOLEPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                        "<input type='button' value='Test Connection and JSON Response' onclick='testPiHole()'><p id='PiHoleTest'></p>"
+                        "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
+                        "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
+
+static const char PIHOLE_TEST[] PROGMEM = "<script>function testPiHole(){var e=document.getElementById(\"PiHoleTest\"),t=document.getElementById(\"piholeAddress\").value,"
+                       "n=document.getElementById(\"piholePort\").value;"
+                       "if(e.innerHTML=\"\",\"\"==t||\"\"==n)return e.innerHTML=\"* Address and Port are required\","
+                       "void(e.style.background=\"\");var r=\"http://\"+t+\":\"+n;r+=\"/admin/api.php?summary\",window.open(r,\"_blank\").focus()}</script>";
+
+static const char NEWS_FORM1[] PROGMEM =   "<form class='w3-container' action='/savenews' method='get'><h2>News Configuration:</h2>"
+                        "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
+                        "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
+                        "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
+                        "<p>Select News Source <select class='w3-option w3-padding' name='newssource' id='newssource'></select></p>"
+                        "<script>var s='%NEWSSOURCE%';var tt;var xmlhttp=new XMLHttpRequest();xmlhttp.open('GET','https://newsapi.org/v2/sources?apiKey=%NEWSKEY%',!0);"
+                        "xmlhttp.onreadystatechange=function(){if(xmlhttp.readyState==4){if(xmlhttp.status==200){var obj=JSON.parse(xmlhttp.responseText);"
+                        "obj.sources.forEach(t)}}};xmlhttp.send();function t(it){if(it!=null){if(s==it.id){se=' selected'}else{se=''}tt+='<option'+se+'>'+it.id+'</option>';"
+                        "document.getElementById('newssource').innerHTML=tt}}</script>"
+                        "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
+
+static const char OCTO_FORM[] PROGMEM = "<form class='w3-container' action='/saveoctoprint' method='get'><h2>OctoPrint Configuration:</h2>"
+                        "<p><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status</p>"
+                        "<p><input name='octoprintprogress' class='w3-check w3-margin-top' type='checkbox' %OCTOPROGRESSCHECKED%> Show OctoPrint progress with clock</p>"
+                        "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
+                        "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
+                        "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                        "<label>OctoPrint User (only needed if you have haproxy or basic auth turned on)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoUser' value='%OCTOUSER%' maxlength='30'>"
+                        "<label>OctoPrint Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='octoPass' value='%OCTOPASS%'>"
+                        "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
+                        "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
+
+
 
 const int TIMEOUT = 500; // 500 = 1/2 second
 int timeoutCount = 0;
@@ -244,6 +307,7 @@ void setup() {
     server.on("/savewideclock", handleSaveWideClock);
     server.on("/savenews", handleSaveNews);
     server.on("/saveoctoprint", handleSaveOctoprint);
+    server.on("/savepihole", handleSavePihole);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
     server.on("/configure", handleConfigure);
@@ -251,6 +315,7 @@ void setup() {
     server.on("/configurewideclock", handleWideClockConfigure);
     server.on("/configurenews", handleNewsConfigure);
     server.on("/configureoctoprint", handleOctoprintConfigure);
+    server.on("/configurepihole", handlePiholeConfigure);
     server.on("/display", handleDisplay);
     server.onNotFound(redirectHome);
     serverUpdater.setup(&server, "/update", www_username, www_password);
@@ -346,8 +411,16 @@ void loop() {
       if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
         msg += "    Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
       }
+      if (USE_PIHOLE) {
+        piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
+        piholeClient.getGraphData(PiHoleServer, PiHolePort);
+        if (piholeClient.getPiHoleStatus() != "") {
+          msg += "    Pi-hole (" + piholeClient.getPiHoleStatus() + "): " + piholeClient.getAdsPercentageToday() + "% "; 
+        }
+      }
 
       scrollMessage(msg);
+      drawPiholeGraph();
     }
   }
 
@@ -464,6 +537,21 @@ void handleSaveOctoprint() {
   redirectHome();
 }
 
+void handleSavePihole() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  USE_PIHOLE = server.hasArg("displaypihole");
+  PiHoleServer = server.arg("piholeAddress");
+  PiHolePort = server.arg("piholePort").toInt();
+  writeCityIds();
+  if (USE_PIHOLE) {
+    piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
+    piholeClient.getGraphData(PiHoleServer, PiHolePort);
+  }
+  redirectHome();
+}
+
 void handleLocations() {
   if (!athentication()) {
     return server.requestAuthentication();
@@ -537,12 +625,8 @@ void handleBitcoinConfigure() {
 
   sendHeader();
 
-  String BITCOIN_FORM = "<form class='w3-container' action='/savebitcoin' method='get'><h2>Bitcoin Configuration:</h2>"
-                        "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>"
-                        "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
-
-  String form = BITCOIN_FORM;
-  String bitcoinOptions = CURRENCY_OPTIONS;
+  String form = (const char*)BITCOIN_FORM;
+  String bitcoinOptions = (const char*)CURRENCY_OPTIONS;
   bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
   form.replace("%BITCOINOPTIONS%", bitcoinOptions);
   server.sendContent(form); //Send another Chunk of form
@@ -560,10 +644,6 @@ void handleWideClockConfigure() {
   }
   digitalWrite(externalLight, LOW);
 
-  String WIDECLOCK_FORM = "<form class='w3-container' action='/savewideclock' method='get'><h2>Wide Clock Configuration:</h2>"
-                          "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>"
-                          "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
-
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
   server.sendHeader("Expires", "-1");
@@ -574,7 +654,7 @@ void handleWideClockConfigure() {
 
   if (numberOfHorizontalDisplays >= 8) {
     // Wide display options
-    String form = WIDECLOCK_FORM;
+    String form = (const char*)WIDECLOCK_FORM;
     String clockOptions = "<option value='1'>HH:MM Temperature</option><option value='2'>HH:MM:SS</option><option value='3'>HH:MM</option>";
     clockOptions.replace(Wide_Clock_Style + "'", Wide_Clock_Style + "' selected");
     form.replace("%WIDECLOCKOPTIONS%", clockOptions);
@@ -593,19 +673,7 @@ void handleNewsConfigure() {
     return server.requestAuthentication();
   }
   digitalWrite(externalLight, LOW);
-
-  String NEWS_FORM1 =   "<form class='w3-container' action='/savenews' method='get'><h2>News Configuration:</h2>"
-                        "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
-                        "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
-                        "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
-                        "<p>Select News Source <select class='w3-option w3-padding' name='newssource' id='newssource'></select></p>"
-                        "<script>var s='%NEWSSOURCE%';var tt;var xmlhttp=new XMLHttpRequest();xmlhttp.open('GET','https://newsapi.org/v2/sources?apiKey=%NEWSKEY%',!0);"
-                        "xmlhttp.onreadystatechange=function(){if(xmlhttp.readyState==4){if(xmlhttp.status==200){var obj=JSON.parse(xmlhttp.responseText);"
-                        "obj.sources.forEach(t)}}};xmlhttp.send();function t(it){if(it!=null){if(s==it.id){se=' selected'}else{se=''}tt+='<option'+se+'>'+it.id+'</option>';"
-                        "document.getElementById('newssource').innerHTML=tt}}</script>"
-                        "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
   
-
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
   server.sendHeader("Expires", "-1");
@@ -614,7 +682,7 @@ void handleNewsConfigure() {
 
   sendHeader();
 
-  String form = NEWS_FORM1;
+  String form = (const char*)NEWS_FORM1;
   String isNewsDisplayedChecked = "";
   if (NEWS_ENABLED) {
     isNewsDisplayedChecked = "checked='checked'";
@@ -637,17 +705,6 @@ void handleOctoprintConfigure() {
   }
   digitalWrite(externalLight, LOW);
 
-  String OCTO_FORM =    "<form class='w3-container' action='/saveoctoprint' method='get'><h2>OctoPrint Configuration:</h2>"
-                        "<p><input name='displayoctoprint' class='w3-check w3-margin-top' type='checkbox' %OCTOCHECKED%> Show OctoPrint Status</p>"
-                        "<p><input name='octoprintprogress' class='w3-check w3-margin-top' type='checkbox' %OCTOPROGRESSCHECKED%> Show OctoPrint progress with clock</p>"
-                        "<label>OctoPrint API Key (get from your server)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintApiKey' value='%OCTOKEY%' maxlength='60'>"
-                        "<label>OctoPrint Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintAddress' value='%OCTOADDRESS%' maxlength='60'>"
-                        "<label>OctoPrint Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoPrintPort' value='%OCTOPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
-                        "<label>OctoPrint User (only needed if you have haproxy or basic auth turned on)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='octoUser' value='%OCTOUSER%' maxlength='30'>"
-                        "<label>OctoPrint Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='octoPass' value='%OCTOPASS%'>"
-                        "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
-                        "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
-
   server.sendHeader("Cache-Control", "no-cache, no-store");
   server.sendHeader("Pragma", "no-cache");
   server.sendHeader("Expires", "-1");
@@ -656,7 +713,7 @@ void handleOctoprintConfigure() {
 
   sendHeader();
 
-  String form = OCTO_FORM;
+  String form = (const char*)OCTO_FORM;
   String isOctoPrintDisplayedChecked = "";
   if (OCTOPRINT_ENABLED) {
     isOctoPrintDisplayedChecked = "checked='checked'";
@@ -681,6 +738,42 @@ void handleOctoprintConfigure() {
   digitalWrite(externalLight, HIGH);
 }
 
+void handlePiholeConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+
+  String form = (const char*)PIHOLE_TEST;
+  server.sendContent(form);
+
+  form = (const char*)PIHOLE_FORM;
+  String isPiholeDisplayedChecked = "";
+  if (USE_PIHOLE) {
+    isPiholeDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%PIHOLECHECKED%", isPiholeDisplayedChecked);
+  form.replace("%PIHOLEADDRESS%", PiHoleServer);
+  form.replace("%PIHOLEPORT%", String(PiHolePort));
+
+  server.sendContent(form);
+  form = "";
+          
+  sendFooter();
+
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
 void handleConfigure() {
   if (!athentication()) {
     return server.requestAuthentication();
@@ -696,7 +789,7 @@ void handleConfigure() {
 
   sendHeader();
 
-  String form = CHANGE_FORM1;
+  String form = (const char*)CHANGE_FORM1;
   form.replace("%TIMEDBKEY%", TIMEDBKEY);
   form.replace("%WEATHERKEY%", APIKEY);
 
@@ -744,7 +837,7 @@ void handleConfigure() {
   form.replace("%CHECKED%", checked);
   server.sendContent(form);
 
-  form = CHANGE_FORM2;
+  form = (const char*)CHANGE_FORM2;
   String isPmChecked = "";
   if (IS_PM) {
     isPmChecked = "checked='checked'";
@@ -760,7 +853,7 @@ void handleConfigure() {
   form.replace("%ENDTIME%", timeDisplayTurnsOff);
   form.replace("%INTENSITYOPTIONS%", String(displayIntensity));
   String dSpeed = String(displayScrollSpeed);
-  String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option><option value='5'>Very Fast</option>";
+  String scrollOptions = "<option value='35'>Slow</option><option value='25'>Normal</option><option value='15'>Fast</option><option value='10'>Very Fast</option>";
   scrollOptions.replace(dSpeed + "'", dSpeed + "' selected" );
   form.replace("%SCROLLOPTIONS%", scrollOptions);
   String minutes = String(minutesBetweenDataRefresh);
@@ -771,7 +864,7 @@ void handleConfigure() {
 
   server.sendContent(form); //Send another chunk of the form
 
-  form = CHANGE_FORM3;
+  form = (const char*)CHANGE_FORM3;
   String isUseSecurityChecked = "";
   if (IS_BASIC_AUTH) {
     isUseSecurityChecked = "checked='checked'";
@@ -893,32 +986,18 @@ void redirectHome() {
 }
 
 void sendHeader() {
-  String WEB_ACTIONS1 = "<a class='w3-bar-item w3-button' href='/'><i class='fa fa-home'></i> Home</a>"
-                        "<a class='w3-bar-item w3-button' href='/configure'><i class='fa fa-cog'></i> Configure</a>"
-                        "<a class='w3-bar-item w3-button' href='/configurenews'><i class='fa fa-newspaper-o'></i> News</a>"
-                        "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fa fa-cube'></i> OctoPrint</a>";
-
-  String WEB_ACTIONS2 = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fa fa-usd'></i> Bitcoin</a>"
-                        "<a class='w3-bar-item w3-button' href='/pull'><i class='fa fa-cloud-download'></i> Refresh Data</a>"
-                        "<a class='w3-bar-item w3-button' href='/display'>";
-
-  String WEB_ACTION3 = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fa fa-undo'></i> Reset Settings</a>"
-                       "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fa fa-wifi'></i> Forget WiFi</a>"
-                       "<a class='w3-bar-item w3-button' href='/update'><i class='fa fa-wrench'></i> Firmware Update</a>"
-                       "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fa fa-question-circle'></i> About</a>";
-
-  String menu = WEB_ACTIONS1;
+  String menu = (const char*)WEB_ACTIONS1;
   if (numberOfHorizontalDisplays >= 8) {
-    menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='fa fa-clock-o'></i> Wide Clock</a>";
+    menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='far fa-clock'></i> Wide Clock</a>";
   }
-  menu += WEB_ACTIONS2;
+  menu += (const char*)WEB_ACTIONS2;
   if (displayOn) {
-    menu += "<i class='fa fa-eye-slash'></i> Turn Display OFF";
+    menu += "<i class='fas fa-eye-slash'></i> Turn Display OFF";
   } else {
-    menu += "<i class='fa fa-eye'></i> Turn Display ON";
+    menu += "<i class='fas fa-eye'></i> Turn Display ON";
   }
 
-  menu += WEB_ACTION3;
+  menu += (const char*)WEB_ACTION3;
 
   String html = "<!DOCTYPE HTML>";
   html += "<html><head><title>Marquee Scroller</title><link rel='icon' href='data:;base64,='>";
@@ -926,18 +1005,18 @@ void sendHeader() {
   html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
   html += "<link rel='stylesheet' href='https://www.w3schools.com/w3css/4/w3.css'>";
   html += "<link rel='stylesheet' href='https://www.w3schools.com/lib/w3-theme-blue-grey.css'>";
-  html += "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'>";
+  html += "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.1/css/all.min.css'>";
   html += "</head><body>";
   server.sendContent(html);
   html = "<nav class='w3-sidebar w3-bar-block w3-card' style='margin-top:88px' id='mySidebar'>";
   html += "<div class='w3-container w3-theme-d2'>";
-  html += "<span onclick='closeSidebar()' class='w3-button w3-display-topright w3-large'><i class='fa fa-times'></i></span>";
+  html += "<span onclick='closeSidebar()' class='w3-button w3-display-topright w3-large'><i class='fas fa-times'></i></span>";
   html += "<div class='w3-left'><img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'></div>";
   html += "<div class='w3-padding'>Menu</div></div>";
   server.sendContent(html);
   server.sendContent(menu);
   html = "</nav>";
-  html += "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fa fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
+  html += "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fas fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
   html += "<script>";
   html += "function openSidebar(){document.getElementById('mySidebar').style.display='block'}function closeSidebar(){document.getElementById('mySidebar').style.display='none'}closeSidebar();";
   html += "</script>";
@@ -953,9 +1032,9 @@ void sendFooter() {
   String html = "<br><br><br>";
   html += "</div>";
   html += "<footer class='w3-container w3-bottom w3-theme w3-margin-top'>";
-  html += "<i class='fa fa-paper-plane-o'></i> Version: " + String(VERSION) + "<br>";
-  html += "<i class='fa fa-clock-o'></i> Next Update: " + getTimeTillUpdate() + "<br>";
-  html += "<i class='fa fa-rss'></i> Signal Strength: ";
+  html += "<i class='far fa-paper-plane'></i> Version: " + String(VERSION) + "<br>";
+  html += "<i class='far fa-clock'></i> Next Update: " + getTimeTillUpdate() + "<br>";
+  html += "<i class='fas fa-rss'></i> Signal Strength: ";
   html += String(rssi) + "%";
   html += "</footer>";
   html += "</body></html>";
@@ -1007,7 +1086,7 @@ void displayWeatherData() {
     html += weatherClient.getCondition(0) + " (" + weatherClient.getDescription(0) + ")<br>";
     html += temperature + " " + getTempSymbol() + "<br>";
     html += time + "<br>";
-    html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(0) + "," + weatherClient.getLon(0) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fa fa-map-marker' style='color:red'></i> Map It!</a><br>";
+    html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(0) + "," + weatherClient.getLon(0) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fas fa-map-marker' style='color:red'></i> Map It!</a><br>";
     html += "</p></div></div><hr>";
   }
 
@@ -1035,6 +1114,25 @@ void displayWeatherData() {
   if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
     html = "<div class='w3-cell-row'>Bitcoin value: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + "</div><br><hr>";
     server.sendContent(String(html));
+    html = "";
+  }
+
+  if (USE_PIHOLE) {
+    if (piholeClient.getError() == "") {
+      html = "<div class='w3-cell-row'><b>Pi-hole</b><br>"
+             "Total Queries (" + piholeClient.getUniqueClients() + " clients): <b>" + piholeClient.getDnsQueriesToday() + "</b><br>"
+             "Queries Blocked: <b>" + piholeClient.getAdsBlockedToday() + "</b><br>"
+             "Percent Blocked: <b>" + piholeClient.getAdsPercentageToday() + "%</b><br>"
+             "Domains on Blocklist: <b>" + piholeClient.getDomainsBeingBlocked() + "</b><br>"
+             "Status: <b>" + piholeClient.getPiHoleStatus() + "</b><br>"
+             "</div><br><hr>";
+    } else {
+      html = "<div class='w3-cell-row'>Pi-hole Error";
+      html += "Please <a href='/configurepihole' title='Configure'>Configure</a> for Pi-hole <a href='/configurepihole' title='Configure'><i class='fas fa-cog'></i></a><br>";
+      html += "Status: Error Getting Data<br>";
+      html += "Reason: " + piholeClient.getError() + "<br></div><br><hr>";
+    }
+    server.sendContent(html);
     html = "";
   }
 
@@ -1222,6 +1320,9 @@ String writeCityIds() {
     f.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
     f.println("SHOW_WIND=" + String(SHOW_WIND));
     f.println("SHOW_DATE=" + String(SHOW_DATE));
+    f.println("USE_PIHOLE=" + String(USE_PIHOLE));
+    f.println("PiHoleServer=" + PiHoleServer);
+    f.println("PiHolePort=" + String(PiHolePort));
   }
   f.close();
   readCityIds();
@@ -1397,6 +1498,19 @@ void readCityIds() {
       SHOW_DATE = line.substring(line.lastIndexOf("SHOW_DATE=") + 10).toInt();
       Serial.println("SHOW_DATE=" + String(SHOW_DATE));
     }
+    if (line.indexOf("USE_PIHOLE=") >= 0) {
+      USE_PIHOLE = line.substring(line.lastIndexOf("USE_PIHOLE=") + 11).toInt();
+      Serial.println("USE_PIHOLE=" + String(USE_PIHOLE));
+    }
+    if (line.indexOf("PiHoleServer=") >= 0) {
+      PiHoleServer = line.substring(line.lastIndexOf("PiHoleServer=") + 13);
+      PiHoleServer.trim();
+      Serial.println("PiHoleServer=" + PiHoleServer);
+    }
+    if (line.indexOf("PiHolePort=") >= 0) {
+      PiHolePort = line.substring(line.lastIndexOf("PiHolePort=") + 11).toInt();
+      Serial.println("PiHolePort=" + String(PiHolePort));
+    }
   }
   fr.close();
   matrix.setIntensity(displayIntensity);
@@ -1437,6 +1551,44 @@ void scrollMessage(String msg) {
     delay(displayScrollSpeed);
   }
   matrix.setCursor(0, 0);
+}
+
+void drawPiholeGraph() {
+  if (!USE_PIHOLE || piholeClient.getBlockedCount() == 0) {
+    return;
+  }
+  int count = piholeClient.getBlockedCount();
+  int high = 0;
+  int row = matrix.width() - 1;
+  int yval = 0;
+
+  // get the high value for the sample that will be on the screen
+  for (int inx = count; inx >= (count - matrix.width()); inx--) {
+    if (piholeClient.getBlockedAds()[inx] > high) {
+      high = piholeClient.getBlockedAds()[inx];
+    }
+  }
+  
+  for (int inx = (count-1); inx >= (count - matrix.width()); inx--) {
+    yval = map(piholeClient.getBlockedAds()[inx], high, 0, 0, 7);
+    //Serial.println("Value: " + String(piholeClient.getBlockedAds()[inx]));
+    //Serial.println("x: " + String(row) + " y:" + String(yval) + " h:" + String(8-yval));
+    matrix.drawFastVLine(row, yval, 8-yval, HIGH);
+    if (row == 0) {
+      break;
+    }
+    row--;
+  }
+  matrix.write();
+  for (int wait = 0; wait < 500; wait++) {
+    if (WEBSERVER_ENABLED) {
+      server.handleClient();
+    }
+    if (ENABLE_OTA) {
+      ArduinoOTA.handle();
+    }
+    delay(20);
+  }
 }
 
 void centerPrint(String msg) {

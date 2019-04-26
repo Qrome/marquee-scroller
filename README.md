@@ -30,6 +30,7 @@ SOFTWARE.
 * Configured through Web Interface
 * Display 3D print progress from your OctoPrint Server
 * Option to display Bitcoin current value
+* Option to display Pi-hole status and graph (each pixel accross is 10 minutes)
 * Basic Authorization around Configuration web interface
 * Support for OTA (loading firmware over WiFi)
 * Update firmware through web interface
