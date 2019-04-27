@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.12"
+#define VERSION "2.13"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -1562,16 +1562,24 @@ void drawPiholeGraph() {
   int row = matrix.width() - 1;
   int yval = 0;
 
+  int totalRows = count - matrix.width();
+  
+  if (totalRows < 0) {
+    totalRows = 0;
+  }
+
   // get the high value for the sample that will be on the screen
-  for (int inx = count; inx >= (count - matrix.width()); inx--) {
+  for (int inx = count; inx >= totalRows; inx--) {
     if (piholeClient.getBlockedAds()[inx] > high) {
-      high = piholeClient.getBlockedAds()[inx];
+      high = (int)piholeClient.getBlockedAds()[inx];
     }
   }
-  
-  for (int inx = (count-1); inx >= (count - matrix.width()); inx--) {
-    yval = map(piholeClient.getBlockedAds()[inx], high, 0, 0, 7);
-    //Serial.println("Value: " + String(piholeClient.getBlockedAds()[inx]));
+
+  int currentVal = 0;
+  for (int inx = (count-1); inx >= totalRows; inx--) {
+    currentVal = (int)piholeClient.getBlockedAds()[inx];
+    yval = map(currentVal, 0, high, 7, 0);
+    //Serial.println("Value: " + String(currentVal));
     //Serial.println("x: " + String(row) + " y:" + String(yval) + " h:" + String(8-yval));
     matrix.drawFastVLine(row, yval, 8-yval, HIGH);
     if (row == 0) {
