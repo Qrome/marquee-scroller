@@ -79,6 +79,8 @@ boolean SHOW_CITY = true;
 boolean SHOW_CONDITION = true;
 boolean SHOW_HUMIDITY = true;
 boolean SHOW_WIND = true;
+boolean SHOW_WINDDIR = true;
+boolean SHOW_PRESSURE = true;
 
 // OctoPrint Client
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
@@ -121,6 +123,7 @@ static const char CHANGE_FORM1[] PROGMEM = "<form class='w3-container' action='/
                       "<p><input name='showcondition' class='w3-check w3-margin-top' type='checkbox' %CONDITION_CHECKED%> Display Weather Condition</p>"
                       "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
+                      "<p><input name='showpressure' class='w3-check w3-margin-top' type='checkbox' %PRESSURE_CHECKED%> Display Barometric Pressure</p>"
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
 
 static const char CHANGE_FORM2[] PROGMEM = "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>"
@@ -392,9 +395,14 @@ void loop() {
         msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
       }
       if (SHOW_WIND) {
-        msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
+        msg += "Wind:" + weatherClient.getDirectionRounded(0) + " deg/";
+        msg += weatherClient.getWindRounded(0) + " " + getSpeedSymbol() + "  ";
       }
-
+      //line to show barometric pressure
+      if (SHOW_PRESSURE)
+      {
+      msg += "Pressure:" + weatherClient.getPressure(0) + " mb   ";
+      }
       msg += marqueeMessage + " ";
 
       if (NEWS_ENABLED) {
@@ -567,6 +575,7 @@ void handleLocations() {
   SHOW_CONDITION = server.hasArg("showcondition");
   SHOW_HUMIDITY = server.hasArg("showhumidity");
   SHOW_WIND = server.hasArg("showwind");
+  SHOW_PRESSURE = server.hasArg("showpressure");
   IS_METRIC = server.hasArg("metric");
   marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
   timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
@@ -825,6 +834,11 @@ void handleConfigure() {
     isWindChecked = "checked='checked'";
   }
   form.replace("%WIND_CHECKED%", isWindChecked);
+  String isPressureChecked = "";
+  if (SHOW_PRESSURE) {
+    isPressureChecked = "checked='checked'";
+  }
+  form.replace("%PRESSURE_CHECKED%", isPressureChecked);
   String is24hourChecked = "";
   if (IS_24HOUR) {
     is24hourChecked = "checked='checked'";
@@ -1080,7 +1094,8 @@ void displayWeatherData() {
     html += "<div class='w3-cell w3-left w3-medium' style='width:120px'>";
     html += "<img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'><br>";
     html += weatherClient.getHumidity(0) + "% Humidity<br>";
-    html += weatherClient.getWind(0) + " <span class='w3-tiny'>" + getSpeedSymbol() + "</span> Wind<br>";
+    html += weatherClient.getDirection(0) + " deg/" + weatherClient.getWind(0) + " <span class='w3-tiny'>" + getSpeedSymbol() + "</span> Wind<br>";
+    html += weatherClient.getPressure(0) + " Pressure<br>";
     html += "</div>";
     html += "<div class='w3-cell w3-container' style='width:100%'><p>";
     html += weatherClient.getCondition(0) + " (" + weatherClient.getDescription(0) + ")<br>";
@@ -1319,6 +1334,7 @@ String writeCityIds() {
     f.println("SHOW_CONDITION=" + String(SHOW_CONDITION));
     f.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
     f.println("SHOW_WIND=" + String(SHOW_WIND));
+    f.println("SHOW_PRESSURE=" + String(SHOW_PRESSURE));
     f.println("SHOW_DATE=" + String(SHOW_DATE));
     f.println("USE_PIHOLE=" + String(USE_PIHOLE));
     f.println("PiHoleServer=" + PiHoleServer);
@@ -1493,6 +1509,10 @@ void readCityIds() {
     if (line.indexOf("SHOW_WIND=") >= 0) {
       SHOW_WIND = line.substring(line.lastIndexOf("SHOW_WIND=") + 10).toInt();
       Serial.println("SHOW_WIND=" + String(SHOW_WIND));
+    }
+    if (line.indexOf("SHOW_PRESSURE=") >= 0) {
+      SHOW_PRESSURE = line.substring(line.lastIndexOf("SHOW_PRESSURE=") + 14).toInt();
+      Serial.println("SHOW_PRESSURE=" + String(SHOW_PRESSURE));
     }
     if (line.indexOf("SHOW_DATE=") >= 0) {
       SHOW_DATE = line.substring(line.lastIndexOf("SHOW_DATE=") + 10).toInt();
