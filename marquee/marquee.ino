@@ -81,6 +81,7 @@ boolean SHOW_HUMIDITY = true;
 boolean SHOW_WIND = true;
 boolean SHOW_WINDDIR = true;
 boolean SHOW_PRESSURE = true;
+boolean SHOW_HIGHLOW = true;
 
 // OctoPrint Client
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
@@ -124,6 +125,7 @@ static const char CHANGE_FORM1[] PROGMEM = "<form class='w3-container' action='/
                       "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
                       "<p><input name='showpressure' class='w3-check w3-margin-top' type='checkbox' %PRESSURE_CHECKED%> Display Barometric Pressure</p>"
+                      "<p><input name='showhighlow' class='w3-check w3-margin-top' type='checkbox' %HIGHLOW_CHECKED%> Display Daily High/Low Temperatures</p>"
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
 
 static const char CHANGE_FORM2[] PROGMEM = "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>"
@@ -382,17 +384,17 @@ void loop() {
 
       if (SHOW_DATE) {
         msg += TimeDB.getDayName() + ", ";
-        msg += TimeDB.getMonthName() + " " + day() + "    ";
+        msg += TimeDB.getMonthName() + " " + day() + "  ";
       }
       if (SHOW_CITY) {
-        msg += weatherClient.getCity(0) + "    ";
+        msg += weatherClient.getCity(0) + "  ";
       }
-      msg += temperature + getTempSymbol() + "    ";
+      msg += temperature + getTempSymbol() + "  ";
       if (SHOW_CONDITION) {
-        msg += description + "    ";
+        msg += description + "  ";
       }
       if (SHOW_HUMIDITY) {
-        msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
+        msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "% ";
       }
       if (SHOW_WIND) {
         msg += "Wind:" + weatherClient.getDirectionRounded(0) + " deg/";
@@ -401,23 +403,29 @@ void loop() {
       //line to show barometric pressure
       if (SHOW_PRESSURE)
       {
-      msg += "Pressure:" + weatherClient.getPressure(0) + " mb   ";
+      msg += "Pressure:" + weatherClient.getPressure(0) + getPressureSymbol() + "  ";
+      }
+      //show high/low temperature
+
+      if (SHOW_HIGHLOW)
+      {
+      msg += "Daily High/Low Temperatures:" + weatherClient.getHigh(0) + "/" + weatherClient.getLow(0) + " " + getTempSymbol() + "  ";
       }
       msg += marqueeMessage + " ";
-
+      
       if (NEWS_ENABLED) {
-        msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "   ";
+        msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "  ";
         newsIndex += 1;
         if (newsIndex > 9) {
           newsIndex = 0;
         }
       }
       if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
-        msg += "   " + printerClient.getFileName() + " ";
-        msg += "(" + printerClient.getProgressCompletion() + "%)   ";
+        msg += "  " + printerClient.getFileName() + " ";
+        msg += "(" + printerClient.getProgressCompletion() + "%)  ";
       }
       if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
-        msg += "    Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
+        msg += "  Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
       }
       if (USE_PIHOLE) {
         piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
@@ -576,6 +584,7 @@ void handleLocations() {
   SHOW_HUMIDITY = server.hasArg("showhumidity");
   SHOW_WIND = server.hasArg("showwind");
   SHOW_PRESSURE = server.hasArg("showpressure");
+  SHOW_HIGHLOW = server.hasArg("showhighlow");
   IS_METRIC = server.hasArg("metric");
   marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
   timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
@@ -839,6 +848,14 @@ void handleConfigure() {
     isPressureChecked = "checked='checked'";
   }
   form.replace("%PRESSURE_CHECKED%", isPressureChecked);
+
+  String isHighlowChecked = "";
+  if (SHOW_HIGHLOW) {
+    isHighlowChecked = "checked='checked'";
+  }
+  form.replace("%HIGHLOW_CHECKED%", isHighlowChecked);
+
+  
   String is24hourChecked = "";
   if (IS_24HOUR) {
     is24hourChecked = "checked='checked'";
@@ -1100,6 +1117,7 @@ void displayWeatherData() {
     html += "<div class='w3-cell w3-container' style='width:100%'><p>";
     html += weatherClient.getCondition(0) + " (" + weatherClient.getDescription(0) + ")<br>";
     html += temperature + " " + getTempSymbol() + "<br>";
+    html += weatherClient.getHigh(0) + "/" + weatherClient.getLow(0) + " " + getTempSymbol() + "<br>";
     html += time + "<br>";
     html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(0) + "," + weatherClient.getLon(0) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fas fa-map-marker' style='color:red'></i> Map It!</a><br>";
     html += "</p></div></div><hr>";
@@ -1208,6 +1226,16 @@ String getSpeedSymbol() {
   String rtnValue = "mph";
   if (IS_METRIC) {
     rtnValue = "kph";
+  }
+  return rtnValue;
+}
+
+String getPressureSymbol()
+{
+  String rtnValue = "";
+  if (IS_METRIC)
+  {
+    rtnValue = "mb";
   }
   return rtnValue;
 }
@@ -1335,6 +1363,7 @@ String writeCityIds() {
     f.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
     f.println("SHOW_WIND=" + String(SHOW_WIND));
     f.println("SHOW_PRESSURE=" + String(SHOW_PRESSURE));
+    f.println("SHOW_HIGHLOW=" + String(SHOW_HIGHLOW));
     f.println("SHOW_DATE=" + String(SHOW_DATE));
     f.println("USE_PIHOLE=" + String(USE_PIHOLE));
     f.println("PiHoleServer=" + PiHoleServer);
@@ -1514,6 +1543,12 @@ void readCityIds() {
       SHOW_PRESSURE = line.substring(line.lastIndexOf("SHOW_PRESSURE=") + 14).toInt();
       Serial.println("SHOW_PRESSURE=" + String(SHOW_PRESSURE));
     }
+
+    if (line.indexOf("SHOW_HIGHLOW=") >= 0) {
+      SHOW_HIGHLOW = line.substring(line.lastIndexOf("SHOW_HIGHLOW=") + 13).toInt();
+      Serial.println("SHOW_HIGHLOW=" + String(SHOW_HIGHLOW));
+    }
+    
     if (line.indexOf("SHOW_DATE=") >= 0) {
       SHOW_DATE = line.substring(line.lastIndexOf("SHOW_DATE=") + 10).toInt();
       Serial.println("SHOW_DATE=" + String(SHOW_DATE));
