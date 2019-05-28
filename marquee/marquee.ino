@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.13"
+#define VERSION "2.14"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
