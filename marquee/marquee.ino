@@ -1032,6 +1032,7 @@ void sendHeader() {
   server.sendContent(html);
 
   server.sendContent(FPSTR(WEB_ACTIONS1));
+  Serial.println("Displays: " + String(numberOfHorizontalDisplays));
   if (numberOfHorizontalDisplays >= 8) {
     server.sendContent("<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='far fa-clock'></i> Wide Clock</a>");
   }
