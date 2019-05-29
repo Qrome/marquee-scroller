@@ -49,6 +49,10 @@ private:
     String icon;
     boolean cached;
     String error;
+    String pressure;
+    String direction;
+    String high;
+    String low;
   } weather;
 
   weather weathers[5];
@@ -74,6 +78,11 @@ public:
   String getCondition(int index);
   String getWind(int index);
   String getWindRounded(int index);
+  String getDirection(int index);
+  String getDirectionRounded(int index);
+  String getPressure(int index);
+  String getHigh(int index);
+  String getLow(int index);
   String getWeatherId(int index);
   String getDescription(int index);
   String getIcon(int index);
