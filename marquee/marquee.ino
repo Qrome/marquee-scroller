@@ -80,7 +80,7 @@ boolean SHOW_CONDITION = true;
 boolean SHOW_HUMIDITY = true;
 boolean SHOW_WIND = true;
 boolean SHOW_WINDDIR = true;
-boolean SHOW_PRESSURE = true;
+boolean SHOW_PRESSURE = false;
 boolean SHOW_HIGHLOW = true;
 
 // OctoPrint Client
@@ -121,11 +121,11 @@ static const char CHANGE_FORM1[] PROGMEM = "<form class='w3-container' action='/
                       "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
                       "<p><input name='showdate' class='w3-check w3-margin-top' type='checkbox' %DATE_CHECKED%> Display Date</p>"
                       "<p><input name='showcity' class='w3-check w3-margin-top' type='checkbox' %CITY_CHECKED%> Display City Name</p>"
+                      "<p><input name='showhighlow' class='w3-check w3-margin-top' type='checkbox' %HIGHLOW_CHECKED%> Display Daily High/Low Temperatures</p>"
                       "<p><input name='showcondition' class='w3-check w3-margin-top' type='checkbox' %CONDITION_CHECKED%> Display Weather Condition</p>"
                       "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
                       "<p><input name='showpressure' class='w3-check w3-margin-top' type='checkbox' %PRESSURE_CHECKED%> Display Barometric Pressure</p>"
-                      "<p><input name='showhighlow' class='w3-check w3-margin-top' type='checkbox' %HIGHLOW_CHECKED%> Display Daily High/Low Temperatures</p>"
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
 
 static const char CHANGE_FORM2[] PROGMEM = "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>"
@@ -390,27 +390,26 @@ void loop() {
         msg += weatherClient.getCity(0) + "  ";
       }
       msg += temperature + getTempSymbol() + "  ";
+
+      //show high/low temperature
+      if (SHOW_HIGHLOW) {
+        msg += "High/Low:" + weatherClient.getHigh(0) + "/" + weatherClient.getLow(0) + " " + getTempSymbol() + "  ";
+      }
+      
       if (SHOW_CONDITION) {
         msg += description + "  ";
       }
       if (SHOW_HUMIDITY) {
-        msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "% ";
+        msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%  ";
       }
       if (SHOW_WIND) {
-        msg += "Wind:" + weatherClient.getDirectionRounded(0) + " deg/";
-        msg += weatherClient.getWindRounded(0) + " " + getSpeedSymbol() + "  ";
+        msg += "Wind:" + weatherClient.getDirectionRounded(0) + " deg @ " + weatherClient.getWindRounded(0) + " " + getSpeedSymbol() + "  ";
       }
       //line to show barometric pressure
-      if (SHOW_PRESSURE)
-      {
-      msg += "Pressure:" + weatherClient.getPressure(0) + getPressureSymbol() + "  ";
+      if (SHOW_PRESSURE) {
+        msg += "Pressure:" + weatherClient.getPressure(0) + getPressureSymbol() + "  ";
       }
-      //show high/low temperature
-
-      if (SHOW_HIGHLOW)
-      {
-      msg += "Daily High/Low Temperatures:" + weatherClient.getHigh(0) + "/" + weatherClient.getLow(0) + " " + getTempSymbol() + "  ";
-      }
+     
       msg += marqueeMessage + " ";
       
       if (NEWS_ENABLED) {
@@ -1017,6 +1016,7 @@ void redirectHome() {
 }
 
 void sendHeader() {
+
   String menu = (const char*)WEB_ACTIONS1;
   if (numberOfHorizontalDisplays >= 8) {
     menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='far fa-clock'></i> Wide Clock</a>";
