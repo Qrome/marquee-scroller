@@ -112,6 +112,10 @@ void OpenWeatherMapClient::updateWeather() {
     weathers[inx].weatherId = (const char*)root["list"][inx]["weather"][0]["id"];
     weathers[inx].description = (const char*)root["list"][inx]["weather"][0]["description"];
     weathers[inx].icon = (const char*)root["list"][inx]["weather"][0]["icon"];
+    weathers[inx].pressure = (const char*)root["list"][inx]["main"]["pressure"];
+    weathers[inx].direction = (const char*)root["list"][inx]["wind"]["deg"];
+    weathers[inx].high = (const char*)root["list"][inx]["main"]["temp_max"];
+    weathers[inx].low = (const char*)root["list"][inx]["main"]["temp_min"];
 
     if (units == "metric") {
       // convert to kph from m/s
@@ -119,6 +123,12 @@ void OpenWeatherMapClient::updateWeather() {
       weathers[inx].wind = String(f);
     }
 
+    if (units != "metric")
+    {
+      float p = (weathers[inx].pressure.toFloat() * 0.0295301); //convert millibars to inches
+      weathers[inx].pressure = String(p);
+    }
+    
     Serial.println("lat: " + weathers[inx].lat);
     Serial.println("lon: " + weathers[inx].lon);
     Serial.println("dt: " + weathers[inx].dt);
@@ -128,6 +138,7 @@ void OpenWeatherMapClient::updateWeather() {
     Serial.println("humidity: " + weathers[inx].humidity);
     Serial.println("condition: " + weathers[inx].condition);
     Serial.println("wind: " + weathers[inx].wind);
+    Serial.println("direction: " + weathers[inx].direction);
     Serial.println("weatherId: " + weathers[inx].weatherId);
     Serial.println("description: " + weathers[inx].description);
     Serial.println("icon: " + weathers[inx].icon);
@@ -206,6 +217,16 @@ String OpenWeatherMapClient::getWind(int index) {
   return weathers[index].wind;
 }
 
+String OpenWeatherMapClient::getDirection(int index)
+{
+  return weathers[index].direction;
+}
+
+String OpenWeatherMapClient::getDirectionRounded(int index)
+{
+  return roundValue(getDirection(index));
+}
+
 String OpenWeatherMapClient::getWindRounded(int index) {
   return roundValue(getWind(index));
 }
@@ -216,6 +237,21 @@ String OpenWeatherMapClient::getWeatherId(int index) {
 
 String OpenWeatherMapClient::getDescription(int index) {
   return weathers[index].description;
+}
+
+String OpenWeatherMapClient::getPressure(int index)
+{
+  return weathers[index].pressure;
+}
+
+String OpenWeatherMapClient::getHigh(int index)
+{
+  return weathers[index].high;
+}
+
+String OpenWeatherMapClient::getLow(int index)
+{
+  return weathers[index].low;
 }
 
 String OpenWeatherMapClient::getIcon(int index) {

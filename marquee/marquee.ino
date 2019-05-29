@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.13"
+#define VERSION "2.14"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -79,6 +79,9 @@ boolean SHOW_CITY = true;
 boolean SHOW_CONDITION = true;
 boolean SHOW_HUMIDITY = true;
 boolean SHOW_WIND = true;
+boolean SHOW_WINDDIR = true;
+boolean SHOW_PRESSURE = false;
+boolean SHOW_HIGHLOW = true;
 
 // OctoPrint Client
 OctoPrintClient printerClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
@@ -118,9 +121,11 @@ static const char CHANGE_FORM1[] PROGMEM = "<form class='w3-container' action='/
                       "<p><input name='metric' class='w3-check w3-margin-top' type='checkbox' %CHECKED%> Use Metric (Celsius)</p>"
                       "<p><input name='showdate' class='w3-check w3-margin-top' type='checkbox' %DATE_CHECKED%> Display Date</p>"
                       "<p><input name='showcity' class='w3-check w3-margin-top' type='checkbox' %CITY_CHECKED%> Display City Name</p>"
+                      "<p><input name='showhighlow' class='w3-check w3-margin-top' type='checkbox' %HIGHLOW_CHECKED%> Display Daily High/Low Temperatures</p>"
                       "<p><input name='showcondition' class='w3-check w3-margin-top' type='checkbox' %CONDITION_CHECKED%> Display Weather Condition</p>"
                       "<p><input name='showhumidity' class='w3-check w3-margin-top' type='checkbox' %HUMIDITY_CHECKED%> Display Humidity</p>"
                       "<p><input name='showwind' class='w3-check w3-margin-top' type='checkbox' %WIND_CHECKED%> Display Wind</p>"
+                      "<p><input name='showpressure' class='w3-check w3-margin-top' type='checkbox' %PRESSURE_CHECKED%> Display Barometric Pressure</p>"
                       "<p><input name='is24hour' class='w3-check w3-margin-top' type='checkbox' %IS_24HOUR_CHECKED%> Use 24 Hour Clock (military time)</p>";
 
 static const char CHANGE_FORM2[] PROGMEM = "<p><input name='isPM' class='w3-check w3-margin-top' type='checkbox' %IS_PM_CHECKED%> Show PM indicator (only 12h format)</p>"
@@ -379,37 +384,47 @@ void loop() {
 
       if (SHOW_DATE) {
         msg += TimeDB.getDayName() + ", ";
-        msg += TimeDB.getMonthName() + " " + day() + "    ";
+        msg += TimeDB.getMonthName() + " " + day() + "  ";
       }
       if (SHOW_CITY) {
-        msg += weatherClient.getCity(0) + "    ";
+        msg += weatherClient.getCity(0) + "  ";
       }
-      msg += temperature + getTempSymbol() + "    ";
+      msg += temperature + getTempSymbol() + "  ";
+
+      //show high/low temperature
+      if (SHOW_HIGHLOW) {
+        msg += "High/Low:" + weatherClient.getHigh(0) + "/" + weatherClient.getLow(0) + " " + getTempSymbol() + "  ";
+      }
+      
       if (SHOW_CONDITION) {
-        msg += description + "    ";
+        msg += description + "  ";
       }
       if (SHOW_HUMIDITY) {
-        msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%   ";
+        msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%  ";
       }
       if (SHOW_WIND) {
-        msg += "Wind:" + weatherClient.getWindRounded(0) + getSpeedSymbol() + "  ";
+        msg += "Wind:" + weatherClient.getDirectionRounded(0) + " deg @ " + weatherClient.getWindRounded(0) + " " + getSpeedSymbol() + "  ";
       }
-
+      //line to show barometric pressure
+      if (SHOW_PRESSURE) {
+        msg += "Pressure:" + weatherClient.getPressure(0) + getPressureSymbol() + "  ";
+      }
+     
       msg += marqueeMessage + " ";
-
+      
       if (NEWS_ENABLED) {
-        msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "   ";
+        msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "  ";
         newsIndex += 1;
         if (newsIndex > 9) {
           newsIndex = 0;
         }
       }
       if (OCTOPRINT_ENABLED && printerClient.isPrinting()) {
-        msg += "   " + printerClient.getFileName() + " ";
-        msg += "(" + printerClient.getProgressCompletion() + "%)   ";
+        msg += "  " + printerClient.getFileName() + " ";
+        msg += "(" + printerClient.getProgressCompletion() + "%)  ";
       }
       if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
-        msg += "    Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
+        msg += "  Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
       }
       if (USE_PIHOLE) {
         piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
@@ -567,6 +582,8 @@ void handleLocations() {
   SHOW_CONDITION = server.hasArg("showcondition");
   SHOW_HUMIDITY = server.hasArg("showhumidity");
   SHOW_WIND = server.hasArg("showwind");
+  SHOW_PRESSURE = server.hasArg("showpressure");
+  SHOW_HIGHLOW = server.hasArg("showhighlow");
   IS_METRIC = server.hasArg("metric");
   marqueeMessage = decodeHtmlString(server.arg("marqueeMsg"));
   timeDisplayTurnsOn = decodeHtmlString(server.arg("startTime"));
@@ -625,8 +642,8 @@ void handleBitcoinConfigure() {
 
   sendHeader();
 
-  String form = (const char*)BITCOIN_FORM;
-  String bitcoinOptions = (const char*)CURRENCY_OPTIONS;
+  String form = FPSTR(BITCOIN_FORM);
+  String bitcoinOptions = FPSTR(CURRENCY_OPTIONS);
   bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
   form.replace("%BITCOINOPTIONS%", bitcoinOptions);
   server.sendContent(form); //Send another Chunk of form
@@ -654,7 +671,7 @@ void handleWideClockConfigure() {
 
   if (numberOfHorizontalDisplays >= 8) {
     // Wide display options
-    String form = (const char*)WIDECLOCK_FORM;
+    String form = FPSTR(WIDECLOCK_FORM);
     String clockOptions = "<option value='1'>HH:MM Temperature</option><option value='2'>HH:MM:SS</option><option value='3'>HH:MM</option>";
     clockOptions.replace(Wide_Clock_Style + "'", Wide_Clock_Style + "' selected");
     form.replace("%WIDECLOCKOPTIONS%", clockOptions);
@@ -682,7 +699,7 @@ void handleNewsConfigure() {
 
   sendHeader();
 
-  String form = (const char*)NEWS_FORM1;
+  String form = FPSTR(NEWS_FORM1);
   String isNewsDisplayedChecked = "";
   if (NEWS_ENABLED) {
     isNewsDisplayedChecked = "checked='checked'";
@@ -713,7 +730,7 @@ void handleOctoprintConfigure() {
 
   sendHeader();
 
-  String form = (const char*)OCTO_FORM;
+  String form = FPSTR(OCTO_FORM);
   String isOctoPrintDisplayedChecked = "";
   if (OCTOPRINT_ENABLED) {
     isOctoPrintDisplayedChecked = "checked='checked'";
@@ -752,10 +769,9 @@ void handlePiholeConfigure() {
 
   sendHeader();
 
-  String form = (const char*)PIHOLE_TEST;
-  server.sendContent(form);
+  server.sendContent(FPSTR(PIHOLE_TEST));
 
-  form = (const char*)PIHOLE_FORM;
+  String form = FPSTR(PIHOLE_FORM);
   String isPiholeDisplayedChecked = "";
   if (USE_PIHOLE) {
     isPiholeDisplayedChecked = "checked='checked'";
@@ -789,7 +805,7 @@ void handleConfigure() {
 
   sendHeader();
 
-  String form = (const char*)CHANGE_FORM1;
+  String form = FPSTR(CHANGE_FORM1);
   form.replace("%TIMEDBKEY%", TIMEDBKEY);
   form.replace("%WEATHERKEY%", APIKEY);
 
@@ -825,6 +841,19 @@ void handleConfigure() {
     isWindChecked = "checked='checked'";
   }
   form.replace("%WIND_CHECKED%", isWindChecked);
+  String isPressureChecked = "";
+  if (SHOW_PRESSURE) {
+    isPressureChecked = "checked='checked'";
+  }
+  form.replace("%PRESSURE_CHECKED%", isPressureChecked);
+
+  String isHighlowChecked = "";
+  if (SHOW_HIGHLOW) {
+    isHighlowChecked = "checked='checked'";
+  }
+  form.replace("%HIGHLOW_CHECKED%", isHighlowChecked);
+
+  
   String is24hourChecked = "";
   if (IS_24HOUR) {
     is24hourChecked = "checked='checked'";
@@ -837,7 +866,7 @@ void handleConfigure() {
   form.replace("%CHECKED%", checked);
   server.sendContent(form);
 
-  form = (const char*)CHANGE_FORM2;
+  form = FPSTR(CHANGE_FORM2);
   String isPmChecked = "";
   if (IS_PM) {
     isPmChecked = "checked='checked'";
@@ -864,7 +893,7 @@ void handleConfigure() {
 
   server.sendContent(form); //Send another chunk of the form
 
-  form = (const char*)CHANGE_FORM3;
+  form = FPSTR(CHANGE_FORM3);
   String isUseSecurityChecked = "";
   if (IS_BASIC_AUTH) {
     isUseSecurityChecked = "checked='checked'";
@@ -986,19 +1015,6 @@ void redirectHome() {
 }
 
 void sendHeader() {
-  String menu = (const char*)WEB_ACTIONS1;
-  if (numberOfHorizontalDisplays >= 8) {
-    menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='far fa-clock'></i> Wide Clock</a>";
-  }
-  menu += (const char*)WEB_ACTIONS2;
-  if (displayOn) {
-    menu += "<i class='fas fa-eye-slash'></i> Turn Display OFF";
-  } else {
-    menu += "<i class='fas fa-eye'></i> Turn Display ON";
-  }
-
-  menu += (const char*)WEB_ACTION3;
-
   String html = "<!DOCTYPE HTML>";
   html += "<html><head><title>Marquee Scroller</title><link rel='icon' href='data:;base64,='>";
   html += "<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />";
@@ -1014,7 +1030,20 @@ void sendHeader() {
   html += "<div class='w3-left'><img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'></div>";
   html += "<div class='w3-padding'>Menu</div></div>";
   server.sendContent(html);
-  server.sendContent(menu);
+
+  server.sendContent(FPSTR(WEB_ACTIONS1));
+  Serial.println("Displays: " + String(numberOfHorizontalDisplays));
+  if (numberOfHorizontalDisplays >= 8) {
+    server.sendContent("<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='far fa-clock'></i> Wide Clock</a>");
+  }
+  server.sendContent(FPSTR(WEB_ACTIONS2));
+  if (displayOn) {
+    server.sendContent("<i class='fas fa-eye-slash'></i> Turn Display OFF");
+  } else {
+    server.sendContent("<i class='fas fa-eye'></i> Turn Display ON");
+  }
+  server.sendContent(FPSTR(WEB_ACTION3));
+
   html = "</nav>";
   html += "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fas fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
   html += "<script>";
@@ -1080,11 +1109,13 @@ void displayWeatherData() {
     html += "<div class='w3-cell w3-left w3-medium' style='width:120px'>";
     html += "<img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'><br>";
     html += weatherClient.getHumidity(0) + "% Humidity<br>";
-    html += weatherClient.getWind(0) + " <span class='w3-tiny'>" + getSpeedSymbol() + "</span> Wind<br>";
+    html += weatherClient.getDirection(0) + " deg/" + weatherClient.getWind(0) + " <span class='w3-tiny'>" + getSpeedSymbol() + "</span> Wind<br>";
+    html += weatherClient.getPressure(0) + " Pressure<br>";
     html += "</div>";
     html += "<div class='w3-cell w3-container' style='width:100%'><p>";
     html += weatherClient.getCondition(0) + " (" + weatherClient.getDescription(0) + ")<br>";
     html += temperature + " " + getTempSymbol() + "<br>";
+    html += weatherClient.getHigh(0) + "/" + weatherClient.getLow(0) + " " + getTempSymbol() + "<br>";
     html += time + "<br>";
     html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(0) + "," + weatherClient.getLon(0) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fas fa-map-marker' style='color:red'></i> Map It!</a><br>";
     html += "</p></div></div><hr>";
@@ -1193,6 +1224,16 @@ String getSpeedSymbol() {
   String rtnValue = "mph";
   if (IS_METRIC) {
     rtnValue = "kph";
+  }
+  return rtnValue;
+}
+
+String getPressureSymbol()
+{
+  String rtnValue = "";
+  if (IS_METRIC)
+  {
+    rtnValue = "mb";
   }
   return rtnValue;
 }
@@ -1319,6 +1360,8 @@ String writeCityIds() {
     f.println("SHOW_CONDITION=" + String(SHOW_CONDITION));
     f.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
     f.println("SHOW_WIND=" + String(SHOW_WIND));
+    f.println("SHOW_PRESSURE=" + String(SHOW_PRESSURE));
+    f.println("SHOW_HIGHLOW=" + String(SHOW_HIGHLOW));
     f.println("SHOW_DATE=" + String(SHOW_DATE));
     f.println("USE_PIHOLE=" + String(USE_PIHOLE));
     f.println("PiHoleServer=" + PiHoleServer);
@@ -1494,6 +1537,16 @@ void readCityIds() {
       SHOW_WIND = line.substring(line.lastIndexOf("SHOW_WIND=") + 10).toInt();
       Serial.println("SHOW_WIND=" + String(SHOW_WIND));
     }
+    if (line.indexOf("SHOW_PRESSURE=") >= 0) {
+      SHOW_PRESSURE = line.substring(line.lastIndexOf("SHOW_PRESSURE=") + 14).toInt();
+      Serial.println("SHOW_PRESSURE=" + String(SHOW_PRESSURE));
+    }
+
+    if (line.indexOf("SHOW_HIGHLOW=") >= 0) {
+      SHOW_HIGHLOW = line.substring(line.lastIndexOf("SHOW_HIGHLOW=") + 13).toInt();
+      Serial.println("SHOW_HIGHLOW=" + String(SHOW_HIGHLOW));
+    }
+    
     if (line.indexOf("SHOW_DATE=") >= 0) {
       SHOW_DATE = line.substring(line.lastIndexOf("SHOW_DATE=") + 10).toInt();
       Serial.println("SHOW_DATE=" + String(SHOW_DATE));
