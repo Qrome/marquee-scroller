@@ -642,8 +642,8 @@ void handleBitcoinConfigure() {
 
   sendHeader();
 
-  String form = (const char*)BITCOIN_FORM;
-  String bitcoinOptions = (const char*)CURRENCY_OPTIONS;
+  String form = FPSTR(BITCOIN_FORM);
+  String bitcoinOptions = FPSTR(CURRENCY_OPTIONS);
   bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
   form.replace("%BITCOINOPTIONS%", bitcoinOptions);
   server.sendContent(form); //Send another Chunk of form
@@ -671,7 +671,7 @@ void handleWideClockConfigure() {
 
   if (numberOfHorizontalDisplays >= 8) {
     // Wide display options
-    String form = (const char*)WIDECLOCK_FORM;
+    String form = FPSTR(WIDECLOCK_FORM);
     String clockOptions = "<option value='1'>HH:MM Temperature</option><option value='2'>HH:MM:SS</option><option value='3'>HH:MM</option>";
     clockOptions.replace(Wide_Clock_Style + "'", Wide_Clock_Style + "' selected");
     form.replace("%WIDECLOCKOPTIONS%", clockOptions);
@@ -699,7 +699,7 @@ void handleNewsConfigure() {
 
   sendHeader();
 
-  String form = (const char*)NEWS_FORM1;
+  String form = FPSTR(NEWS_FORM1);
   String isNewsDisplayedChecked = "";
   if (NEWS_ENABLED) {
     isNewsDisplayedChecked = "checked='checked'";
@@ -730,7 +730,7 @@ void handleOctoprintConfigure() {
 
   sendHeader();
 
-  String form = (const char*)OCTO_FORM;
+  String form = FPSTR(OCTO_FORM);
   String isOctoPrintDisplayedChecked = "";
   if (OCTOPRINT_ENABLED) {
     isOctoPrintDisplayedChecked = "checked='checked'";
@@ -769,10 +769,9 @@ void handlePiholeConfigure() {
 
   sendHeader();
 
-  String form = (const char*)PIHOLE_TEST;
-  server.sendContent(form);
+  server.sendContent(FPSTR(PIHOLE_TEST));
 
-  form = (const char*)PIHOLE_FORM;
+  String form = FPSTR(PIHOLE_FORM);
   String isPiholeDisplayedChecked = "";
   if (USE_PIHOLE) {
     isPiholeDisplayedChecked = "checked='checked'";
@@ -806,7 +805,7 @@ void handleConfigure() {
 
   sendHeader();
 
-  String form = (const char*)CHANGE_FORM1;
+  String form = FPSTR(CHANGE_FORM1);
   form.replace("%TIMEDBKEY%", TIMEDBKEY);
   form.replace("%WEATHERKEY%", APIKEY);
 
@@ -867,7 +866,7 @@ void handleConfigure() {
   form.replace("%CHECKED%", checked);
   server.sendContent(form);
 
-  form = (const char*)CHANGE_FORM2;
+  form = FPSTR(CHANGE_FORM2);
   String isPmChecked = "";
   if (IS_PM) {
     isPmChecked = "checked='checked'";
@@ -894,7 +893,7 @@ void handleConfigure() {
 
   server.sendContent(form); //Send another chunk of the form
 
-  form = (const char*)CHANGE_FORM3;
+  form = FPSTR(CHANGE_FORM3);
   String isUseSecurityChecked = "";
   if (IS_BASIC_AUTH) {
     isUseSecurityChecked = "checked='checked'";
@@ -1016,20 +1015,6 @@ void redirectHome() {
 }
 
 void sendHeader() {
-
-  String menu = (const char*)WEB_ACTIONS1;
-  if (numberOfHorizontalDisplays >= 8) {
-    menu += "<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='far fa-clock'></i> Wide Clock</a>";
-  }
-  menu += (const char*)WEB_ACTIONS2;
-  if (displayOn) {
-    menu += "<i class='fas fa-eye-slash'></i> Turn Display OFF";
-  } else {
-    menu += "<i class='fas fa-eye'></i> Turn Display ON";
-  }
-
-  menu += (const char*)WEB_ACTION3;
-
   String html = "<!DOCTYPE HTML>";
   html += "<html><head><title>Marquee Scroller</title><link rel='icon' href='data:;base64,='>";
   html += "<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />";
@@ -1045,7 +1030,19 @@ void sendHeader() {
   html += "<div class='w3-left'><img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'></div>";
   html += "<div class='w3-padding'>Menu</div></div>";
   server.sendContent(html);
-  server.sendContent(menu);
+
+  server.sendContent(FPSTR(WEB_ACTIONS1));
+  if (numberOfHorizontalDisplays >= 8) {
+    server.sendContent("<a class='w3-bar-item w3-button' href='/configurewideclock'><i class='far fa-clock'></i> Wide Clock</a>");
+  }
+  server.sendContent(FPSTR(WEB_ACTIONS2));
+  if (displayOn) {
+    server.sendContent("<i class='fas fa-eye-slash'></i> Turn Display OFF");
+  } else {
+    server.sendContent("<i class='fas fa-eye'></i> Turn Display ON");
+  }
+  server.sendContent(FPSTR(WEB_ACTION3));
+
   html = "</nav>";
   html += "<header class='w3-top w3-bar w3-theme'><button class='w3-bar-item w3-button w3-xxxlarge w3-hover-theme' onclick='openSidebar()'><i class='fas fa-bars'></i></button><h2 class='w3-bar-item'>Weather Marquee</h2></header>";
   html += "<script>";
