@@ -53,6 +53,7 @@ private:
     String direction;
     String high;
     String low;
+    String timeZone;
   } weather;
 
   weather weathers[5];
@@ -91,4 +92,5 @@ public:
   String getWeatherIcon(int index);
   String getError();
   String getWeekDay(int index, float offset);
+  int getTimeZone(int index);
 };

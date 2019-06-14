@@ -116,6 +116,7 @@ void OpenWeatherMapClient::updateWeather() {
     weathers[inx].direction = (const char*)root["list"][inx]["wind"]["deg"];
     weathers[inx].high = (const char*)root["list"][inx]["main"]["temp_max"];
     weathers[inx].low = (const char*)root["list"][inx]["main"]["temp_min"];
+    weathers[inx].timeZone = (const char*)root["list"][inx]["sys"]["timezone"];
 
     if (units == "metric") {
       // convert to kph from m/s
@@ -142,6 +143,7 @@ void OpenWeatherMapClient::updateWeather() {
     Serial.println("weatherId: " + weathers[inx].weatherId);
     Serial.println("description: " + weathers[inx].description);
     Serial.println("icon: " + weathers[inx].icon);
+    Serial.println("timezone: " + String(getTimeZone(inx)));
     Serial.println();
     
   }
@@ -305,8 +307,15 @@ String OpenWeatherMapClient::getWeekDay(int index, float offset) {
   return rtnValue;
 }
 
-String OpenWeatherMapClient::getWeatherIcon(int index)
-{
+int OpenWeatherMapClient::getTimeZone(int index) {
+  int rtnValue = weathers[index].timeZone.toInt();
+  if (rtnValue != 0) {
+    rtnValue = rtnValue / 3600;
+  }
+  return rtnValue;
+}
+
+String OpenWeatherMapClient::getWeatherIcon(int index) {
   int id = getWeatherId(index).toInt();
   String W = ")";
   switch(id)
