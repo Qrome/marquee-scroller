@@ -22,6 +22,7 @@ SOFTWARE.
 */
 
 #include "OpenWeatherMapClient.h"
+#include "math.h"
 
 OpenWeatherMapClient::OpenWeatherMapClient(String ApiKey, int CityIDs[], int cityCount, boolean isMetric) {
   updateCityIdList(CityIDs, cityCount);
@@ -227,6 +228,13 @@ String OpenWeatherMapClient::getDirection(int index)
 String OpenWeatherMapClient::getDirectionRounded(int index)
 {
   return roundValue(getDirection(index));
+}
+
+String OpenWeatherMapClient::getDirectionText(int index) {
+  int num = getDirectionRounded(index).toInt();
+  int val = floor((num / 22.5) + 0.5);
+  String arr[] = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
+  return arr[(val % 16)];
 }
 
 String OpenWeatherMapClient::getWindRounded(int index) {

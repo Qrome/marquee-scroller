@@ -81,6 +81,7 @@ public:
   String getWindRounded(int index);
   String getDirection(int index);
   String getDirectionRounded(int index);
+  String getDirectionText(int index);
   String getPressure(int index);
   String getHigh(int index);
   String getLow(int index);
