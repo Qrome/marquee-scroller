@@ -22,6 +22,7 @@ SOFTWARE.
 */
 
 #include "OpenWeatherMapClient.h"
+#include "math.h"
 
 OpenWeatherMapClient::OpenWeatherMapClient(String ApiKey, int CityIDs[], int cityCount, boolean isMetric) {
   updateCityIdList(CityIDs, cityCount);
@@ -116,6 +117,7 @@ void OpenWeatherMapClient::updateWeather() {
     weathers[inx].direction = (const char*)root["list"][inx]["wind"]["deg"];
     weathers[inx].high = (const char*)root["list"][inx]["main"]["temp_max"];
     weathers[inx].low = (const char*)root["list"][inx]["main"]["temp_min"];
+    weathers[inx].timeZone = (const char*)root["list"][inx]["sys"]["timezone"];
 
     if (units == "metric") {
       // convert to kph from m/s
@@ -142,6 +144,7 @@ void OpenWeatherMapClient::updateWeather() {
     Serial.println("weatherId: " + weathers[inx].weatherId);
     Serial.println("description: " + weathers[inx].description);
     Serial.println("icon: " + weathers[inx].icon);
+    Serial.println("timezone: " + String(getTimeZone(inx)));
     Serial.println();
     
   }
@@ -227,6 +230,13 @@ String OpenWeatherMapClient::getDirectionRounded(int index)
   return roundValue(getDirection(index));
 }
 
+String OpenWeatherMapClient::getDirectionText(int index) {
+  int num = getDirectionRounded(index).toInt();
+  int val = floor((num / 22.5) + 0.5);
+  String arr[] = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
+  return arr[(val % 16)];
+}
+
 String OpenWeatherMapClient::getWindRounded(int index) {
   return roundValue(getWind(index));
 }
@@ -305,8 +315,15 @@ String OpenWeatherMapClient::getWeekDay(int index, float offset) {
   return rtnValue;
 }
 
-String OpenWeatherMapClient::getWeatherIcon(int index)
-{
+int OpenWeatherMapClient::getTimeZone(int index) {
+  int rtnValue = weathers[index].timeZone.toInt();
+  if (rtnValue != 0) {
+    rtnValue = rtnValue / 3600;
+  }
+  return rtnValue;
+}
+
+String OpenWeatherMapClient::getWeatherIcon(int index) {
   int id = getWeatherId(index).toInt();
   String W = ")";
   switch(id)

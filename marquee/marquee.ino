@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.14"
+#define VERSION "2.15"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -403,7 +403,7 @@ void loop() {
         msg += "Humidity:" + weatherClient.getHumidityRounded(0) + "%  ";
       }
       if (SHOW_WIND) {
-        msg += "Wind:" + weatherClient.getDirectionRounded(0) + " deg @ " + weatherClient.getWindRounded(0) + " " + getSpeedSymbol() + "  ";
+        msg += "Wind: " + weatherClient.getDirectionText(0) + " @ " + weatherClient.getWindRounded(0) + " " + getSpeedSymbol() + "  ";
       }
       //line to show barometric pressure
       if (SHOW_PRESSURE) {
@@ -1109,7 +1109,7 @@ void displayWeatherData() {
     html += "<div class='w3-cell w3-left w3-medium' style='width:120px'>";
     html += "<img src='http://openweathermap.org/img/w/" + weatherClient.getIcon(0) + ".png' alt='" + weatherClient.getDescription(0) + "'><br>";
     html += weatherClient.getHumidity(0) + "% Humidity<br>";
-    html += weatherClient.getDirection(0) + " deg/" + weatherClient.getWind(0) + " <span class='w3-tiny'>" + getSpeedSymbol() + "</span> Wind<br>";
+    html += weatherClient.getDirectionText(0) + " / " + weatherClient.getWind(0) + " <span class='w3-tiny'>" + getSpeedSymbol() + "</span> Wind<br>";
     html += weatherClient.getPressure(0) + " Pressure<br>";
     html += "</div>";
     html += "<div class='w3-cell w3-container' style='width:100%'><p>";
