@@ -42,7 +42,9 @@ Version 2.5 introduced the ability to upgrade pre-compiled firmware from a binar
 * **marquee.ino.d1_mini_2.10.bin** - compiled for Wemos D1 Mini and standard 4x1 LED (default)
 * **marquee.ino.d1_mini_wide_2.10.bin** - compiled for Wemos D1 Mini and double wide 8x1 LED display
 
-## Compiling and Loading to Wemos D1
+# Building and Compiling
+## Using Arudino IDE
+### Compiling and Loading to Wemos D1
 It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.  
 * USB CH340G drivers:  https://wiki.wemos.cc/downloads
 * Enter http://arduino.esp8266.com/stable/package_esp8266com_index.json into Additional Board Manager URLs field. You can add multiple URLs, separating them with commas.  This will add support for the Wemos D1 Mini to Arduino IDE.
@@ -51,7 +53,7 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 * Set 1M SPIFFS -- **this project requires SPIFFS for saving and reading configuration settings.**
 * Select the **Port** from the tools menu.  
 
-## Loading Supporting Library Files in Arduino
+### Loading Supporting Library Files in Arduino
 Use the Arduino guide for details on how to installing and manage libraries https://www.arduino.cc/en/Guide/Libraries  
 **Packages** -- the following packages and libraries are used (download and install):  
 <ESP8266WiFi.h>  
@@ -65,6 +67,15 @@ Use the Arduino guide for details on how to installing and manage libraries http
 <JsonStreamingParser.h> --> https://github.com/squix78/json-streaming-parser  
 
 Note ArduinoJson (version 5.13.1) is now included as a library file in version 2.7 and later.
+
+
+## Building with Platformio.
+Just open project with `Visual Studio` or any other IDE  that have `Platformio` installed.
+
+Platformio.ini file should be recognized and all dependecies downloaded upon build.
+
+Note ! There is issue with Windows that prevents from building when path is too long - you need to move your project to root folder in order to download all dependecies.
+
 
 ## Initial Configuration
 Starting with version 2.0 editing the **Settings.h** file is optional.  All API Keys are now managed in the Web Interface except for the GeoNames Key. It is not required to edit the Settings.h file before loading and running the code.  
