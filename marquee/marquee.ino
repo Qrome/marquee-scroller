@@ -227,7 +227,11 @@ void setup() {
   int maxPos = numberOfHorizontalDisplays * numberOfVerticalDisplays;
   for (int i = 0; i < maxPos; i++) {
     matrix.setRotation(i, ledRotation);
-    matrix.setPosition(i, maxPos - i - 1, 0);
+    if (matrixRotation == 0) {
+      matrix.setPosition(i, maxPos - i - 1, 0);
+    } else if (matrixRotation == 1) {
+      matrix.setPosition(i, i, 0);
+    }
   }
 
   Serial.println("matrix created");

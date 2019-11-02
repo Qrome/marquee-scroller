@@ -94,6 +94,11 @@ const int numberOfVerticalDisplays = 1; // default 1 for a single row height
 3: 90 degrees counter clockwise (default)
 */
 int ledRotation = 3;
+/* set matrixRotation for MATRIX rotation (0 is default)
+0: rotated 180 degress
+1: rotated 0 degress
+*/
+int matrixRotation = 0;
 
 String timeDisplayTurnsOn = "06:30";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
 String timeDisplayTurnsOff = "23:00"; // 24 Hour Format HH:MM -- Leave blank for always on. Both must be set to work.
