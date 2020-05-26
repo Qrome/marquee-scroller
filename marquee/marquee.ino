@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.15"
+#define VERSION "2.16"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -181,7 +181,7 @@ static const char NEWS_FORM1[] PROGMEM =   "<form class='w3-container' action='/
                         "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
                         "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
                         "<p>Select News Source <select class='w3-option w3-padding' name='newssource' id='newssource'></select></p>"
-                        "<script>var s='%NEWSSOURCE%';var tt;var xmlhttp=new XMLHttpRequest();xmlhttp.open('GET','https://newsapi.org/v2/sources?apiKey=%NEWSKEY%',!0);"
+                        "<script>var s='%NEWSSOURCE%';var tt;var xmlhttp=new XMLHttpRequest();xmlhttp.open('GET','https://raw.githubusercontent.com/Qrome/marquee-scroller/master/sources.json',!0);"
                         "xmlhttp.onreadystatechange=function(){if(xmlhttp.readyState==4){if(xmlhttp.status==200){var obj=JSON.parse(xmlhttp.responseText);"
                         "obj.sources.forEach(t)}}};xmlhttp.send();function t(it){if(it!=null){if(s==it.id){se=' selected'}else{se=''}tt+='<option'+se+'>'+it.id+'</option>';"
                         "document.getElementById('newssource').innerHTML=tt}}</script>"
