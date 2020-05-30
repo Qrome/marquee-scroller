@@ -59,8 +59,8 @@ SOFTWARE.
 
 String TIMEDBKEY = ""; // Your API Key from https://timezonedb.com/register
 String APIKEY = ""; // Your API Key from http://openweathermap.org/
-// Default City Location (use http://openweathermap.org/find to find city ID)
-int CityIDs[] = { 5304391 }; //Only USE ONE for weather marquee
+// Default City Location (use to find city ID)
+int CityIDs[] = { 3439389 }; //Only USE ONE for weather marquee
 String marqueeMessage = "";
 boolean IS_METRIC = false; // false = Imperial and true = Metric
 boolean IS_24HOUR = false; // 23:00 millitary 24 hour clock
@@ -81,26 +81,26 @@ String NEWS_SOURCE = "reuters";  // https://newsapi.org/sources to get full list
 
 // Display Settings
 // CLK -> D5 (SCK)  
-// CS  -> D6 
+// CS  -> D4 
 // DIN -> D7 (MOSI)
-const int pinCS = D6; // Attach CS to this pin, DIN to MOSI and CLK to SCK (cf http://arduino.cc/en/Reference/SPI )
+const int pinCS = D4; // Attach CS to this pin, DIN to MOSI and CLK to SCK (cf http://arduino.cc/en/Reference/SPI )
 int displayIntensity = 1;  //(This can be set from 0 - 15)
 const int numberOfHorizontalDisplays = 4; // default 4 for standard 4 x 1 display Max size of 16
 const int numberOfVerticalDisplays = 1; // default 1 for a single row height
-/* set ledRotation for LED Display panels (3 is default)
+/* set ledRotation for LED Display panels
 0: no rotation
-1: 90 degrees clockwise
+1: 90 degrees clockwise (default)
 2: 180 degrees
-3: 90 degrees counter clockwise (default)
+3: 90 degrees counter clockwise
 */
-int ledRotation = 3;
-/* set matrixRotation for MATRIX rotation (0 is default)
+int ledRotation = 1;
+/* set matrixRotation for MATRIX rotation
 0: rotated 180 degress
-1: rotated 0 degress
+1: rotated 0 degress (default)
 */
-int matrixRotation = 0;
+int matrixRotation = 1;
 
-String timeDisplayTurnsOn = "06:30";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
+String timeDisplayTurnsOn = "06:00";  // 24 Hour Format HH:MM -- Leave blank for always on. (ie 05:30)
 String timeDisplayTurnsOff = "23:00"; // 24 Hour Format HH:MM -- Leave blank for always on. Both must be set to work.
 
 // OctoPrint Monitoring -- Monitor your 3D printer OctoPrint Server
