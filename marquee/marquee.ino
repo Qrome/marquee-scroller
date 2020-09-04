@@ -108,6 +108,7 @@ static const char WEB_ACTIONS2[] PROGMEM = "<a class='w3-bar-item w3-button' hre
 
 static const char WEB_ACTION3[] PROGMEM = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fas fa-undo'></i> Reset Settings</a>"
                        "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fas fa-wifi'></i> Forget WiFi</a>"
+                       "<a class='w3-bar-item w3-button' href='/restart'><i class='fas fa-sync'></i> Restart</a>"
                        "<a class='w3-bar-item w3-button' href='/update'><i class='fas fa-wrench'></i> Firmware Update</a>"
                        "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fas fa-question-circle'></i> About</a>";
 
@@ -315,6 +316,7 @@ void setup() {
     server.on("/savepihole", handleSavePihole);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
+    server.on("/restart", restartEsp);
     server.on("/configure", handleConfigure);
     server.on("/configurebitcoin", handleBitcoinConfigure);
     server.on("/configurewideclock", handleWideClockConfigure);
@@ -624,6 +626,11 @@ void handleForgetWifi() {
   redirectHome();
   WiFiManager wifiManager;
   wifiManager.resetSettings();
+  ESP.restart();
+}
+
+void restartEsp() {
+  redirectHome();
   ESP.restart();
 }
 
