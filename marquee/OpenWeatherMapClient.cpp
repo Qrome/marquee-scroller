@@ -259,9 +259,19 @@ String OpenWeatherMapClient::getHigh(int index)
   return weathers[index].high;
 }
 
+String OpenWeatherMapClient::getHighRounded(int index) 
+{
+  return roundValue(getHigh(index));
+}
+
 String OpenWeatherMapClient::getLow(int index)
 {
   return weathers[index].low;
+}
+
+String OpenWeatherMapClient::getLowRounded(int index) 
+{
+  return roundValue(getLow(index));
 }
 
 String OpenWeatherMapClient::getIcon(int index) {

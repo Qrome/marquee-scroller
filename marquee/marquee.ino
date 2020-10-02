@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.15"
+#define VERSION "2.17"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -108,6 +108,7 @@ static const char WEB_ACTIONS2[] PROGMEM = "<a class='w3-bar-item w3-button' hre
 
 static const char WEB_ACTION3[] PROGMEM = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fas fa-undo'></i> Reset Settings</a>"
                        "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fas fa-wifi'></i> Forget WiFi</a>"
+                       "<a class='w3-bar-item w3-button' href='/restart'><i class='fas fa-sync'></i> Restart</a>"
                        "<a class='w3-bar-item w3-button' href='/update'><i class='fas fa-wrench'></i> Firmware Update</a>"
                        "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fas fa-question-circle'></i> About</a>";
 
@@ -178,13 +179,16 @@ static const char PIHOLE_TEST[] PROGMEM = "<script>function testPiHole(){var e=d
 
 static const char NEWS_FORM1[] PROGMEM =   "<form class='w3-container' action='/savenews' method='get'><h2>News Configuration:</h2>"
                         "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
+                        
                         "<label>News API Key (get from <a href='https://newsapi.org/' target='_BLANK'>here</a>)</label>"
                         "<input class='w3-input w3-border w3-margin-bottom' type='text' name='newsApiKey' value='%NEWSKEY%' maxlength='60'>"
                         "<p>Select News Source <select class='w3-option w3-padding' name='newssource' id='newssource'></select></p>"
-                        "<script>var s='%NEWSSOURCE%';var tt;var xmlhttp=new XMLHttpRequest();xmlhttp.open('GET','https://newsapi.org/v2/sources?apiKey=%NEWSKEY%',!0);"
+                        // "<script>var s='%NEWSSOURCE%';var tt;var xmlhttp=new XMLHttpRequest();xmlhttp.open('GET','https://newsapi.org/v2/sources?apiKey=%NEWSKEY%',!0);"
+                        "<script>var s='%NEWSSOURCE%';var tt;var xmlhttp=new XMLHttpRequest();xmlhttp.open('GET','https://raw.githubusercontent.com/Qrome/marquee-scroller/master/sources.json',!0);"
                         "xmlhttp.onreadystatechange=function(){if(xmlhttp.readyState==4){if(xmlhttp.status==200){var obj=JSON.parse(xmlhttp.responseText);"
                         "obj.sources.forEach(t)}}};xmlhttp.send();function t(it){if(it!=null){if(s==it.id){se=' selected'}else{se=''}tt+='<option'+se+'>'+it.id+'</option>';"
                         "document.getElementById('newssource').innerHTML=tt}}</script>"
+                        "<p><input name='showsource' class='w3-check w3-margin-top' type='checkbox' %SOURCECHECKED%> Display News Source</p>"
                         "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
 
 static const char OCTO_FORM[] PROGMEM = "<form class='w3-container' action='/saveoctoprint' method='get'><h2>OctoPrint Configuration:</h2>"
@@ -315,6 +319,7 @@ void setup() {
     server.on("/savepihole", handleSavePihole);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
+    server.on("/restart", restartEsp);
     server.on("/configure", handleConfigure);
     server.on("/configurebitcoin", handleBitcoinConfigure);
     server.on("/configurewideclock", handleWideClockConfigure);
@@ -393,7 +398,7 @@ void loop() {
 
       //show high/low temperature
       if (SHOW_HIGHLOW) {
-        msg += "High/Low:" + weatherClient.getHigh(0) + "/" + weatherClient.getLow(0) + " " + getTempSymbol() + "  ";
+        msg += "High/Low:" + weatherClient.getHighRounded(0) + "/" + weatherClient.getLowRounded(0) + " " + getTempSymbol() + "  ";
       }
       
       if (SHOW_CONDITION) {
@@ -413,7 +418,13 @@ void loop() {
       msg += marqueeMessage + " ";
       
       if (NEWS_ENABLED) {
+        if (NEWS_SOURCE_ENABLED){
         msg += "  " + NEWS_SOURCE + ": " + newsClient.getTitle(newsIndex) + "  ";
+        }
+        else
+        {
+          msg += "  " + newsClient.getTitle(newsIndex) + "  ";
+          }
         newsIndex += 1;
         if (newsIndex > 9) {
           newsIndex = 0;
@@ -527,6 +538,7 @@ void handleSaveNews() {
   NEWS_ENABLED = server.hasArg("displaynews");
   NEWS_API_KEY = server.arg("newsApiKey");
   NEWS_SOURCE = server.arg("newssource");
+  NEWS_SOURCE_ENABLED = server.hasArg("showsource");
   matrix.fillScreen(LOW); // show black
   writeCityIds();
   newsClient.updateNews();
@@ -627,6 +639,11 @@ void handleForgetWifi() {
   ESP.restart();
 }
 
+void restartEsp() {
+  redirectHome();
+  ESP.restart();
+}
+
 void handleBitcoinConfigure() {
   if (!athentication()) {
     return server.requestAuthentication();
@@ -701,12 +718,18 @@ void handleNewsConfigure() {
 
   String form = FPSTR(NEWS_FORM1);
   String isNewsDisplayedChecked = "";
+  String isNewsSourceChecked = "";
+  
   if (NEWS_ENABLED) {
     isNewsDisplayedChecked = "checked='checked'";
+  }
+  if (NEWS_SOURCE_ENABLED){
+    isNewsSourceChecked = "checked='checked'";
   }
   form.replace("%NEWSCHECKED%", isNewsDisplayedChecked);
   form.replace("%NEWSKEY%", NEWS_API_KEY);
   form.replace("%NEWSSOURCE%", NEWS_SOURCE);
+  form.replace("%SOURCECHECKED%", isNewsSourceChecked);
   server.sendContent(form); //Send news form
 
   sendFooter();
@@ -1338,6 +1361,7 @@ String writeCityIds() {
     f.println("scrollSpeed=" + String(displayScrollSpeed));
     f.println("isNews=" + String(NEWS_ENABLED));
     f.println("newsApiKey=" + NEWS_API_KEY);
+    f.println("newsShowSource=" + String(NEWS_SOURCE_ENABLED));
     f.println("isFlash=" + String(flashOnSeconds));
     f.println("is24hour=" + String(IS_24HOUR));
     f.println("isPM=" + String(IS_PM));
@@ -1411,6 +1435,10 @@ void readCityIds() {
       NEWS_API_KEY = line.substring(line.lastIndexOf("newsApiKey=") + 11);
       NEWS_API_KEY.trim();
       Serial.println("NEWS_API_KEY: " + NEWS_API_KEY);
+    }
+    if (line.indexOf("newsShowSource=") >= 0) {
+      NEWS_SOURCE_ENABLED = line.substring(line.lastIndexOf("newsShowSource=") + 15).toInt();
+      Serial.println("NEWS_SOURCE_ENABLED=" + String(NEWS_SOURCE_ENABLED));
     }
     if (line.indexOf("isFlash=") >= 0) {
       flashOnSeconds = line.substring(line.lastIndexOf("isFlash=") + 8).toInt();
