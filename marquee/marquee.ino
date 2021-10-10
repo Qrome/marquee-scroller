@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.16"
+#define VERSION "2.18"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -108,7 +108,6 @@ static const char WEB_ACTIONS2[] PROGMEM = "<a class='w3-bar-item w3-button' hre
 
 static const char WEB_ACTION3[] PROGMEM = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fas fa-undo'></i> Reset Settings</a>"
                        "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fas fa-wifi'></i> Forget WiFi</a>"
-                       "<a class='w3-bar-item w3-button' href='/restart'><i class='fas fa-sync'></i> Restart</a>"
                        "<a class='w3-bar-item w3-button' href='/update'><i class='fas fa-wrench'></i> Firmware Update</a>"
                        "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fas fa-question-circle'></i> About</a>";
 
@@ -316,7 +315,6 @@ void setup() {
     server.on("/savepihole", handleSavePihole);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
-    server.on("/restart", restartEsp);
     server.on("/configure", handleConfigure);
     server.on("/configurebitcoin", handleBitcoinConfigure);
     server.on("/configurewideclock", handleWideClockConfigure);
@@ -447,11 +445,7 @@ void loop() {
     if (Wide_Clock_Style == "1") {
       // On Wide Display -- show the current temperature as well
       String currentTemp = weatherClient.getTempRounded(0);
-      String timeSpacer = "  ";
-      if (currentTemp.length() >= 3) {
-        timeSpacer = " ";
-      }
-      currentTime += timeSpacer + currentTemp + getTempSymbol();
+      currentTime += " " + currentTemp + getTempSymbol();
     }
     if (Wide_Clock_Style == "2") {
       currentTime += secondsIndicator(false) + TimeDB.zeroPad(second());
@@ -626,11 +620,6 @@ void handleForgetWifi() {
   redirectHome();
   WiFiManager wifiManager;
   wifiManager.resetSettings();
-  ESP.restart();
-}
-
-void restartEsp() {
-  redirectHome();
   ESP.restart();
 }
 
@@ -1121,8 +1110,8 @@ void displayWeatherData() {
     html += "</div>";
     html += "<div class='w3-cell w3-container' style='width:100%'><p>";
     html += weatherClient.getCondition(0) + " (" + weatherClient.getDescription(0) + ")<br>";
-    html += temperature + " " + getTempSymbol() + "<br>";
-    html += weatherClient.getHigh(0) + "/" + weatherClient.getLow(0) + " " + getTempSymbol() + "<br>";
+    html += temperature + " " + getTempSymbol(true) + "<br>";
+    html += weatherClient.getHigh(0) + "/" + weatherClient.getLow(0) + " " + getTempSymbol(true) + "<br>";
     html += time + "<br>";
     html += "<a href='https://www.google.com/maps/@" + weatherClient.getLat(0) + "," + weatherClient.getLon(0) + ",10000m/data=!3m1!1e3' target='_BLANK'><i class='fas fa-map-marker' style='color:red'></i> Map It!</a><br>";
     html += "</p></div></div><hr>";
@@ -1220,12 +1209,22 @@ void flashLED(int number, int delayTime) {
 }
 
 String getTempSymbol() {
+  return getTempSymbol(false);
+}
+
+String getTempSymbol(bool forWeb) {
   String rtnValue = "F";
   if (IS_METRIC) {
     rtnValue = "C";
   }
+  if (forWeb) {
+    rtnValue = "°" + rtnValue;
+  } else {
+    rtnValue = char(247) + rtnValue;
+  }
   return rtnValue;
 }
+
 
 String getSpeedSymbol() {
   String rtnValue = "mph";
