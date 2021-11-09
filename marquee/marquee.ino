@@ -138,6 +138,8 @@ static const char CHANGE_FORM2[] PROGMEM = "<p><input name='isPM' class='w3-chec
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
                       "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
 
+static const char NORMALCLOCK_FORM[] PROGMEM = "<p><input name='isAlternate' class='w3-check w3-margin-top' type='checkbox' %IS_ALTERNATE_CHECKED%> Alternate between Time and Temp display</p>";
+
 static const char CHANGE_FORM3[] PROGMEM = "<hr><p><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes</p>"
                       "<p><label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'></p>"
                       "<p><label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'></p>"
@@ -439,24 +441,34 @@ void loop() {
     }
   }
 
-  String currentTime = hourMinutes(false);
+  String displayText = hourMinutes(false);
 
   if (numberOfHorizontalDisplays >= 8) {
     if (Wide_Clock_Style == "1") {
       // On Wide Display -- show the current temperature as well
       String currentTemp = weatherClient.getTempRounded(0);
-      currentTime += " " + currentTemp + getTempSymbol();
+      displayText += " " + currentTemp + getTempSymbol();
     }
     if (Wide_Clock_Style == "2") {
-      currentTime += secondsIndicator(false) + TimeDB.zeroPad(second());
+      displayText += secondsIndicator(false) + TimeDB.zeroPad(second());
       matrix.fillScreen(LOW); // show black
     }
     if (Wide_Clock_Style == "3") {
       // No change this is normal clock display
     }
+  } else {
+    if (IS_ALTERNATE) {
+      if (second() / 10 == 1 || second() / 10 == 3 || second() / 10 == 5) {
+        String currentTemp = weatherClient.getTempRounded(0);
+        displayText = currentTemp + getTempSymbol();
+      }
+    }
   }
   matrix.fillScreen(LOW);
-  centerPrint(currentTime, true);
+
+
+  
+  centerPrint(displayText, true);
 
   if (WEBSERVER_ENABLED) {
     server.handleClient();
@@ -573,6 +585,7 @@ void handleLocations() {
   flashOnSeconds = server.hasArg("flashseconds");
   IS_24HOUR = server.hasArg("is24hour");
   IS_PM = server.hasArg("isPM");
+  IS_ALTERNATE = server.hasArg("isAlternate");
   SHOW_DATE = server.hasArg("showdate");
   SHOW_CITY = server.hasArg("showcity");
   SHOW_CONDITION = server.hasArg("showcondition");
@@ -868,10 +881,12 @@ void handleConfigure() {
     isPmChecked = "checked='checked'";
   }
   form.replace("%IS_PM_CHECKED%", isPmChecked);
+
   String isFlashSecondsChecked = "";
   if (flashOnSeconds) {
     isFlashSecondsChecked = "checked='checked'";
   }
+
   form.replace("%FLASHSECONDS%", isFlashSecondsChecked);
   form.replace("%MSG%", marqueeMessage);
   form.replace("%STARTTIME%", timeDisplayTurnsOn);
@@ -888,6 +903,16 @@ void handleConfigure() {
   form.replace("%REFRESH_DISPLAY%", String(minutesBetweenScrolling));
 
   server.sendContent(form); //Send another chunk of the form
+
+  if (numberOfHorizontalDisplays < 8) {
+    form = FPSTR(NORMALCLOCK_FORM);
+    String isAlternateChecked = "";
+    if (IS_ALTERNATE) {
+      isAlternateChecked = "checked='checked'";
+    }
+    form.replace("%IS_ALTERNATE_CHECKED%", isAlternateChecked);
+    server.sendContent(form); //Send another chunk of the form
+  }  
 
   form = FPSTR(CHANGE_FORM3);
   String isUseSecurityChecked = "";
@@ -1347,6 +1372,7 @@ String writeCityIds() {
     f.println("isFlash=" + String(flashOnSeconds));
     f.println("is24hour=" + String(IS_24HOUR));
     f.println("isPM=" + String(IS_PM));
+    f.println("isAlternate=" + String(IS_ALTERNATE));
     f.println("wideclockformat=" + Wide_Clock_Style);
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
@@ -1429,6 +1455,10 @@ void readCityIds() {
     if (line.indexOf("isPM=") >= 0) {
       IS_PM = line.substring(line.lastIndexOf("isPM=") + 5).toInt();
       Serial.println("IS_PM=" + String(IS_PM));
+    }
+    if (line.indexOf("isAlternate=") >= 0) {
+      IS_ALTERNATE = line.substring(line.lastIndexOf("isAlternate=") + 12).toInt();
+      Serial.println("IS_PM=" + String(IS_ALTERNATE));
     }
     if (line.indexOf("wideclockformat=") >= 0) {
       Wide_Clock_Style = line.substring(line.lastIndexOf("wideclockformat=") + 16);
