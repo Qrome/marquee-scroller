@@ -147,7 +147,7 @@ static const char WIDECLOCK_FORM[] PROGMEM = "<form class='w3-container' action=
 static const char PIHOLE_FORM[] PROGMEM = "<form class='w3-container' action='/savepihole' method='get'><h2>Pi-hole Configuration:</h2>"
                         "<p><input name='displaypihole' class='w3-check w3-margin-top' type='checkbox' %PIHOLECHECKED%> Show Pi-hole Statistics</p>"
                         "<label>Pi-hole Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholeAddress' id='piholeAddress' value='%PIHOLEADDRESS%' maxlength='60'>"
-                        "<label>Pi-hole Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholePort' id= 'piholePort' value='%PIHOLEPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                        "<label>Pi-hole Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholePort' id='piholePort' value='%PIHOLEPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
                         "<input type='button' value='Test Connection and JSON Response' onclick='testPiHole()'><p id='PiHoleTest'></p>"
                         "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
                         "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
@@ -440,6 +440,14 @@ void loop() {
   if (ENABLE_OTA) {
     ArduinoOTA.handle();
   }
+}
+
+String zeroPad(int value) {
+  String rtnValue = String(value);
+  if (value < 10) {
+    rtnValue = "0" + rtnValue;
+  }
+  return rtnValue;
 }
 
 String hourMinutes(boolean isRefresh) {
@@ -1057,9 +1065,22 @@ void displayWeatherData() {
 
 
   if (OCTOPRINT_ENABLED) {
-    html = "<div class='w3-cell-row'>OctoPrint Status: ";
+    html = "<div class='w3-cell-row'><b>OctoPrint Status:</b> ";
     if (printerClient.isPrinting()) {
-      html += printerClient.getState() + " " + printerClient.getFileName() + " (" + printerClient.getProgressCompletion() + "%)";
+      int val = printerClient.getProgressPrintTimeLeft().toInt();
+      int hours = numberOfHours(val);
+      int minutes = numberOfMinutes(val);
+      int seconds = numberOfSeconds(val);
+      html += "Online and Printing</br>Est. Print Time Left: " + zeroPad(hours) + ":" + zeroPad(minutes) + ":" + zeroPad(seconds) + "<br>";
+    
+      val = printerClient.getProgressPrintTime().toInt();
+      hours = numberOfHours(val);
+      minutes = numberOfMinutes(val);
+      seconds = numberOfSeconds(val);
+      html += "Printing Time: " + zeroPad(hours) + ":" + zeroPad(minutes) + ":" + zeroPad(seconds) + "<br>";
+      html += printerClient.getState() + " " + printerClient.getFileName() + "</br>";
+      html += "<style>#myProgress {width: 100%;background-color: #ddd;}#myBar {width: " + printerClient.getProgressCompletion() + "%;height: 30px;background-color: #4CAF50;}</style>";
+      html += "<div id=\"myProgress\"><div id=\"myBar\" class=\"w3-medium w3-center\">" + printerClient.getProgressCompletion() + "%</div></div>";
     } else if (printerClient.isOperational()) {
       html += printerClient.getState();
     } else if (printerClient.getError() != "") {
@@ -1469,12 +1490,10 @@ void readCityIds() {
       SHOW_PRESSURE = line.substring(line.lastIndexOf("SHOW_PRESSURE=") + 14).toInt();
       Serial.println("SHOW_PRESSURE=" + String(SHOW_PRESSURE));
     }
-
     if (line.indexOf("SHOW_HIGHLOW=") >= 0) {
       SHOW_HIGHLOW = line.substring(line.lastIndexOf("SHOW_HIGHLOW=") + 13).toInt();
       Serial.println("SHOW_HIGHLOW=" + String(SHOW_HIGHLOW));
     }
-    
     if (line.indexOf("SHOW_DATE=") >= 0) {
       SHOW_DATE = line.substring(line.lastIndexOf("SHOW_DATE=") + 10).toInt();
       Serial.println("SHOW_DATE=" + String(SHOW_DATE));
@@ -1486,7 +1505,7 @@ void readCityIds() {
     if (line.indexOf("PiHoleServer=") >= 0) {
       PiHoleServer = line.substring(line.lastIndexOf("PiHoleServer=") + 13);
       PiHoleServer.trim();
-      Serial.println("PiHoleServer=" + PiHoleServer);
+      Serial.println("PiHoleServer=" + String(PiHoleServer));
     }
     if (line.indexOf("PiHolePort=") >= 0) {
       PiHolePort = line.substring(line.lastIndexOf("PiHolePort=") + 11).toInt();

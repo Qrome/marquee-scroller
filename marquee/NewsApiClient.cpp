@@ -43,6 +43,11 @@ void NewsApiClient::updateNews() {
   WiFiClient wifiClient;
   HTTPClient http;
 
+  if (myApiKey == "") {
+    Serial.println("Please provide an API key for the News.");
+    return;
+  }
+
   String apiGetData = "http://" + String(servername) + "/v2/top-headlines?sources=" + mySource + "&apiKey=" + myApiKey;
 
   Serial.println("Getting News Data");
