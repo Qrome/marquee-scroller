@@ -256,12 +256,12 @@ String OpenWeatherMapClient::getPressure(int index)
 
 String OpenWeatherMapClient::getHigh(int index)
 {
-  return weathers[index].high;
+  return roundValue(weathers[index].high);
 }
 
 String OpenWeatherMapClient::getLow(int index)
 {
-  return weathers[index].low;
+  return roundValue(weathers[index].low);
 }
 
 String OpenWeatherMapClient::getIcon(int index) {
