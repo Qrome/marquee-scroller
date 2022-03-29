@@ -29,13 +29,14 @@ PiHoleClient::PiHoleClient() {
 
 void PiHoleClient::getPiHoleData(String server, int port) {
 
+  WiFiClient wifiClient;
   errorMessage = "";
   String response = "";
 
   String apiGetData = "http://" + server + ":" + String(port) + "/admin/api.php?summary";
   Serial.println("Sending: " + apiGetData);
   HTTPClient http;  //Object of class HTTPClient
-  http.begin(apiGetData);// get the result
+  http.begin(wifiClient, apiGetData);// get the result
   int httpCode = http.GET();
   //Check the returning code
   if (httpCode > 0) {
@@ -89,6 +90,7 @@ void PiHoleClient::getPiHoleData(String server, int port) {
 }
 
 void PiHoleClient::getTopClientsBlocked(String server, int port, String apiKey) {
+  WiFiClient wifiClient;
   errorMessage = "";
   resetClientsBlocked();
 
@@ -102,7 +104,7 @@ void PiHoleClient::getTopClientsBlocked(String server, int port, String apiKey) 
   String apiGetData = "http://" + server + ":" + String(port) + "/admin/api.php?topClientsBlocked=3&auth=" + apiKey;
   Serial.println("Sending: " + apiGetData);
   HTTPClient http;  //Object of class HTTPClient
-  http.begin(apiGetData);// get the result
+  http.begin(wifiClient, apiGetData);// get the result
   int httpCode = http.GET();
   //Check the returning code
   if (httpCode > 0) {
@@ -145,14 +147,14 @@ void PiHoleClient::getTopClientsBlocked(String server, int port, String apiKey) 
 }
 
 void PiHoleClient::getGraphData(String server, int port) {
-  
+  WiFiClient wifiClient;
   HTTPClient http;
   
   String apiGetData = "http://" + server + ":" + String(port) + "/admin/api.php?overTimeData10mins";
   resetBlockedGraphData();
   Serial.println("Getting Pi-Hole Graph Data");
   Serial.println(apiGetData);
-  http.begin(apiGetData);
+  http.begin(wifiClient, apiGetData);
   int httpCode = http.GET();
 
   String result = "";

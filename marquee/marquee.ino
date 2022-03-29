@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "2.19"
+#define VERSION "3.0"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -90,9 +90,6 @@ int printerCount = 0;
 // Pi-hole Client
 PiHoleClient piholeClient;
 
-// Bitcoin Client
-BitcoinApiClient bitcoinClient;
-
 ESP8266WebServer server(WEBSERVER_PORT);
 ESP8266HTTPUpdateServer serverUpdater;
 
@@ -101,8 +98,7 @@ static const char WEB_ACTIONS1[] PROGMEM = "<a class='w3-bar-item w3-button' hre
                         "<a class='w3-bar-item w3-button' href='/configurenews'><i class='far fa-newspaper'></i> News</a>"
                         "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fas fa-cube'></i> OctoPrint</a>";
 
-static const char WEB_ACTIONS2[] PROGMEM = "<a class='w3-bar-item w3-button' href='/configurebitcoin'><i class='fab fa-bitcoin'></i> Bitcoin</a>"
-                        "<a class='w3-bar-item w3-button' href='/configurepihole'><i class='fas fa-network-wired'></i> Pi-hole</a>"
+static const char WEB_ACTIONS2[] PROGMEM = "<a class='w3-bar-item w3-button' href='/configurepihole'><i class='fas fa-network-wired'></i> Pi-hole</a>"
                         "<a class='w3-bar-item w3-button' href='/pull'><i class='fas fa-cloud-download-alt'></i> Refresh Data</a>"
                         "<a class='w3-bar-item w3-button' href='/display'>";
 
@@ -143,21 +139,6 @@ static const char CHANGE_FORM3[] PROGMEM = "<hr><p><input name='isBasicAuth' cla
                       "<p><label>Marquee Password </label><input class='w3-input w3-border w3-margin-bottom' type='password' name='stationpassword' value='%STATIONPASSWORD%'></p>"
                       "<p><button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></p></form>"
                       "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
-
-static const char BITCOIN_FORM[] PROGMEM = "<form class='w3-container' action='/savebitcoin' method='get'><h2>Bitcoin Configuration:</h2>"
-                        "<p>Select Bitcoin Currency <select class='w3-option w3-padding' name='bitcoincurrency'>%BITCOINOPTIONS%</select></p>"
-                        "<button class='w3-button w3-block w3-grey w3-section w3-padding' type='submit'>Save</button></form>";
-
-static const char CURRENCY_OPTIONS[] PROGMEM = "<option value='NONE'>NONE</option>"
-                          "<option value='USD'>United States Dollar</option>"
-                          "<option value='AUD'>Australian Dollar</option>"
-                          "<option value='BRL'>Brazilian Real</option>"
-                          "<option value='BTC'>Bitcoin</option>"
-                          "<option value='CAD'>Canadian Dollar</option>"
-                          "<option value='CNY'>Chinese Yuan</option>"
-                          "<option value='EUR'>Euro</option>"
-                          "<option value='GBP'>British Pound Sterling</option>"
-                          "<option value='XAU'>Gold (troy ounce)</option>";
 
 static const char WIDECLOCK_FORM[] PROGMEM = "<form class='w3-container' action='/savewideclock' method='get'><h2>Wide Clock Configuration:</h2>"
                           "<p>Wide Clock Display Format <select class='w3-option w3-padding' name='wideclockformat'>%WIDECLOCKOPTIONS%</select></p>"
@@ -308,7 +289,6 @@ void setup() {
     server.on("/", displayWeatherData);
     server.on("/pull", handlePull);
     server.on("/locations", handleLocations);
-    server.on("/savebitcoin", handleSaveBitcoin);
     server.on("/savewideclock", handleSaveWideClock);
     server.on("/savenews", handleSaveNews);
     server.on("/saveoctoprint", handleSaveOctoprint);
@@ -316,7 +296,6 @@ void setup() {
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
     server.on("/configure", handleConfigure);
-    server.on("/configurebitcoin", handleBitcoinConfigure);
     server.on("/configurewideclock", handleWideClockConfigure);
     server.on("/configurenews", handleNewsConfigure);
     server.on("/configureoctoprint", handleOctoprintConfigure);
@@ -423,9 +402,6 @@ void loop() {
         msg += "  " + printerClient.getFileName() + " ";
         msg += "(" + printerClient.getProgressCompletion() + "%)  ";
       }
-      if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
-        msg += "  Bitcoin: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + " ";
-      }
       if (USE_PIHOLE) {
         piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
         piholeClient.getGraphData(PiHoleServer, PiHolePort);
@@ -448,7 +424,7 @@ void loop() {
       currentTime += " " + currentTemp + getTempSymbol();
     }
     if (Wide_Clock_Style == "2") {
-      currentTime += secondsIndicator(false) + TimeDB.zeroPad(second());
+      String(currentTime) += secondsIndicator(false) + TimeDB.zeroPad(second());
       matrix.fillScreen(LOW); // show black
     }
     if (Wide_Clock_Style == "3") {
@@ -470,7 +446,7 @@ String hourMinutes(boolean isRefresh) {
   if (IS_24HOUR) {
     return hour() + secondsIndicator(isRefresh) + TimeDB.zeroPad(minute());
   } else {
-    return hourFormat12() + secondsIndicator(isRefresh) + TimeDB.zeroPad(minute());
+    return String(hourFormat12()) + secondsIndicator(isRefresh) + TimeDB.zeroPad(minute());
   }
 }
 
@@ -492,16 +468,6 @@ boolean athentication() {
 void handlePull() {
   getWeatherData(); // this will force a data pull for new weather
   displayWeatherData();
-}
-
-void handleSaveBitcoin() {
-  if (!athentication()) {
-    return server.requestAuthentication();
-  }
-  BitcoinCurrencyCode = server.arg("bitcoincurrency");
-  writeCityIds();
-  bitcoinClient.updateBitcoinData(BitcoinCurrencyCode);  // does nothing if BitCoinCurrencyCode is "NONE" or empty
-  redirectHome();
 }
 
 void handleSaveWideClock() {
@@ -621,34 +587,6 @@ void handleForgetWifi() {
   WiFiManager wifiManager;
   wifiManager.resetSettings();
   ESP.restart();
-}
-
-void handleBitcoinConfigure() {
-  if (!athentication()) {
-    return server.requestAuthentication();
-  }
-  digitalWrite(externalLight, LOW);
-  String html = "";
-
-  server.sendHeader("Cache-Control", "no-cache, no-store");
-  server.sendHeader("Pragma", "no-cache");
-  server.sendHeader("Expires", "-1");
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200, "text/html", "");
-
-  sendHeader();
-
-  String form = FPSTR(BITCOIN_FORM);
-  String bitcoinOptions = FPSTR(CURRENCY_OPTIONS);
-  bitcoinOptions.replace(BitcoinCurrencyCode + "'", BitcoinCurrencyCode + "' selected");
-  form.replace("%BITCOINOPTIONS%", bitcoinOptions);
-  server.sendContent(form); //Send another Chunk of form
-
-  sendFooter();
-
-  server.sendContent("");
-  server.client().stop();
-  digitalWrite(externalLight, HIGH);
 }
 
 void handleWideClockConfigure() {
@@ -973,10 +911,6 @@ void getWeatherData() //client function to send/receive GET request data.
     newsClient.updateNews();
   }
 
-  if (displayOn) {
-    bitcoinClient.updateBitcoinData(BitcoinCurrencyCode);  // does nothing if BitCoinCurrencyCode is "NONE" or empty
-  }
-
   Serial.println("Version: " + String(VERSION));
   Serial.println();
   digitalWrite(externalLight, HIGH);
@@ -1134,12 +1068,6 @@ void displayWeatherData() {
       html += "Not Connected";
     }
     html += "</div><br><hr>";
-    server.sendContent(String(html));
-    html = "";
-  }
-
-  if (BitcoinCurrencyCode != "NONE" && BitcoinCurrencyCode != "") {
-    html = "<div class='w3-cell-row'>Bitcoin value: " + bitcoinClient.getRate() + " " + bitcoinClient.getCode() + "</div><br><hr>";
     server.sendContent(String(html));
     html = "";
   }
@@ -1361,7 +1289,6 @@ String writeCityIds() {
     f.println("www_username=" + String(www_username));
     f.println("www_password=" + String(www_password));
     f.println("IS_BASIC_AUTH=" + String(IS_BASIC_AUTH));
-    f.println("BitcoinCurrencyCode=" + BitcoinCurrencyCode);
     f.println("SHOW_CITY=" + String(SHOW_CITY));
     f.println("SHOW_CONDITION=" + String(SHOW_CONDITION));
     f.println("SHOW_HUMIDITY=" + String(SHOW_HUMIDITY));
@@ -1521,11 +1448,6 @@ void readCityIds() {
     if (line.indexOf("IS_BASIC_AUTH=") >= 0) {
       IS_BASIC_AUTH = line.substring(line.lastIndexOf("IS_BASIC_AUTH=") + 14).toInt();
       Serial.println("IS_BASIC_AUTH=" + String(IS_BASIC_AUTH));
-    }
-    if (line.indexOf("BitcoinCurrencyCode=") >= 0) {
-      BitcoinCurrencyCode = line.substring(line.lastIndexOf("BitcoinCurrencyCode=") + 20);
-      BitcoinCurrencyCode.trim();
-      Serial.println("BitcoinCurrencyCode=" + BitcoinCurrencyCode);
     }
     if (line.indexOf("SHOW_CITY=") >= 0) {
       SHOW_CITY = line.substring(line.lastIndexOf("SHOW_CITY=") + 10).toInt();

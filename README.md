@@ -1,12 +1,16 @@
 # Marquee Scroller (Clock, Weather, News, and More)
 
+## NOTICE
+The latest version of Marquee Scroller 3.0 works with **ESP8266 Core 3.0.2** -- if you are upgrading from Marquee Scroller 2.X version this will require you to enter in all your API Keys and Settings.  Please have those ready to provide after you upgrade.  The ESP8266 Core 3.0.2 uses the newer FS (file system) that requires a fresh start on the configuration.
+Make sure you update to the latest version of WifiManager library (link below).
+* Bitcoin features were removed in 3.0
+
 ## Features include:
 * Accurate Clock refresh off Internet Time Servers
 * Local Weather and conditions (refreshed every 10 - 30 minutes)
 * News Headlines from all the major sources
 * Configured through Web Interface
 * Display 3D print progress from your OctoPrint Server
-* Option to display Bitcoin current value
 * Option to display Pi-hole status and graph (each pixel accross is 10 minutes)
 * Basic Authorization around Configuration web interface
 * Support for OTA (loading firmware over WiFi)
@@ -38,17 +42,17 @@ Original Single Panel version: https://www.thingiverse.com/thing:2867294
 Double Wide LED version: https://www.thingiverse.com/thing:2989552  
 
 ## Upgrading from version 2.5 or Higher
-Version 2.5 introduced the ability to upgrade pre-compiled firmware from a binary file.  In version 2.6 and on you should find binary files that can be uploaded to your marque scrolling clock via the web interface.  From the main menu in the web interface select "Firmware Update" and follow the prompts.
-* **marquee.ino.d1_mini_2.18.bin** - compiled for Wemos D1 Mini and standard 4x1 LED (default)
-* **marquee.ino.d1_mini_wide_2.18.bin** - compiled for Wemos D1 Mini and double wide 8x1 LED display
+In version 2.6 and higher, the binary files that can be uploaded to your marque scrolling clock via the web interface.  From the main menu in the web interface select "Firmware Update" and follow the prompts.
+* **marquee.ino.d1_mini_3.0.bin** - compiled for Wemos D1 Mini and standard 4x1 LED (default)
+* **marquee.ino.d1_mini_wide_3.0.bin** - compiled for Wemos D1 Mini and double wide 8x1 LED display
 
 ## Compiling and Loading to Wemos D1
 It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.  
 * USB CH340G drivers:  https://sparks.gogo.co.nz/ch340.html
 * Enter http://arduino.esp8266.com/stable/package_esp8266com_index.json into Additional Board Manager URLs field. You can add multiple URLs, separating them with commas.  This will add support for the Wemos D1 Mini to Arduino IDE.
-* Open Boards Manager from Tools > Board menu and install esp8266 Core platform version **2.5.2**
-* Select Board:  "LOLIN(WEMOS) D1 R2 & mini"
-* Set Flash Size to 1M SPIFFS -- **this project requires SPIFFS for saving and reading configuration settings.**
+* Open Boards Manager from Tools > Board menu and install esp8266 Core platform version Latest **3.0.2**
+* Select Board:  "ESP8266 Boards (3.0.2)" --> "LOLIN(WEMOS) D1 R2 & mini"
+* Set Flash Size: 4MB (FS:1MB OTA:~1019KB) -- **this project requires FS for saving and reading configuration settings.**
 * Select the **Port** from the tools menu.  
 
 ## Loading Supporting Library Files in Arduino
@@ -56,7 +60,7 @@ Use the Arduino guide for details on how to installing and manage libraries http
 **Packages** -- the following packages and libraries are used (download and install):  
 <ESP8266WiFi.h>  
 <ESP8266WebServer.h>  
-<WiFiManager.h> --> https://github.com/tzapu/WiFiManager  
+<WiFiManager.h> --> https://github.com/tzapu/WiFiManager  (latest)
 "FS.h"  
 <SPI.h>  
 <TimeLib.h> --> https://github.com/PaulStoffregen/Time  
@@ -67,7 +71,7 @@ Use the Arduino guide for details on how to installing and manage libraries http
 Note ArduinoJson (version 5.13.1) is now included as a library file in version 2.7 and later.
 
 ## Initial Configuration
-Starting with version 2.0 editing the **Settings.h** file is optional.  All API Keys are now managed in the Web Interface except for the GeoNames Key. It is not required to edit the Settings.h file before loading and running the code.  
+Editing the **Settings.h** file is totally optional and not required.  All API Keys are now managed in the Web Interface except for the GeoNames Key. It is not required to edit the Settings.h file before loading and running the code.  
 * Open Weather Map free API key: http://openweathermap.org/  -- this is used to get weather data and the latitude and longitude for the current time zone. Weather API key is required for correct time.
 * TimeZoneDB free registration for API key: https://timezonedb.com/register -- this is used for setting the time and getting the correct time zone as well as managing time changes due to Day Light Savings time by regions.  This key is set and managed only through the web interface and added in version 2.10 of Marquee Scroller. TimeZoneDB key is required for correct time display.
 * News API key (free): https://newsapi.org/ -- Optional if you want to get current news headlines.
