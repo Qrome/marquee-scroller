@@ -23,7 +23,7 @@ Make sure you update to the latest version of WifiManager library (link below).
 * Build Video by Chris Riley: https://youtu.be/KqBiqJT9_lE
 
 ## Required Parts:
-* Wemos D1 Mini: https://amzn.to/2qLyKJd
+* Wemos D1 Mini: https://amzn.to/3tMl81U
 * Dot Matrix Module: https://amzn.to/2HtnQlD  
 
 Note: Using the links provided here help to support these types of projects. Thank you for the support.  
