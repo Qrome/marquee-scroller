@@ -1,7 +1,7 @@
 # Marquee Scroller (Clock, Weather, News, and More)
 
 ## NOTICE
-The latest version of Marquee Scroller 3.0 works with **ESP8266 Core 3.0.2** -- if you are upgrading from Marquee Scroller 2.X version this will require you to enter in all your API Keys and Settings.  Please have those ready to provide after you upgrade.  The ESP8266 Core 3.0.2 uses the newer FS (file system) that requires a fresh start on the configuration.
+The latest version of Marquee Scroller 3.0 works with **ESP8266 Core 3.0.2** -- if you are upgrading from Marquee Scroller 2.X version this may require you to enter in all your API Keys and settings.  Always meake sure you have coppied all your API keys somewhere before updating.  The ESP8266 Core 3.0.2 uses the newer FS (file system) that may require a fresh start on the configuration.
 Make sure you update to the latest version of WifiManager library (link below).
 * Removed Bitcoin features in 3.0
 
