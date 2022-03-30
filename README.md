@@ -3,7 +3,7 @@
 ## NOTICE
 The latest version of Marquee Scroller 3.0 works with **ESP8266 Core 3.0.2** -- if you are upgrading from Marquee Scroller 2.X version this will require you to enter in all your API Keys and Settings.  Please have those ready to provide after you upgrade.  The ESP8266 Core 3.0.2 uses the newer FS (file system) that requires a fresh start on the configuration.
 Make sure you update to the latest version of WifiManager library (link below).
-* Bitcoin features were removed in 3.0
+* Removed Bitcoin features in 3.0
 
 ## Features include:
 * Accurate Clock refresh off Internet Time Servers
@@ -58,11 +58,7 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 ## Loading Supporting Library Files in Arduino
 Use the Arduino guide for details on how to installing and manage libraries https://www.arduino.cc/en/Guide/Libraries  
 **Packages** -- the following packages and libraries are used (download and install):  
-<ESP8266WiFi.h>  
-<ESP8266WebServer.h>  
 <WiFiManager.h> --> https://github.com/tzapu/WiFiManager  (latest)
-"FS.h"  
-<SPI.h>  
 <TimeLib.h> --> https://github.com/PaulStoffregen/Time  
 <Adafruit_GFX.h> --> https://github.com/adafruit/Adafruit-GFX-Library  
 <Max72xxPanel.h> --> https://github.com/markruys/arduino-Max72xxPanel  
@@ -71,12 +67,12 @@ Use the Arduino guide for details on how to installing and manage libraries http
 Note ArduinoJson (version 5.13.1) is now included as a library file in version 2.7 and later.
 
 ## Initial Configuration
-Editing the **Settings.h** file is totally optional and not required.  All API Keys are now managed in the Web Interface except for the GeoNames Key. It is not required to edit the Settings.h file before loading and running the code.  
+Editing the **Settings.h** file is totally optional and not required.  All API Keys are now managed in the Web Interface. It is not required to edit the Settings.h file before loading and running the code.  
 * Open Weather Map free API key: http://openweathermap.org/  -- this is used to get weather data and the latitude and longitude for the current time zone. Weather API key is required for correct time.
 * TimeZoneDB free registration for API key: https://timezonedb.com/register -- this is used for setting the time and getting the correct time zone as well as managing time changes due to Day Light Savings time by regions.  This key is set and managed only through the web interface and added in version 2.10 of Marquee Scroller. TimeZoneDB key is required for correct time display.
 * News API key (free): https://newsapi.org/ -- Optional if you want to get current news headlines.
 * Your OctoPrint API Key -- optional if you use the OctoPrint status.
-* Version 2.0 supports Chained 4x1 LED displays -- configure in the Settings.h file.  
+* Version 2.0 supports Chained 4x1 LED displays -- configure up to 16x1 in the Settings.h file.  
 
 NOTE: The settings in the Settings.h are the default settings for the first loading. After loading you will manage changes to the settings via the Web Interface. If you want to change settings again in the settings.h, you will need to erase the file system on the Wemos or use the “Reset Settings” option in the Web Interface.  
 
