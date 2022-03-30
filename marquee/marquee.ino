@@ -424,7 +424,7 @@ void loop() {
       currentTime += " " + currentTemp + getTempSymbol();
     }
     if (Wide_Clock_Style == "2") {
-      String(currentTime) += secondsIndicator(false) + TimeDB.zeroPad(second());
+      currentTime = currentTime + secondsIndicator(false) + TimeDB.zeroPad(second());
       matrix.fillScreen(LOW); // show black
     }
     if (Wide_Clock_Style == "3") {
