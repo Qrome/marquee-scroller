@@ -108,6 +108,7 @@ static const char WEB_ACTIONS2[] PROGMEM = "<a class='w3-bar-item w3-button' hre
 
 static const char WEB_ACTION3[] PROGMEM = "</a><a class='w3-bar-item w3-button' href='/systemreset' onclick='return confirm(\"Do you want to reset to default weather settings?\")'><i class='fas fa-undo'></i> Reset Settings</a>"
                        "<a class='w3-bar-item w3-button' href='/forgetwifi' onclick='return confirm(\"Do you want to forget to WiFi connection?\")'><i class='fas fa-wifi'></i> Forget WiFi</a>"
+                       "<a class='w3-bar-item w3-button' href='/restart'><i class='fas fa-sync'></i> Restart</a>"
                        "<a class='w3-bar-item w3-button' href='/update'><i class='fas fa-wrench'></i> Firmware Update</a>"
                        "<a class='w3-bar-item w3-button' href='https://github.com/Qrome/marquee-scroller' target='_blank'><i class='fas fa-question-circle'></i> About</a>";
 
@@ -136,7 +137,8 @@ static const char CHANGE_FORM2[] PROGMEM = "<p><input name='isPM' class='w3-chec
                       "<p>Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='0' max='15' value='%INTENSITYOPTIONS%'></p>"
                       "<p>Display Scroll Speed <select class='w3-option w3-padding' name='scrollspeed'>%SCROLLOPTIONS%</select></p>"
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
-                      "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
+                      "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>"
+                      "<p>Display Panel Rotation <select class='w3-option w3-padding' name='panelRotation'>%PANEL_ROTATION_OPTIONS%</select><br />You need to restart the clock after this is saved to take effect.</p>";
 
 static const char CHANGE_FORM3[] PROGMEM = "<hr><p><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes</p>"
                       "<p><label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'></p>"
@@ -315,6 +317,7 @@ void setup() {
     server.on("/savepihole", handleSavePihole);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
+    server.on("/restart", restartEsp);
     server.on("/configure", handleConfigure);
     server.on("/configurebitcoin", handleBitcoinConfigure);
     server.on("/configurewideclock", handleWideClockConfigure);
@@ -588,6 +591,7 @@ void handleLocations() {
   minutesBetweenDataRefresh = server.arg("refresh").toInt();
   minutesBetweenScrolling = server.arg("refreshDisplay").toInt();
   displayScrollSpeed = server.arg("scrollspeed").toInt();
+  ledRotation = server.arg("panelRotation").toInt();
   IS_BASIC_AUTH = server.hasArg("isBasicAuth");
   String temp = server.arg("userid");
   temp.toCharArray(www_username, sizeof(temp));
@@ -620,6 +624,11 @@ void handleForgetWifi() {
   redirectHome();
   WiFiManager wifiManager;
   wifiManager.resetSettings();
+  ESP.restart();
+}
+
+void restartEsp() {
+  redirectHome();
   ESP.restart();
 }
 
@@ -886,6 +895,10 @@ void handleConfigure() {
   options.replace(">" + minutes + "<", " selected>" + minutes + "<");
   form.replace("%OPTIONS%", options);
   form.replace("%REFRESH_DISPLAY%", String(minutesBetweenScrolling));
+  String panelRotationOptions = "<option value='0'>0 degrees</option><option value='1'>90 degrees</option><option value='2'>180 degrees</option><option value='3'>270 degrees</option>";
+  String rotation = String(ledRotation);
+  panelRotationOptions.replace("'" + rotation + "'", "'" + rotation + "' selected='selected'");
+  form.replace("%PANEL_ROTATION_OPTIONS%",panelRotationOptions);
 
   server.sendContent(form); //Send another chunk of the form
 
@@ -1351,6 +1364,7 @@ String writeCityIds() {
     f.println("isMetric=" + String(IS_METRIC));
     f.println("refreshRate=" + String(minutesBetweenDataRefresh));
     f.println("minutesBetweenScrolling=" + String(minutesBetweenScrolling));
+    f.println("ledRotation=" + String(ledRotation));
     f.println("isOctoPrint=" + String(OCTOPRINT_ENABLED));
     f.println("isOctoProgress=" + String(OCTOPRINT_PROGRESS));
     f.println("octoKey=" + OctoPrintApiKey);
@@ -1451,6 +1465,11 @@ void readCityIds() {
       minutesBetweenScrolling = line.substring(line.lastIndexOf("minutesBetweenScrolling=") + 24).toInt();
       Serial.println("minutesBetweenScrolling=" + String(minutesBetweenScrolling));
     }
+    if (line.indexOf("ledRotation=") >= 0) {
+      ledRotation = line.substring(line.lastIndexOf("ledRotation=") + 12).toInt();
+      Serial.println("ledRotation=" + String(ledRotation));
+    }
+    
     if (line.indexOf("marqueeMessage=") >= 0) {
       marqueeMessage = line.substring(line.lastIndexOf("marqueeMessage=") + 15);
       marqueeMessage.trim();
