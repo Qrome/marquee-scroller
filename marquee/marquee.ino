@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "3.0"
+#define VERSION "3.01"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -452,7 +452,7 @@ String zeroPad(int value) {
 
 String hourMinutes(boolean isRefresh) {
   if (IS_24HOUR) {
-    return hour() + secondsIndicator(isRefresh) + TimeDB.zeroPad(minute());
+    return String(hour()) + secondsIndicator(isRefresh) + TimeDB.zeroPad(minute());
   } else {
     return String(hourFormat12()) + secondsIndicator(isRefresh) + TimeDB.zeroPad(minute());
   }
