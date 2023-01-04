@@ -117,3 +117,5 @@ String OTA_Password = "";     // Set an OTA password here -- leave blank if you 
 //******************************
 // End Settings
 //******************************
+//blue-grey
+String themeColor = "blue-grey"; // this can be changed later in the web interface.
