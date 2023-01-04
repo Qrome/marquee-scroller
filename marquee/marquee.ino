@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "3.01"
+#define VERSION "3.02"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -132,7 +132,8 @@ static const char CHANGE_FORM2[] PROGMEM = "<p><input name='isPM' class='w3-chec
                       "<p>Display Brightness <input class='w3-border w3-margin-bottom' name='ledintensity' type='number' min='0' max='15' value='%INTENSITYOPTIONS%'></p>"
                       "<p>Display Scroll Speed <select class='w3-option w3-padding' name='scrollspeed'>%SCROLLOPTIONS%</select></p>"
                       "<p>Minutes Between Refresh Data <select class='w3-option w3-padding' name='refresh'>%OPTIONS%</select></p>"
-                      "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>";
+                      "<p>Minutes Between Scrolling Data <input class='w3-border w3-margin-bottom' name='refreshDisplay' type='number' min='1' max='10' value='%REFRESH_DISPLAY%'></p>"
+                      "<p>Theme Color <select class='w3-option w3-padding' name='theme'>%THEME_OPTIONS%</select></p>";
 
 static const char CHANGE_FORM3[] PROGMEM = "<hr><p><input name='isBasicAuth' class='w3-check w3-margin-top' type='checkbox' %IS_BASICAUTH_CHECKED%> Use Security Credentials for Configuration Changes</p>"
                       "<p><label>Marquee User ID (for this web interface)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='userid' value='%USERID%' maxlength='20'></p>"
@@ -179,6 +180,29 @@ static const char OCTO_FORM[] PROGMEM = "<form class='w3-container' action='/sav
                         "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
                         "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
+static const char COLOR_THEMES[] PROGMEM = "<option>red</option>"
+                      "<option>pink</option>"
+                      "<option>purple</option>"
+                      "<option>deep-purple</option>"
+                      "<option>indigo</option>"
+                      "<option>blue</option>"
+                      "<option>light-blue</option>"
+                      "<option>cyan</option>"
+                      "<option>teal</option>"
+                      "<option>green</option>"
+                      "<option>light-green</option>"
+                      "<option>lime</option>"
+                      "<option>khaki</option>"
+                      "<option>yellow</option>"
+                      "<option>amber</option>"
+                      "<option>orange</option>"
+                      "<option>deep-orange</option>"
+                      "<option>blue-grey</option>"
+                      "<option>brown</option>"
+                      "<option>grey</option>"
+                      "<option>dark-grey</option>"
+                      "<option>black</option>"
+                      "<option>w3schools</option>";
 
 
 const int TIMEOUT = 500; // 500 = 1/2 second
@@ -560,6 +584,7 @@ void handleLocations() {
   timeDisplayTurnsOff = decodeHtmlString(server.arg("endTime"));
   displayIntensity = server.arg("ledintensity").toInt();
   minutesBetweenDataRefresh = server.arg("refresh").toInt();
+  themeColor = server.arg("theme");
   minutesBetweenScrolling = server.arg("refreshDisplay").toInt();
   displayScrollSpeed = server.arg("scrollspeed").toInt();
   IS_BASIC_AUTH = server.hasArg("isBasicAuth");
@@ -832,6 +857,9 @@ void handleConfigure() {
   options.replace(">" + minutes + "<", " selected>" + minutes + "<");
   form.replace("%OPTIONS%", options);
   form.replace("%REFRESH_DISPLAY%", String(minutesBetweenScrolling));
+  String themeOptions = FPSTR(COLOR_THEMES);
+  themeOptions.replace(">" + String(themeColor) + "<", " selected>" + String(themeColor) + "<");
+  form.replace("%THEME_OPTIONS%", themeOptions);
 
   server.sendContent(form); //Send another chunk of the form
 
@@ -958,7 +986,7 @@ void sendHeader() {
   html += "<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />";
   html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
   html += "<link rel='stylesheet' href='https://www.w3schools.com/w3css/4/w3.css'>";
-  html += "<link rel='stylesheet' href='https://www.w3schools.com/lib/w3-theme-blue-grey.css'>";
+  html += "<link rel='stylesheet' href='https://www.w3schools.com/lib/w3-theme-" + themeColor + ".css'>";
   html += "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.1/css/all.min.css'>";
   html += "</head><body>";
   server.sendContent(html);
@@ -1320,6 +1348,7 @@ String writeCityIds() {
     f.println("USE_PIHOLE=" + String(USE_PIHOLE));
     f.println("PiHoleServer=" + PiHoleServer);
     f.println("PiHolePort=" + String(PiHolePort));
+    f.println("themeColor=" + themeColor);
   }
   f.close();
   readCityIds();
@@ -1510,6 +1539,11 @@ void readCityIds() {
     if (line.indexOf("PiHolePort=") >= 0) {
       PiHolePort = line.substring(line.lastIndexOf("PiHolePort=") + 11).toInt();
       Serial.println("PiHolePort=" + String(PiHolePort));
+    }
+    if (line.indexOf("themeColor=") >= 0) {
+      themeColor = line.substring(line.lastIndexOf("themeColor=") + 11);
+      themeColor.trim();
+      Serial.println("themeColor=" + themeColor);
     }
   }
   fr.close();
