@@ -27,7 +27,7 @@
 
 #include "Settings.h"
 
-#define VERSION "3.02"
+#define VERSION "3.03"
 
 #define HOSTNAME "CLOCK-"
 #define CONFIG "/conf.txt"
@@ -149,14 +149,16 @@ static const char PIHOLE_FORM[] PROGMEM = "<form class='w3-container' action='/s
                         "<p><input name='displaypihole' class='w3-check w3-margin-top' type='checkbox' %PIHOLECHECKED%> Show Pi-hole Statistics</p>"
                         "<label>Pi-hole Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholeAddress' id='piholeAddress' value='%PIHOLEADDRESS%' maxlength='60'>"
                         "<label>Pi-hole Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='piholePort' id='piholePort' value='%PIHOLEPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                        "<label>Pi-hole API Token (from Pi-hole &rarr; Settings &rarr; API/Web interface)</label>"
+                        "<input class='w3-input w3-border w3-margin-bottom' type='text' name='piApiToken' id='piApiToken' value='%PIAPITOKEN%' maxlength='65'>"
                         "<input type='button' value='Test Connection and JSON Response' onclick='testPiHole()'><p id='PiHoleTest'></p>"
                         "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
                         "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
 static const char PIHOLE_TEST[] PROGMEM = "<script>function testPiHole(){var e=document.getElementById(\"PiHoleTest\"),t=document.getElementById(\"piholeAddress\").value,"
-                       "n=document.getElementById(\"piholePort\").value;"
+                       "n=document.getElementById(\"piholePort\").value,api=document.getElementById(\"piApiToken\").value;;"
                        "if(e.innerHTML=\"\",\"\"==t||\"\"==n)return e.innerHTML=\"* Address and Port are required\","
-                       "void(e.style.background=\"\");var r=\"http://\"+t+\":\"+n;r+=\"/admin/api.php?summary\",window.open(r,\"_blank\").focus()}</script>";
+                       "void(e.style.background=\"\");var r=\"http://\"+t+\":\"+n;r+=\"/admin/api.php?summary=3&auth=\"+api,window.open(r,\"_blank\").focus()}</script>";
 
 static const char NEWS_FORM1[] PROGMEM =   "<form class='w3-container' action='/savenews' method='get'><h2>News Configuration:</h2>"
                         "<p><input name='displaynews' class='w3-check w3-margin-top' type='checkbox' %NEWSCHECKED%> Display News Headlines</p>"
@@ -427,8 +429,8 @@ void loop() {
         msg += "(" + printerClient.getProgressCompletion() + "%)  ";
       }
       if (USE_PIHOLE) {
-        piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
-        piholeClient.getGraphData(PiHoleServer, PiHolePort);
+        piholeClient.getPiHoleData(PiHoleServer, PiHolePort, PiHoleApiKey);
+        piholeClient.getGraphData(PiHoleServer, PiHolePort, PiHoleApiKey);
         if (piholeClient.getPiHoleStatus() != "") {
           msg += "    Pi-hole (" + piholeClient.getPiHoleStatus() + "): " + piholeClient.getAdsPercentageToday() + "% "; 
         }
@@ -553,10 +555,12 @@ void handleSavePihole() {
   USE_PIHOLE = server.hasArg("displaypihole");
   PiHoleServer = server.arg("piholeAddress");
   PiHolePort = server.arg("piholePort").toInt();
+  PiHoleApiKey = server.arg("piApiToken");
+  Serial.println("PiHoleApiKey from save: " + PiHoleApiKey);
   writeCityIds();
   if (USE_PIHOLE) {
-    piholeClient.getPiHoleData(PiHoleServer, PiHolePort);
-    piholeClient.getGraphData(PiHoleServer, PiHolePort);
+    piholeClient.getPiHoleData(PiHoleServer, PiHolePort, PiHoleApiKey);
+    piholeClient.getGraphData(PiHoleServer, PiHolePort, PiHoleApiKey);
   }
   redirectHome();
 }
@@ -746,6 +750,8 @@ void handlePiholeConfigure() {
   form.replace("%PIHOLECHECKED%", isPiholeDisplayedChecked);
   form.replace("%PIHOLEADDRESS%", PiHoleServer);
   form.replace("%PIHOLEPORT%", String(PiHolePort));
+  form.replace("%PIAPITOKEN%", PiHoleApiKey);
+
 
   server.sendContent(form);
   form = "";
@@ -1348,6 +1354,7 @@ String writeCityIds() {
     f.println("USE_PIHOLE=" + String(USE_PIHOLE));
     f.println("PiHoleServer=" + PiHoleServer);
     f.println("PiHolePort=" + String(PiHolePort));
+    f.println("PiHoleApiKey=" + String(PiHoleApiKey));
     f.println("themeColor=" + themeColor);
   }
   f.close();
@@ -1539,6 +1546,11 @@ void readCityIds() {
     if (line.indexOf("PiHolePort=") >= 0) {
       PiHolePort = line.substring(line.lastIndexOf("PiHolePort=") + 11).toInt();
       Serial.println("PiHolePort=" + String(PiHolePort));
+    }
+    if (line.indexOf("PiHoleApiKey=") >= 0) {
+      PiHoleApiKey = line.substring(line.lastIndexOf("PiHoleApiKey=") + 13);
+      PiHoleApiKey.trim();
+      Serial.println("PiHoleApiKey=" + String(PiHoleApiKey));
     }
     if (line.indexOf("themeColor=") >= 0) {
       themeColor = line.substring(line.lastIndexOf("themeColor=") + 11);

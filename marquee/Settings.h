@@ -84,7 +84,7 @@ String NEWS_SOURCE = "reuters";  // https://newsapi.org/sources to get full list
 // DIN -> D7 (MOSI)
 const int pinCS = D6; // Attach CS to this pin, DIN to MOSI and CLK to SCK (cf http://arduino.cc/en/Reference/SPI )
 int displayIntensity = 1;  //(This can be set from 0 - 15)
-const int numberOfHorizontalDisplays = 4; // default 4 for standard 4 x 1 display Max size of 16
+const int numberOfHorizontalDisplays = 8; // default 4 for standard 4 x 1 display Max size of 16
 const int numberOfVerticalDisplays = 1; // default 1 for a single row height
 /* set ledRotation for LED Display panels (3 is default)
 0: no rotation
@@ -110,6 +110,7 @@ String OctoAuthPass = "";     // only used with haproxy or basic auth (only need
 boolean USE_PIHOLE = false;   // Set true to display your Pi-hole details
 String PiHoleServer = "";     // IP or Address only (DO NOT include http://)
 int PiHolePort = 80;          // Port of your Pi-hole address (default 80)
+String PiHoleApiKey = "";   // Optional -- only needed to see top blocked clients
 
 boolean ENABLE_OTA = true;    // this will allow you to load firmware to the device over WiFi (see OTA for ESP8266)
 String OTA_Password = "";     // Set an OTA password here -- leave blank if you don't want to be prompted for password

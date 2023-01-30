@@ -27,13 +27,19 @@ PiHoleClient::PiHoleClient() {
   //Constructor
 }
 
-void PiHoleClient::getPiHoleData(String server, int port) {
+void PiHoleClient::getPiHoleData(String server, int port, String apiKey) {
 
   WiFiClient wifiClient;
   errorMessage = "";
   String response = "";
 
-  String apiGetData = "http://" + server + ":" + String(port) + "/admin/api.php?summary";
+  if (apiKey == "") {
+    errorMessage = "Pi-hole API Key is required to view Summary Data.";
+    Serial.println(errorMessage);
+    return;
+  }
+
+  String apiGetData = "http://" + server + ":" + String(port) + "/admin/api.php?summary&auth=" + apiKey;
   Serial.println("Sending: " + apiGetData);
   HTTPClient http;  //Object of class HTTPClient
   http.begin(wifiClient, apiGetData);// get the result
@@ -96,6 +102,7 @@ void PiHoleClient::getTopClientsBlocked(String server, int port, String apiKey) 
 
   if (apiKey == "") {
     errorMessage = "Pi-hole API Key is required to view Top Clients Blocked.";
+    Serial.println(errorMessage);
     return;
   }
 
@@ -146,11 +153,19 @@ void PiHoleClient::getTopClientsBlocked(String server, int port, String apiKey) 
   Serial.println();
 }
 
-void PiHoleClient::getGraphData(String server, int port) {
+void PiHoleClient::getGraphData(String server, int port, String apiKey) {
   WiFiClient wifiClient;
   HTTPClient http;
   
-  String apiGetData = "http://" + server + ":" + String(port) + "/admin/api.php?overTimeData10mins";
+  errorMessage = "";
+
+  if (apiKey == "") {
+    errorMessage = "Pi-hole API Key is required to view Graph Data.";
+    Serial.println(errorMessage);
+    return;
+  }
+
+  String apiGetData = "http://" + server + ":" + String(port) + "/admin/api.php?overTimeData10mins&auth=" + apiKey;
   resetBlockedGraphData();
   Serial.println("Getting Pi-Hole Graph Data");
   Serial.println(apiGetData);
@@ -158,7 +173,6 @@ void PiHoleClient::getGraphData(String server, int port) {
   int httpCode = http.GET();
 
   String result = "";
-  errorMessage = "";
   boolean track = false;
   int countBracket = 0;
   blockedCount = 0;

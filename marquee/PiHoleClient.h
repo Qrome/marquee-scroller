@@ -24,7 +24,6 @@ SOFTWARE.
 #pragma once
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <WiFiClient.h>
 #include "libs/ArduinoJson/ArduinoJson.h"
 
 class PiHoleClient {
@@ -72,8 +71,8 @@ private:
   
 public:
   PiHoleClient();
-  void getPiHoleData(String server, int port);
-  void getGraphData(String server, int port);
+  void getPiHoleData(String server, int port, String apiKey);
+  void getGraphData(String server, int port, String apiKey);
   void getTopClientsBlocked(String server, int port, String apiKey);
 
   String getDomainsBeingBlocked();
