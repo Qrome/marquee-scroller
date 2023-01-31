@@ -196,7 +196,7 @@ void PiHoleClient::getGraphData(String server, int port, String apiKey) {
           int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
           for(int i=0;i<c;i++) {
             if (track && countBracket >= 3) {
-              if (buff[i] == ',' || buff[i] == '}') {
+              if (buff[i] == ',' || buff[i] == '}' && blockedCount < 144) {
                 blocked[blockedCount] = result.toInt();
                 if (blocked[blockedCount] > blockedHigh) {
                   blockedHigh = blocked[blockedCount];
