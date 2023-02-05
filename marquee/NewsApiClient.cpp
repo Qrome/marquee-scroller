@@ -171,6 +171,10 @@ String NewsApiClient::cleanText(String text) {
   text.replace("î", "i");
   text.replace("ï", "i");
   text.replace("ô", "o");
+  text.replace("ó", "o");
+  text.replace("ò", "o");
+  text.replace("Ó", "O");
+  text.replace("Ò", "O");
   text.replace("…", "...");
   text.replace("–", "-");
   text.replace("Â", "A");
@@ -194,5 +198,7 @@ String NewsApiClient::cleanText(String text) {
   text.replace("ß", "ss");
   text.replace("»", "'");
   text.replace("«", "'");
+  text.replace(" ", " "); // Non-breaking whitespace
+  
   return text;
 }
