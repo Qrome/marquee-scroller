@@ -58,7 +58,7 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 ## Loading Supporting Library Files in Arduino
 Use the Arduino guide for details on how to installing and manage libraries https://www.arduino.cc/en/Guide/Libraries  
 **Packages** -- the following packages and libraries are used (download and install):  
-<WiFiManager.h> --> https://github.com/tzapu/WiFiManager  (latest)
+<WiFiManager.h> --> https://github.com/tzapu/WiFiManager (latest)  
 <TimeLib.h> --> https://github.com/PaulStoffregen/Time  
 <Adafruit_GFX.h> --> https://github.com/adafruit/Adafruit-GFX-Library  
 <Max72xxPanel.h> --> https://github.com/markruys/arduino-Max72xxPanel  
