@@ -90,6 +90,9 @@ int printerCount = 0;
 // Pi-hole Client
 PiHoleClient piholeClient;
 
+// Mqtt Client
+MqttClient mqttClient(MqttServer, MqttPort, MqttTopic);
+
 ESP8266WebServer server(WEBSERVER_PORT);
 ESP8266HTTPUpdateServer serverUpdater;
 
@@ -99,6 +102,7 @@ static const char WEB_ACTIONS1[] PROGMEM = "<a class='w3-bar-item w3-button' hre
                         "<a class='w3-bar-item w3-button' href='/configureoctoprint'><i class='fas fa-cube'></i> OctoPrint</a>";
 
 static const char WEB_ACTIONS2[] PROGMEM = "<a class='w3-bar-item w3-button' href='/configurepihole'><i class='fas fa-network-wired'></i> Pi-hole</a>"
+                        "<a class='w3-bar-item w3-button' href='/configuremqtt'><i class='fas fa-network-wired'></i> Mqtt</a>"
                         "<a class='w3-bar-item w3-button' href='/pull'><i class='fas fa-cloud-download-alt'></i> Refresh Data</a>"
                         "<a class='w3-bar-item w3-button' href='/display'>";
 
@@ -152,6 +156,14 @@ static const char PIHOLE_FORM[] PROGMEM = "<form class='w3-container' action='/s
                         "<label>Pi-hole API Token (from Pi-hole &rarr; Settings &rarr; API/Web interface)</label>"
                         "<input class='w3-input w3-border w3-margin-bottom' type='text' name='piApiToken' id='piApiToken' value='%PIAPITOKEN%' maxlength='65'>"
                         "<input type='button' value='Test Connection and JSON Response' onclick='testPiHole()'><p id='PiHoleTest'></p>"
+                        "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
+                        "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
+
+static const char MQTT_FORM[] PROGMEM = "<form class='w3-container' action='/savemqtt' method='get'><h2>Mqtt Configuration:</h2>"
+                        "<p><input name='displaymqtt' class='w3-check w3-margin-top' type='checkbox' %MQTTCHECKED%> Show Mqtt Statistics</p>"
+                        "<label>Mqtt Address (do not include http://)</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='mqttAddress' id='mqttAddress' value='%MQTTADDRESS%' maxlength='60'>"
+                        "<label>Mqtt Port</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='mqttPort' id='mqttPort' value='%MQTTPORT%' maxlength='5'  onkeypress='return isNumberKey(event)'>"
+                        "<label>Mqtt Topic</label><input class='w3-input w3-border w3-margin-bottom' type='text' name='mqttTopic' id='mqttTopic' value='%MQTTTOPIC%' maxlength='128'>"
                         "<button class='w3-button w3-block w3-green w3-section w3-padding' type='submit'>Save</button></form>"
                         "<script>function isNumberKey(e){var h=e.which?e.which:event.keyCode;return!(h>31&&(h<48||h>57))}</script>";
 
@@ -319,6 +331,7 @@ void setup() {
     server.on("/savenews", handleSaveNews);
     server.on("/saveoctoprint", handleSaveOctoprint);
     server.on("/savepihole", handleSavePihole);
+    server.on("/savemqtt", handleSaveMqtt);
     server.on("/systemreset", handleSystemReset);
     server.on("/forgetwifi", handleForgetWifi);
     server.on("/configure", handleConfigure);
@@ -326,6 +339,7 @@ void setup() {
     server.on("/configurenews", handleNewsConfigure);
     server.on("/configureoctoprint", handleOctoprintConfigure);
     server.on("/configurepihole", handlePiholeConfigure);
+    server.on("/configuremqtt", handleMqttConfigure);
     server.on("/display", handleDisplay);
     server.onNotFound(redirectHome);
     serverUpdater.setup(&server, "/update", www_username, www_password);
@@ -348,6 +362,15 @@ void setup() {
 // Main Looop
 //************************************************************
 void loop() {
+  // allow the mqtt client to do its thing
+  if (USE_MQTT) {
+    mqttClient.loop();
+    String newMqttMessage = mqttClient.getNewMqttMessage();
+    if (newMqttMessage != "") {
+      scrollMessage(newMqttMessage);
+    }
+  }
+
   //Get some Weather Data to serve
   if ((getMinutesFromLastRefresh() >= minutesBetweenDataRefresh) || lastEpoch == 0) {
     getWeatherData();
@@ -434,6 +457,11 @@ void loop() {
         if (piholeClient.getPiHoleStatus() != "") {
           msg += "    Pi-hole (" + piholeClient.getPiHoleStatus() + "): " + piholeClient.getAdsPercentageToday() + "% "; 
         }
+      }
+
+      if (USE_MQTT) {
+        // add mqtt message if there is one
+        msg += String(mqttClient.getLastMqttMessage());
       }
 
       scrollMessage(msg);
@@ -562,6 +590,19 @@ void handleSavePihole() {
     piholeClient.getPiHoleData(PiHoleServer, PiHolePort, PiHoleApiKey);
     piholeClient.getGraphData(PiHoleServer, PiHolePort, PiHoleApiKey);
   }
+  redirectHome();
+}
+
+void handleSaveMqtt() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  USE_MQTT = server.hasArg("displaymqtt");
+  MqttServer = server.arg("mqttAddress");
+  MqttPort = server.arg("mqttPort").toInt();
+  MqttTopic = server.arg("mqttTopic");
+
+  writeCityIds();
   redirectHome();
 }
 
@@ -756,6 +797,41 @@ void handlePiholeConfigure() {
   server.sendContent(form);
   form = "";
           
+  sendFooter();
+
+  server.sendContent("");
+  server.client().stop();
+  digitalWrite(externalLight, HIGH);
+}
+
+void handleMqttConfigure() {
+  if (!athentication()) {
+    return server.requestAuthentication();
+  }
+  digitalWrite(externalLight, LOW);
+
+  server.sendHeader("Cache-Control", "no-cache, no-store");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "-1");
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, "text/html", "");
+
+  sendHeader();
+
+  String form = FPSTR(MQTT_FORM);
+  String isMqttDisplayedChecked = "";
+  if (USE_MQTT) {
+    isMqttDisplayedChecked = "checked='checked'";
+  }
+  form.replace("%MQTTCHECKED%", isMqttDisplayedChecked);
+  form.replace("%MQTTADDRESS%", MqttServer);
+  form.replace("%MQTTPORT%", String(MqttPort));
+  form.replace("%MQTTTOPIC%", String(MqttTopic));
+
+
+  server.sendContent(form);
+  form = "";
+
   sendFooter();
 
   server.sendContent("");
@@ -1146,6 +1222,21 @@ void displayWeatherData() {
     html = "";
   }
 
+  if (USE_MQTT) {
+    if (mqttClient.getError() == "") {
+      html = "<div class='w3-cell-row'><b>Mqtt</b><br>"
+             "Last Message: <b>" + String(mqttClient.getLastMqttMessage()) + "</b><br>"
+             "</div><br><hr>";
+    } else {
+      html = "<div class='w3-cell-row'> Mqtt Error";
+      html += "Please <a href='/configuremqtt' title='Configure'>Configure</a> for Mqtt <a href='/configuremqtt' title='Configure'><i class='fas fa-cog'></i></a><br>";
+      html += "Status: Error Connecting<br>";
+      html += "Reason: " + mqttClient.getError() + "<br></div><br><hr>";
+    }
+    server.sendContent(html);
+    html = "";
+  }
+
   if (NEWS_ENABLED) {
     html = "<div class='w3-cell-row' style='width:100%'><h2>News (" + NEWS_SOURCE + ")</h2></div>";
     if (newsClient.getTitle(0) == "") {
@@ -1355,6 +1446,10 @@ String writeCityIds() {
     f.println("PiHoleServer=" + PiHoleServer);
     f.println("PiHolePort=" + String(PiHolePort));
     f.println("PiHoleApiKey=" + String(PiHoleApiKey));
+    f.println("USE_MQTT=" + String(USE_MQTT));
+    f.println("MqttServer=" + MqttServer);
+    f.println("MqttPort=" + String(MqttPort));
+    f.println("MqttTopic=" + String(MqttTopic));
     f.println("themeColor=" + themeColor);
   }
   f.close();
@@ -1552,6 +1647,25 @@ void readCityIds() {
       PiHoleApiKey.trim();
       Serial.println("PiHoleApiKey=" + String(PiHoleApiKey));
     }
+    if (line.indexOf("USE_MQTT=") >= 0) {
+      USE_MQTT = line.substring(line.lastIndexOf("USE_MQTT=") + 9).toInt();
+      Serial.println("USE_MQTT=" + String(USE_MQTT));
+    }
+    if (line.indexOf("MqttServer=") >= 0) {
+      MqttServer = line.substring(line.lastIndexOf("MqttServer=") + 11);
+      MqttServer.trim();
+      Serial.println("MqttServer=" + String(MqttServer));
+    }
+    if (line.indexOf("MqttPort=") >= 0) {
+      MqttPort = line.substring(line.lastIndexOf("MqttPort=") + 9).toInt();
+      Serial.println("MqttPort=" + String(MqttPort));
+    }
+    if (line.indexOf("MqttTopic=") >= 0) {
+      MqttTopic = line.substring(line.lastIndexOf("MqttTopic=") + 10);
+      MqttTopic.trim();
+      Serial.println("MqttTopic=" + String(MqttTopic));
+    }
+
     if (line.indexOf("themeColor=") >= 0) {
       themeColor = line.substring(line.lastIndexOf("themeColor=") + 11);
       themeColor.trim();
@@ -1565,6 +1679,7 @@ void readCityIds() {
   weatherClient.setMetric(IS_METRIC);
   weatherClient.updateCityIdList(CityIDs, 1);
   printerClient.updateOctoPrintClient(OctoPrintApiKey, OctoPrintServer, OctoPrintPort, OctoAuthUser, OctoAuthPass);
+  mqttClient.updateMqttClient(MqttServer, MqttPort, MqttTopic);
 }
 
 void scrollMessage(String msg) {
