@@ -46,7 +46,9 @@ In version 2.6 and higher, the binary files that can be uploaded to your marque 
 * **marquee.ino.d1_mini_3.01.bin** - compiled for Wemos D1 Mini and standard 4x1 LED (default)
 * **marquee.ino.d1_mini_wide_3.01.bin** - compiled for Wemos D1 Mini and double wide 8x1 LED display
 
-## Compiling and Loading to Wemos D1
+# Building and Compiling
+## Using Arudino IDE
+### Compiling and Loading to Wemos D1
 It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to work with the Wemos board and USB port and installed the required USB drivers etc.  
 * USB CH340G drivers:  https://sparks.gogo.co.nz/ch340.html
 * Enter http://arduino.esp8266.com/stable/package_esp8266com_index.json into Additional Board Manager URLs field. You can add multiple URLs, separating them with commas.  This will add support for the Wemos D1 Mini to Arduino IDE.
@@ -55,7 +57,7 @@ It is recommended to use Arduino IDE.  You will need to configure Arduino IDE to
 * Set Flash Size: 4MB (FS:1MB OTA:~1019KB) -- **this project requires FS for saving and reading configuration settings.**
 * Select the **Port** from the tools menu.  
 
-## Loading Supporting Library Files in Arduino
+### Loading Supporting Library Files in Arduino
 Use the Arduino guide for details on how to installing and manage libraries https://www.arduino.cc/en/Guide/Libraries  
 **Packages** -- the following packages and libraries are used (download and install):  
 <WiFiManager.h> --> https://github.com/tzapu/WiFiManager (latest)  
@@ -65,6 +67,15 @@ Use the Arduino guide for details on how to installing and manage libraries http
 <JsonStreamingParser.h> --> https://github.com/squix78/json-streaming-parser  
 
 Note ArduinoJson (version 5.13.1) is now included as a library file in version 2.7 and later.
+
+
+## Building with Platformio.
+Just open project with `Visual Studio` or any other IDE  that have `Platformio` installed.
+
+Platformio.ini file should be recognized and all dependecies downloaded upon build.
+
+Note ! There is issue with Windows that prevents from building when path is too long - you need to move your project to root folder in order to download all dependecies.
+
 
 ## Initial Configuration
 Editing the **Settings.h** file is totally optional and not required.  All API Keys are now managed in the Web Interface. It is not required to edit the Settings.h file before loading and running the code.  
