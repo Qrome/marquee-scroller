@@ -67,8 +67,8 @@ boolean IS_PM = true; // Show PM indicator on Clock when in AM/PM mode
 const int WEBSERVER_PORT = 80; // The port you can access this device on over HTTP
 const boolean WEBSERVER_ENABLED = true;  // Device will provide a web interface via http://[ip]:[port]/
 boolean IS_BASIC_AUTH = false;  // Use Basic Authorization for Configuration security on Web Interface
-char* www_username = "admin";  // User account for the Web Interface
-char* www_password = "password";  // Password for the Web Interface
+char* www_username = (char*)"admin";  // User account for the Web Interface
+char* www_password = (char*)"password";  // Password for the Web Interface
 int minutesBetweenDataRefresh = 15;  // Time in minutes between data refresh (default 15 minutes)
 int minutesBetweenScrolling = 1; // Time in minutes between scrolling data (default 1 minutes and max is 10)
 int displayScrollSpeed = 25; // In milliseconds -- Configurable by the web UI (slow = 35, normal = 25, fast = 15, very fast = 5)
